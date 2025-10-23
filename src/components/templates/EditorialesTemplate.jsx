@@ -65,7 +65,7 @@ const Container = styled.div`
     "main" auto;
   .area1 {
     grid-area: area1;
-    background-color: rgba(103, 93, 241, 0.14);
+    /* background-color: rgba(103, 93, 241, 0.14); */
     display: flex;
     justify-content: end;
     align-items: center;
@@ -73,13 +73,13 @@ const Container = styled.div`
   }
   .area2 {
     grid-area: area2;
-    background-color: rgba(7, 221, 237, 0.14);
+    /* background-color: rgba(7, 221, 237, 0.14); */
     display: flex;
     justify-content: end;
     align-items: center;
   }
   .main {
     grid-area: main;
-    background-color: rgba(237, 7, 221, 0.14);
+    /* background-color: rgba(237, 7, 221, 0.14); */
   }
 `;
