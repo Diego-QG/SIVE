@@ -54,6 +54,7 @@ export function RegistrarEditoriales({
         _id_empresa: dataempresa.id,
         _id: dataSelect.id,
         _pais: data.pais,
+        _logo: dataSelect.logo ?? "-",
       };
       await editareditorial(p, dataSelect.logo, file);
     } else {

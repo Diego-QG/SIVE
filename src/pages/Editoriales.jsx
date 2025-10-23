@@ -7,7 +7,7 @@ import {
 } from "../index";
 
 export function Editoriales() {
-    const { mostrareditoriales, buscarcategorias, buscador } = useEditorialesStore();
+    const { mostrareditoriales, buscareditoriales, buscador } = useEditorialesStore();
     const { dataempresa } = useEmpresaStore();
     const { isLoading, error } = useQuery({
         queryKey: ["mostrar editoriales", dataempresa?.id],
@@ -18,7 +18,7 @@ export function Editoriales() {
 
     const {} = useQuery({
         queryKey: ["buscar editoriales", buscador],
-        queryFn: () => buscarcategorias({ id_empresa: dataempresa?.id, descripcion:buscador }),
+        queryFn: () => buscareditoriales({ id_empresa: dataempresa?.id, descripcion:buscador }),
         enabled: !!dataempresa,
         refetchOnWindowFocus: false,
     });
