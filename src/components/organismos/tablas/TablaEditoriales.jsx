@@ -2,7 +2,9 @@ import styled from "styled-components";
 import {
   ContentAccionesTabla,
   useEditorialesStore,
-  Paginacion,ImagenContent, Icono
+  Paginacion,
+  ImagenContent,
+  Icono,
 } from "../../../index";
 import Swal from "sweetalert2";
 import { v } from "../../../styles/variables";
@@ -22,7 +24,7 @@ export function TablaEditoriales({
   setdataSelect,
   setAccion,
 }) {
-  if (data==null) return;
+  if (data == null) return;
   const [pagina, setPagina] = useState(1);
   const [datas, setData] = useState(data);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -69,18 +71,25 @@ export function TablaEditoriales({
   const columns = [
     {
       accessorKey: "logo",
-      header: "Logo", 
+      header: "Logo",
       enableSorting: false,
-      cell: (info) => (
-        <td data-title="Color" className="ContentCell">
-          {
-            info.getValue()!="-"?(   <ImagenContent imagen={info.getValue()}/>):(<Icono>
-              {<v.iconoimagenvacia/>}
-            </Icono>)
-          }
-    
-        </td>
-      ),
+      meta: {
+        dataTitle: "Logo",
+        className: "ContentCell",
+      },
+      cell: (info) => {
+        const valorLogo = info.getValue();
+
+        if (valorLogo !== "-") {
+          return <ImagenContent imagen={valorLogo} />;
+        }
+
+        return (
+          <Icono>
+            <v.iconoimagenvacia />
+          </Icono>
+        );
+      },
 
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -92,6 +101,9 @@ export function TablaEditoriales({
     {
       accessorKey: "nombre",
       header: "Editorial",
+      meta: {
+        dataTitle: "Editorial",
+      },
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -103,6 +115,9 @@ export function TablaEditoriales({
     {
       accessorKey: "pais",
       header: "País",
+      meta: {
+        dataTitle: "País",
+      },
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -115,13 +130,15 @@ export function TablaEditoriales({
       accessorKey: "acciones",
       header: "",
       enableSorting: false,
+      meta: {
+        dataTitle: "Acciones",
+        className: "ContentCell",
+      },
       cell: (info) => (
-        <td data-title="Acciones" className="ContentCell">
-          <ContentAccionesTabla
-            funcionEditar={() => editar(info.row.original)}
-            funcionEliminar={() => eliminar(info.row.original)}
-          />
-        </td>
+        <ContentAccionesTabla
+          funcionEditar={() => editar(info.row.original)}
+          funcionEliminar={() => eliminar(info.row.original)}
+        />
       ),
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -148,9 +165,9 @@ export function TablaEditoriales({
           prev.map((row, index) =>
             index === rowIndex
               ? {
-                  ...prev[rowIndex],
-                  [columnId]: value,
-                }
+                ...prev[rowIndex],
+                [columnId]: value,
+              }
               : row
           )
         ),
@@ -183,9 +200,8 @@ export function TablaEditoriales({
                     <div
                       onMouseDown={header.getResizeHandler()}
                       onTouchStart={header.getResizeHandler()}
-                      className={`resizer ${
-                        header.column.getIsResizing() ? "isResizing" : ""
-                      }`}
+                      className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""
+                        }`}
                     />
                   </th>
                 ))}
@@ -193,21 +209,30 @@ export function TablaEditoriales({
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map(item=>(
-              
-                <tr key={item.id}>
-                  {item.getVisibleCells().map(cell => (
-                  
-                      <td key={cell.id}>
+            {table.getRowModel().rows.map((item) => (
+              <tr key={item.id}>
+                  {item.getVisibleCells().map((cell) => {
+                    const { meta } = cell.column.columnDef;
+                    const dataTitle =
+                      typeof meta?.dataTitle === "string"
+                        ? meta.dataTitle
+                        : undefined;
+                    const className = meta?.className ?? undefined;
+
+                    return (
+                      <td
+                        key={cell.id}
+                        data-title={dataTitle}
+                        className={className}
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
                         )}
                       </td>
-                    
-                  ))}
+                    );
+                  })}
                 </tr>
-             
             ))}
           </tbody>
         </table>
@@ -234,7 +259,7 @@ const Container = styled.div`
     /* max-width: ${v.bphomer}; */
   }
   .ioqlpo {
-    display: none !important;   /* oculta el tacho si es el segundo botón */
+    display: none !important; /* oculta el tacho si es el segundo botón */
   }
   .responsive-table {
     width: 100%;
@@ -247,7 +272,6 @@ const Container = styled.div`
       font-size: 1em;
     }
     thead {
-      
       position: absolute;
 
       padding: 0;
@@ -255,7 +279,7 @@ const Container = styled.div`
       height: 1px;
       width: 1px;
       overflow: hidden;
-      
+
       @media (min-width: ${v.bpbart}) {
         position: relative;
         height: auto;
@@ -263,9 +287,8 @@ const Container = styled.div`
         overflow: auto;
       }
       th {
-        
-        border-bottom: 2px solid ${({theme})=>theme.color2};
-        font-weight:700;
+        border-bottom: 2px solid ${({ theme }) => theme.color2};
+        font-weight: 700;
         text-align: center;
         color: ${({ theme }) => theme.text};
         &:first-of-type {
@@ -277,14 +300,12 @@ const Container = styled.div`
     tr,
     th,
     td {
-      
       display: block;
       padding: 0;
       text-align: left;
       white-space: normal;
     }
     tr {
-      
       @media (min-width: ${v.bpbart}) {
         display: table-row;
       }
@@ -292,7 +313,6 @@ const Container = styled.div`
 
     th,
     td {
-      
       padding: 0.5em;
       vertical-align: middle;
       @media (min-width: ${v.bplisa}) {
@@ -324,12 +344,10 @@ const Container = styled.div`
         }
         &:nth-of-type(even) {
           @media (min-width: ${v.bpbart}) {
-           
           }
         }
       }
       th[scope="row"] {
-        
         @media (min-width: ${v.bplisa}) {
           border-bottom: 1px solid rgba(161, 161, 161, 0.32);
         }

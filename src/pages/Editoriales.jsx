@@ -7,20 +7,27 @@ import {
 } from "../index";
 
 export function Editoriales() {
-    const { mostrareditoriales, buscareditoriales, buscador } = useEditorialesStore();
-    const { dataempresa } = useEmpresaStore();
-    const { isLoading, error } = useQuery({
-        queryKey: ["mostrar editoriales", dataempresa?.id],
-        queryFn: () => mostrareditoriales({ id_empresa: dataempresa?.id }),
-        enabled: !!dataempresa,
-        refetchOnWindowFocus: false,
-    });
+    const empresaId = useEmpresaStore((state) => state.dataempresa?.id);
+    const mostrareditoriales = useEditorialesStore((state) => state.mostrareditoriales);
+    const buscareditoriales = useEditorialesStore((state) => state.buscareditoriales);
+    const buscador = useEditorialesStore((state) => state.buscador);
+    const trimmedBuscador = buscador?.trim?.() ?? "";
 
-    const {} = useQuery({
-        queryKey: ["buscar editoriales", buscador],
-        queryFn: () => buscareditoriales({ id_empresa: dataempresa?.id, descripcion:buscador }),
-        enabled: !!dataempresa,
+    const { isLoading, error } = useQuery({
+        queryKey: ["editoriales", empresaId, trimmedBuscador],
+        queryFn: () => {
+            const payload = { id_empresa: empresaId };
+
+            if (!trimmedBuscador) {
+                return mostrareditoriales(payload);
+            }
+
+            return buscareditoriales({ ...payload, descripcion: trimmedBuscador });
+        },
+        enabled: !!empresaId,
         refetchOnWindowFocus: false,
+        staleTime: 60_000,
+        placeholderData: (previousData) => previousData,
     });
 
     if (isLoading) {
