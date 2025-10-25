@@ -9,7 +9,31 @@ import {
 
 export const useEditorialesStore = create((set, get) => ({
   buscador: "",
-  setBuscador: (p) => set({ buscador: p }),
+  setBuscador: async (p) => {
+    set({ buscador: p });
+
+    const trimmedValue = p?.trim?.() ?? "";
+
+    if (!trimmedValue) {
+      const { parametros } = get();
+
+      if (parametros && Object.keys(parametros).length > 0) {
+        const response = await mostrarEditoriales(parametros);
+        const currentValue = get().buscador?.trim?.() ?? "";
+
+        if (currentValue) {
+          return;
+        }
+
+        const nextData = response ?? [];
+
+        set({
+          dataeditoriales: nextData,
+          editorialesitemselect: nextData?.[0] ?? null,
+        });
+      }
+    }
+  },
 
   dataeditoriales: [],
   editorialesitemselect: null,
