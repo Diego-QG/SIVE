@@ -6,6 +6,7 @@ import {
   Login,
   ProtectedRoute,
   Spinner1,
+  Subniveles,
   useEmpresaStore,
   UserAuth,
   useUsuariosStore,
@@ -46,6 +47,10 @@ export function MyRoutes() {
         <Route
           path="/herramientas/editoriales"
           element={<Editoriales />}
+        ></Route>
+        <Route
+          path="/herramientas/subniveles"
+          element={<Subniveles />}
         ></Route>
       </Route>
 
