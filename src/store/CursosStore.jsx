@@ -39,7 +39,7 @@ export const useCursosStore = create((set, get) => ({
   cursositemselect: null,
   parametros: {},
 
-  mostrarscursos: async (p) => {
+  mostrarcursos: async (p) => {
     const response = await mostrarCursos(p);
     set({ parametros: p });
     set({ datacursos: response });

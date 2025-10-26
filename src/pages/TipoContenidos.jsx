@@ -9,18 +9,18 @@ import { useNivelesStore } from "../store/NivelesStore";
 export function TipoContenidos() {
     const mostrartipocontenidos = useTipoContenidosStore((state) => state.mostrartipocontenidos);
     const { mostrarniveles } = useNivelesStore();
-    const buscarcursos = useTipoContenidosStore((state) => state.buscarcursos);
-    const buscador = useCursosStore((state) => state.buscador);
+    const buscartipocontenidos = useTipoContenidosStore((state) => state.buscartipocontenidos);
+    const buscador = useTipoContenidosStore((state) => state.buscador);
     const trimmedBuscador = buscador?.trim?.() ?? "";
 
     const { isLoading, error } = useQuery({
-        queryKey: ["mostrar cursos", trimmedBuscador],
+        queryKey: ["mostrar tipocontenidos", trimmedBuscador],
         queryFn: async () => {
             if (trimmedBuscador) {
-                return buscarcursos({ descripcion: trimmedBuscador });
+                return buscartipocontenidos({ descripcion: trimmedBuscador });
             }
 
-            return mostrarcursos();
+            return mostrartipocontenidos();
         },
         refetchOnWindowFocus: false,
         staleTime: 60_000,
@@ -34,8 +34,8 @@ export function TipoContenidos() {
     })
 
     useQuery({
-        queryKey: ["mostrar cursos"],
-        queryFn: () => mostrarcursos(),
+        queryKey: ["mostrar tipocontenidos"],
+        queryFn: () => mostrartipocontenidos(),
         refetchOnWindowFocus: false,
     })
 
@@ -45,8 +45,8 @@ export function TipoContenidos() {
     }
 
     if (error) {
-        return <span>Error al cargar los cursos</span>;
+        return <span>Error al cargar los tipocontenidos</span>;
     }
 
-    return <CursosTemplate />;
+    return <TipoContenidosTemplate />;
 }
