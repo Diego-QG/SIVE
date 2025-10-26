@@ -9,7 +9,7 @@ import {
 
 export const useSubnivelesStore = create((set, get) => ({
   buscador: "",
-  setbuscador: async (p) => {
+  setBuscador: async (p) => {
     set({ buscador: p });
 
     const trimmedValue = p?.trim?.() ?? "";
@@ -51,8 +51,8 @@ export const useSubnivelesStore = create((set, get) => ({
 
   insertarsubnivel: async (p, file) => {
     await insertarSubnivel(p, file);
-    const { mostrarsubniveles, parametros } = get();  // <-- parametros (bien escrito)
-    await mostrarsubniveles(parametros);              // <-- NO uses set(...)
+    const { mostrarsubniveles, parametros } = get();
+    await mostrarsubniveles(parametros);
   },
 
   eliminarsubnivel: async (p) => {

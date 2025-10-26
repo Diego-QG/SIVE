@@ -10,7 +10,6 @@ import {
 } from "../../../index";
 import { useForm } from "react-hook-form";
 import { CirclePicker } from "react-color";
-import { useEmpresaStore } from "../../../store/EmpresaStore";
 import { useMutation } from "@tanstack/react-query";
 
 export function RegistrarSubniveles({
@@ -20,7 +19,6 @@ export function RegistrarSubniveles({
   setIsExploding,
 }) {
   const { insertarsubnivel, editarsubnivel } = useSubnivelesStore();
-  const { dataempresa } = useEmpresaStore();
   // const [currentColor, setColor] = useState("#F44336");
   const [file, setFile] = useState([]);
   const ref = useRef(null);
@@ -51,7 +49,6 @@ export function RegistrarSubniveles({
     if (accion === "Editar") {
       const p = {
         _nombre: data.descripcion,
-        _id_empresa: dataempresa.id,
         _id: dataSelect.id,
         _pais: data.pais,
         _logo: dataSelect.logo ?? "-",
@@ -62,7 +59,6 @@ export function RegistrarSubniveles({
         _nombre: data.descripcion,
         // _color: currentColor,
         _logo: "-",
-        _id_empresa: dataempresa.id,
         _pais: data.pais,
       };
       await insertarsubnivel(p, file);

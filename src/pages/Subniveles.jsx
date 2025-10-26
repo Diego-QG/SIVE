@@ -13,6 +13,13 @@ export function Subniveles() {
 
     const { isLoading, error } = useQuery({
         queryKey: ["subniveles", trimmedBuscador],
+        queryFn: async () => {
+            if (trimmedBuscador) {
+                return buscarsubniveles({ descripcion: trimmedBuscador });
+            }
+
+            return mostrarsubniveles();
+        },
         refetchOnWindowFocus: false,
         staleTime: 60_000,
         placeholderData: (previousData) => previousData,
