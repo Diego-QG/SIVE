@@ -4,11 +4,11 @@ import {
     Spinner1,
     useTipoContenidosStore,
 } from "../index";
-import { useNivelesStore } from "../store/NivelesStore";
+import { useFamiliaContenidosStore } from "../store/FamiliaContenidosStore";
 
 export function TipoContenidos() {
     const mostrartipocontenidos = useTipoContenidosStore((state) => state.mostrartipocontenidos);
-    const { mostrarniveles } = useNivelesStore();
+    const { mostrarfamiliacontenidos } = useFamiliaContenidosStore();
     const buscartipocontenidos = useTipoContenidosStore((state) => state.buscartipocontenidos);
     const buscador = useTipoContenidosStore((state) => state.buscador);
     const trimmedBuscador = buscador?.trim?.() ?? "";
@@ -28,8 +28,8 @@ export function TipoContenidos() {
     });
 
     useQuery({
-        queryKey: ["mostrar niveles"],
-        queryFn: () => mostrarniveles(),
+        queryKey: ["mostrar familiacontenidos"],
+        queryFn: () => mostrarfamiliacontenidos(),
         refetchOnWindowFocus: false,
     })
 

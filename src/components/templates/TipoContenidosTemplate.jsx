@@ -13,7 +13,7 @@ import ConfettiExplosion from "react-confetti-explosion";
 
 export function TipoContenidosTemplate() {
     const [openRegistro, setOpenRegistro] = useState(false);
-    const { datatipocontenido, setBuscador } = useTipoContenidosStore();
+    const { datatipocontenidos, setBuscador } = useTipoContenidosStore();
     const [accion, setAccion] = useState("");
     const [dataSelect, setDataSelect] = useState([]);
     const [isExploding, setIsExploding] = useState(false);
@@ -50,7 +50,7 @@ export function TipoContenidosTemplate() {
                 {
                     isExploding && <ConfettiExplosion />
                 }
-                <TablaTipoContenidos setdataSelect={setDataSelect} setAccion={setAccion} SetopenRegistro={setOpenRegistro} data={datatipocontenido} />
+                <TablaTipoContenidos setdataSelect={setDataSelect} setAccion={setAccion} SetopenRegistro={setOpenRegistro} data={datatipocontenidos} />
             </section>
         </Container>
     );

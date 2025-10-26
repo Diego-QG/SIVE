@@ -10,7 +10,7 @@ import {
   ContainerSelector,
   Selector,
   ListaDesplegable,
-  useNivelesStore,
+  useFamiliaContenidosStore,
 } from "../../../index";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
@@ -22,8 +22,8 @@ export function RegistrarTipoContenidos({
   setIsExploding,
 }) {
   const { insertartipocontenido, editartipocontenido } = useTipoContenidosStore();
-  const { dataniveles, nivelesitemselect, selectnivel } = useNivelesStore();
-  const [stateNivelesLista, setStateNivelesLista] = useState(false);
+  const { datafamiliacontenidos, familiacontenidositemselect, selectnivel } = useFamiliaContenidosStore();
+  const [stateFamiliaContenidosLista, setStateFamiliaContenidosLista] = useState(false);
   const ref = useRef(null);
   const {
     register,
@@ -89,19 +89,19 @@ export function RegistrarTipoContenidos({
           <form className="formulario" onSubmit={handleSubmit(handlesub)}>
             <section className="form-subcontainer">
               <ContainerSelector>
-                <label>Nivel</label>
+                <label>FamiliaContenido</label>
                 <Selector
-                  state={stateNivelesLista}
-                  funcion={() => setStateNivelesLista(!stateNivelesLista)}
-                  texto2={nivelesitemselect?.nombre}
+                  state={stateFamiliaContenidosLista}
+                  funcion={() => setStateFamiliaContenidosLista(!stateFamiliaContenidosLista)}
+                  texto2={familiacontenidositemselect?.nombre}
                   color="#fc6027"
                 />
                 <ListaDesplegable
                   funcion={selectnivel}
-                  state={stateNivelesLista}
-                  data={dataniveles}
+                  state={stateFamiliaContenidosLista}
+                  data={datafamiliacontenidos}
                   top="4rem"
-                  setState={() => setStateNivelesLista(!stateNivelesLista)}
+                  setState={() => setStateFamiliaContenidosLista(!stateFamiliaContenidosLista)}
                 />
               </ContainerSelector>
 
