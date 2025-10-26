@@ -3,7 +3,7 @@ import { supabase } from "../index";
 
 const tabla = "subniveles";
 
-export async function insertarSubnivel(p, file) {
+export async function insertarSubnivel(p) {
     const { error, data } = await supabase.rpc("insertarsubnivel", p);
     if (error) {
         Swal.fire({

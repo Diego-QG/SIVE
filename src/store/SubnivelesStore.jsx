@@ -49,8 +49,8 @@ export const useSubnivelesStore = create((set, get) => ({
 
   selectsubnivel: (p) => set({ subnivelesitemselect: p }),
 
-  insertarsubnivel: async (p, file) => {
-    await insertarSubnivel(p, file);
+  insertarsubnivel: async (p) => {
+    await insertarSubnivel(p);
     const { mostrarsubniveles, parametros } = get();
     await mostrarsubniveles(parametros);
   },
@@ -61,8 +61,8 @@ export const useSubnivelesStore = create((set, get) => ({
     await mostrarsubniveles(parametros);
   },
 
-  editarsubnivel: async (p, fileold, filenew) => {
-    await editarSubnivel(p, fileold, filenew);
+  editarsubnivel: async (p) => {
+    await editarSubnivel(p);
     const { mostrarsubniveles, parametros } = get();
     await mostrarsubniveles(parametros);
   },

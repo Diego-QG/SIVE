@@ -38,7 +38,7 @@ export function RegistrarSubniveles({
     onSuccess: () => cerrarFormulario(),
   });
   const handlesub = (data) => {
-    console.log("[ED1-FORM] submit subniveles:", { data, tieneArchivo: !!file });
+    console.log("[ED1-FORM] submit subniveles:", { data });
     doInsertar(data);
   };
   const cerrarFormulario = () => {
@@ -53,7 +53,7 @@ export function RegistrarSubniveles({
         _pais: data.pais,
         _logo: dataSelect.logo ?? "-",
       };
-      await editarsubnivel(p, dataSelect.logo, file);
+      await editarsubnivel(p);
     } else {
       const p = {
         _nombre: data.descripcion,
@@ -61,22 +61,7 @@ export function RegistrarSubniveles({
         _logo: "-",
         _pais: data.pais,
       };
-      await insertarsubnivel(p, file);
-    }
-  }
-  function abrirImagenes() {
-    ref.current.click();
-  }
-  function prepararImagen(e) {
-    let filelocal = e.target.files;
-    let fileReaderlocal = new FileReader();
-    fileReaderlocal.readAsDataURL(filelocal[0]);
-    const tipoimg = e.target.files[0];
-    setFile(tipoimg);
-    if (fileReaderlocal && filelocal && filelocal.length) {
-      fileReaderlocal.onload = function load() {
-        setFileurl(fileReaderlocal.result);
-      };
+      await insertarsubnivel(p);
     }
   }
   useEffect(() => {
@@ -104,28 +89,6 @@ export function RegistrarSubniveles({
               <span onClick={onClose}>x</span>
             </section>
           </div>
-          <PictureContainer>
-            {fileurl != "-" ? (
-              <div className="ContentImage">
-                <img src={fileurl}></img>
-              </div>
-            ) : (
-              <Icono>{<v.iconoimagenvacia />}</Icono>
-            )}
-
-            <Btn1
-              funcion={abrirImagenes}
-              titulo="+imagen(opcional)"
-              color="#5f5f5f"
-              bgcolor="rgb(183, 183, 182)"
-              icono={<v.iconosupabase />}
-            />
-            <input
-              type="file"
-              ref={ref}
-              onChange={(e) => prepararImagen(e)}
-            ></input>
-          </PictureContainer>
           <form className="formulario" onSubmit={handleSubmit(handlesub)}>
             <section className="form-subcontainer">
               <article>
@@ -251,28 +214,5 @@ const ContentTitle = styled.div`
     padding: 2px;
     width: 40px;
     font-size: 28px;
-  }
-`;
-const PictureContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: start;
-  border: 2px dashed #f9d70b;
-  border-radius: 5px;
-  background-color: rgba(249, 215, 11, 0.1);
-  padding: 8px;
-  position: relative;
-  gap: 3px;
-  margin-bottom: 8px;
-
-  .ContentImage {
-    overflow: hidden;
-    img {
-      width: 100%;
-      object-fit: contain;
-    }
-  }
-  input {
-    display: none;
   }
 `;
