@@ -6,27 +6,24 @@ import {
   Btn1,
   Icono,
   ConvertirCapitalize,
-  useSubnivelesStore,
+  useCursosStore,
   ContainerSelector,
   Selector,
   ListaDesplegable,
-  useTiposubnivelesStore,
+  useNivelesStore,
 } from "../../../index";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import { useNivelesStore } from "../../../store/NivelesStore";
 
-export function RegistrarSubniveles({
+export function RegistrarCursos({
   onClose,
   dataSelect,
   accion,
   setIsExploding,
 }) {
-  const { insertarsubnivel, editarsubnivel } = useSubnivelesStore();
+  const { insertarcurso, editarcurso } = useCursosStore();
   const { dataniveles, nivelesitemselect, selectnivel } = useNivelesStore();
-  const { datatiposubniveles, tiposubnivelesitemselect, selecttiposubnivel } = useTiposubnivelesStore();
-  const [ stateNivelesLista, setStateNivelesLista ] = useState(false);
-  const [ stateTiposubnivelesLista, setStateTiposubnivelesLista ] = useState(false);
+  const [stateNivelesLista, setStateNivelesLista] = useState(false);
   const ref = useRef(null);
   const {
     register,
@@ -35,7 +32,7 @@ export function RegistrarSubniveles({
   } = useForm();
   const { isPending, mutate: doInsertar } = useMutation({
     mutationFn: insertar,
-    mutationKey: "insertar subniveles",
+    mutationKey: "insertar cursos",
     onError: (err) => console.log("El error", err.message),
     onSuccess: () => cerrarFormulario(),
   });
@@ -55,7 +52,7 @@ export function RegistrarSubniveles({
         _pais: data.pais,
         _logo: dataSelect.logo ?? "-",
       };
-      await editarsubnivel(p);
+      await editarcurso(p);
     } else {
       const p = {
         _nombre: data.descripcion,
@@ -63,7 +60,7 @@ export function RegistrarSubniveles({
         _logo: "-",
         _pais: data.pais,
       };
-      await insertarsubnivel(p);
+      await insertarcurso(p);
     }
   }
   useEffect(() => {
@@ -81,9 +78,7 @@ export function RegistrarSubniveles({
           <div className="headers">
             <section>
               <h1>
-                {accion == "Editar"
-                  ? "Editar subnivel"
-                  : "Registrar nueva subnivel"}
+                {accion == "Editar" ? "Editar curso" : "Registrar nuevo curso"}
               </h1>
             </section>
 
@@ -110,41 +105,6 @@ export function RegistrarSubniveles({
                 />
               </ContainerSelector>
 
-              <ContainerSelector>
-                <label>Tipo Subnivel</label>
-                <Selector
-                  state={stateTiposubnivelesLista}
-                  funcion={() => setStateTiposubnivelesLista(!stateTiposubnivelesLista)}
-                  texto2={tiposubnivelesitemselect?.nombre}
-                  color="#fc6027"
-                />
-                <ListaDesplegable
-                  funcion={selecttiposubnivel}
-                  state={stateTiposubnivelesLista}
-                  data={datatiposubniveles}
-                  top="4rem"
-                  setState={() => setStateTiposubnivelesLista(!stateTiposubnivelesLista)}
-                />
-              </ContainerSelector>
-
-              <article>
-                <InputText icono={<v.iconoflechaderecha />}>
-                  <input
-                    className="form__field"
-                    defaultValue={dataSelect?.ordinal || ""}
-                    type="number"
-                    step="1"
-                    min="0"
-                    max="9"
-                    placeholder="ordinal"
-                    {...register("ordinal", { required: false })}
-                  />
-                  <label className="form__label">ordinal</label>
-                  {errors.ordinal?.type === "required" && (
-                    <p>Campo requerido</p>
-                  )}
-                </InputText>
-              </article>
               <article>
                 <InputText icono={<v.iconoflechaderecha />}>
                   <input
@@ -156,6 +116,24 @@ export function RegistrarSubniveles({
                   />
                   <label className="form__label">nombre</label>
                   {errors.nombre?.type === "required" && <p>Campo requerido</p>}
+                </InputText>
+              </article>
+              <article>
+                <InputText icono={<v.iconoflechaderecha />}>
+                  <input
+                    className="form__field"
+                    defaultValue={dataSelect?.tipo || ""}
+                    type="number"
+                    step="1"
+                    min="1"
+                    max="9"
+                    placeholder="tipo"
+                    {...register("tipo", { required: true })}
+                  />
+                  <label className="form__label">Tipo</label>
+                  {errors.tipo?.type === "required" && (
+                    <p>Campo requerido</p>
+                  )}
                 </InputText>
               </article>
 

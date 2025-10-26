@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import {
+  Cursos,
   Editoriales,
   Herramientas,
   Home,
@@ -10,6 +11,7 @@ import {
   useEmpresaStore,
   UserAuth,
   useUsuariosStore,
+  TipoContenidos,
 } from "../index";
 import { useQuery } from "@tanstack/react-query";
 
@@ -51,6 +53,14 @@ export function MyRoutes() {
         <Route
           path="/herramientas/subniveles"
           element={<Subniveles />}
+        ></Route>
+        <Route
+          path="/herramientas/cursos"
+          element={<Cursos />}
+        ></Route>
+        <Route
+          path="/herramientas/tipocontenidos"
+          element={<TipoContenidos />}
         ></Route>
       </Route>
 

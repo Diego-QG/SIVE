@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import {
   ContentAccionesTabla,
-  useEditorialesStore,
+  useCursosStore,
   Paginacion,
   ImagenContent,
   Icono,
@@ -18,7 +18,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { FaArrowsAltV } from "react-icons/fa";
-export function TablaEditoriales({
+export function TablaCursos({
   data,
   SetopenRegistro,
   setdataSelect,
@@ -29,7 +29,7 @@ export function TablaEditoriales({
   const [datas, setData] = useState(data);
   const [columnFilters, setColumnFilters] = useState([]);
 
-  const { eliminareditorial } = useEditorialesStore();
+  const { eliminarcurso } = useCursosStore();
   function eliminar(p) {
     if (p.nombre === "General") {
       Swal.fire({
@@ -50,7 +50,7 @@ export function TablaEditoriales({
       confirmButtonText: "Si, eliminar",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await eliminareditorial({ id: p.id });
+        await eliminarcurso({ id: p.id });
       }
     });
   }
@@ -69,54 +69,12 @@ export function TablaEditoriales({
     setAccion("Editar");
   }
   const columns = [
-    {
-      accessorKey: "logo",
-      header: "Logo",
-      enableSorting: false,
-      meta: {
-        dataTitle: "Logo",
-        className: "ContentCell",
-      },
-      cell: (info) => {
-        const valorLogo = info.getValue();
-
-        if (valorLogo !== "-") {
-          return <ImagenContent imagen={valorLogo} />;
-        }
-
-        return (
-          <Icono>
-            <v.iconoimagenvacia />
-          </Icono>
-        );
-      },
-
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
-    },
+    
     {
       accessorKey: "nombre",
-      header: "Editorial",
+      header: "Curso",
       meta: {
-        dataTitle: "Editorial",
-      },
-      cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
-    },
-    {
-      accessorKey: "pais",
-      header: "País",
-      meta: {
-        dataTitle: "País",
+        dataTitle: "Curso",
       },
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
@@ -257,6 +215,9 @@ const Container = styled.div`
   @media (min-width: ${v.bphomer}) {
     margin: 2em auto;
     /* max-width: ${v.bphomer}; */
+  }
+  .ioqlpo {
+    display: none !important; /* oculta el tacho si es el segundo botón */
   }
   .responsive-table {
     width: 100%;

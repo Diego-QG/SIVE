@@ -1,28 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-    SubnivelesTemplate,
+    TipoContenidosTemplate,
     Spinner1,
-    useSubnivelesStore,
-    useTiposubnivelesStore,
+    useTipoContenidosStore,
 } from "../index";
 import { useNivelesStore } from "../store/NivelesStore";
 
-export function Subniveles() {
-    const mostrarsubniveles = useSubnivelesStore((state) => state.mostrarsubniveles);
+export function TipoContenidos() {
+    const mostrartipocontenidos = useTipoContenidosStore((state) => state.mostrartipocontenidos);
     const { mostrarniveles } = useNivelesStore();
-    const { mostrartiposubniveles } = useTiposubnivelesStore();
-    const buscarsubniveles = useSubnivelesStore((state) => state.buscarsubniveles);
-    const buscador = useSubnivelesStore((state) => state.buscador);
+    const buscarcursos = useTipoContenidosStore((state) => state.buscarcursos);
+    const buscador = useCursosStore((state) => state.buscador);
     const trimmedBuscador = buscador?.trim?.() ?? "";
 
     const { isLoading, error } = useQuery({
-        queryKey: ["mostrar subniveles", trimmedBuscador],
+        queryKey: ["mostrar cursos", trimmedBuscador],
         queryFn: async () => {
             if (trimmedBuscador) {
-                return buscarsubniveles({ descripcion: trimmedBuscador });
+                return buscarcursos({ descripcion: trimmedBuscador });
             }
 
-            return mostrarsubniveles();
+            return mostrarcursos();
         },
         refetchOnWindowFocus: false,
         staleTime: 60_000,
@@ -36,8 +34,8 @@ export function Subniveles() {
     })
 
     useQuery({
-        queryKey: ["mostrar tipos de subniveles"],
-        queryFn: () => mostrartiposubniveles(),
+        queryKey: ["mostrar cursos"],
+        queryFn: () => mostrarcursos(),
         refetchOnWindowFocus: false,
     })
 
@@ -47,8 +45,8 @@ export function Subniveles() {
     }
 
     if (error) {
-        return <span>Error al cargar las subniveles</span>;
+        return <span>Error al cargar los cursos</span>;
     }
 
-    return <SubnivelesTemplate />;
+    return <CursosTemplate />;
 }
