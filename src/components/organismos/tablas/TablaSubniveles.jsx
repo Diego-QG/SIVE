@@ -1,8 +1,10 @@
 import styled from "styled-components";
 import {
   ContentAccionesTabla,
-  Paginacion,
   useSubnivelesStore,
+  Paginacion,
+  ImagenContent,
+  Icono,
 } from "../../../index";
 import Swal from "sweetalert2";
 import { v } from "../../../styles/variables";
@@ -16,19 +18,28 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { FaArrowsAltV } from "react-icons/fa";
-
 export function TablaSubniveles({
   data,
   SetopenRegistro,
   setdataSelect,
   setAccion,
 }) {
-  if (!Array.isArray(data)) return null;
-
+  if (data == null) return;
+  const [pagina, setPagina] = useState(1);
+  const [datas, setData] = useState(data);
   const [columnFilters, setColumnFilters] = useState([]);
-  const { eliminarsubnivel } = useSubnivelesStore();
 
-  function eliminar(row) {
+  const { eliminarsubnivel } = useSubnivelesStore();
+  function eliminar(p) {
+    if (p.nombre === "General") {
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Este registro no se permite modificar ya que es valor por defecto.",
+        footer: '<a href="">...</a>',
+      });
+      return;
+    }
     Swal.fire({
       title: "¿Estás seguro(a)(e)?",
       text: "Una vez eliminado, ¡no podrá recuperar este registro!",
@@ -39,46 +50,26 @@ export function TablaSubniveles({
       confirmButtonText: "Si, eliminar",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await eliminarsubnivel({ id: row.id });
+        await eliminarsubnivel({ id: p.id });
       }
     });
   }
-
-  function editar(row) {
+  function editar(data) {
+    if (data.nombre === "General") {
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Este registro no se permite modificar ya que es valor por defecto.",
+        footer: '<a href="">...</a>',
+      });
+      return;
+    }
     SetopenRegistro(true);
-    setdataSelect(row);
+    setdataSelect(data);
     setAccion("Editar");
   }
-
   const columns = [
-    {
-      accessorKey: "nivelNombre",
-      header: "Nivel",
-      meta: {
-        dataTitle: "Nivel",
-      },
-      cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
-    },
-    {
-      accessorKey: "tipoNombre",
-      header: "Tipo subnivel",
-      meta: {
-        dataTitle: "Tipo subnivel",
-      },
-      cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
-    },
+    
     {
       accessorKey: "nombre",
       header: "Subnivel",
@@ -94,21 +85,7 @@ export function TablaSubniveles({
       },
     },
     {
-      accessorKey: "codigo",
-      header: "Código",
-      meta: {
-        dataTitle: "Código",
-      },
-      cell: (info) => <span>{info.getValue()}</span>,
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
-    },
-    {
-      id: "acciones",
+      accessorKey: "acciones",
       header: "",
       enableSorting: false,
       meta: {
@@ -129,81 +106,118 @@ export function TablaSubniveles({
       },
     },
   ];
-
   const table = useReactTable({
     data,
     columns,
     state: {
       columnFilters,
     },
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     columnResizeMode: "onChange",
+    meta: {
+      updateData: (rowIndex, columnId, value) =>
+        setData((prev) =>
+          prev.map((row, index) =>
+            index === rowIndex
+              ? {
+                ...prev[rowIndex],
+                [columnId]: value,
+              }
+              : row
+          )
+        ),
+    },
   });
-
   return (
-    <Container>
-      <table className="responsive-table">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th key={header.id}>
-                  {header.column.columnDef.header}
-                  {header.column.getCanSort() && (
-                    <span
-                      style={{ cursor: "pointer" }}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <FaArrowsAltV />
-                    </span>
-                  )}
-                  {
+    <>
+      <Container>
+        <table className="responsive-table">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id}>
+                    {header.column.columnDef.header}
+                    {header.column.getCanSort() && (
+                      <span
+                        style={{ cursor: "pointer" }}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        <FaArrowsAltV />
+                      </span>
+                    )}
                     {
-                      asc: " 🔼",
-                      desc: " 🔽",
-                    }[header.column.getIsSorted()]
-                  }
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => {
-                const { meta } = cell.column.columnDef;
-                const dataTitle =
-                  typeof meta?.dataTitle === "string" ? meta.dataTitle : undefined;
-                const className = meta?.className ?? undefined;
+                      {
+                        asc: " 🔼",
+                        desc: " 🔽",
+                      }[header.column.getIsSorted()]
+                    }
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""
+                        }`}
+                    />
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((item) => (
+              <tr key={item.id}>
+                  {item.getVisibleCells().map((cell) => {
+                    const { meta } = cell.column.columnDef;
+                    const dataTitle =
+                      typeof meta?.dataTitle === "string"
+                        ? meta.dataTitle
+                        : undefined;
+                    const className = meta?.className ?? undefined;
 
-                return (
-                  <td key={cell.id} data-title={dataTitle} className={className}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <Paginacion table={table} />
-    </Container>
+                    return (
+                      <td
+                        key={cell.id}
+                        data-title={dataTitle}
+                        className={className}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+            ))}
+          </tbody>
+        </table>
+        <Paginacion
+          table={table}
+          irinicio={() => table.setPageIndex(0)}
+          pagina={table.getState().pagination.pageIndex + 1}
+          setPagina={setPagina}
+          maximo={table.getPageCount()}
+        />
+      </Container>
+    </>
   );
 }
-
 const Container = styled.div`
   position: relative;
+
   margin: 5% 3%;
   @media (min-width: ${v.bpbart}) {
     margin: 2%;
   }
   @media (min-width: ${v.bphomer}) {
     margin: 2em auto;
+    /* max-width: ${v.bphomer}; */
+  }
+  .ioqlpo {
+    display: none !important; /* oculta el tacho si es el segundo botón */
   }
   .responsive-table {
     width: 100%;
@@ -217,11 +231,13 @@ const Container = styled.div`
     }
     thead {
       position: absolute;
+
       padding: 0;
       border: 0;
       height: 1px;
       width: 1px;
       overflow: hidden;
+
       @media (min-width: ${v.bpbart}) {
         position: relative;
         height: auto;
@@ -252,6 +268,7 @@ const Container = styled.div`
         display: table-row;
       }
     }
+
     th,
     td {
       padding: 0.5em;
@@ -283,6 +300,20 @@ const Container = styled.div`
         &:last-of-type {
           margin-bottom: 0;
         }
+        &:nth-of-type(even) {
+          @media (min-width: ${v.bpbart}) {
+          }
+        }
+      }
+      th[scope="row"] {
+        @media (min-width: ${v.bplisa}) {
+          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
+        }
+        @media (min-width: ${v.bpbart}) {
+          background-color: transparent;
+          text-align: center;
+          color: ${({ theme }) => theme.text};
+        }
       }
       .ContentCell {
         text-align: right;
@@ -290,6 +321,7 @@ const Container = styled.div`
         justify-content: space-between;
         align-items: center;
         height: 50px;
+
         border-bottom: 1px solid rgba(161, 161, 161, 0.32);
         @media (min-width: ${v.bpbart}) {
           justify-content: center;
@@ -299,6 +331,7 @@ const Container = styled.div`
       td {
         text-align: right;
         @media (min-width: ${v.bpbart}) {
+          /* border-bottom: 1px solid rgba(161, 161, 161, 0.32); */
           text-align: center;
         }
       }
@@ -315,4 +348,13 @@ const Container = styled.div`
       }
     }
   }
+`;
+const Colorcontent = styled.div`
+  justify-content: center;
+  min-height: ${(props) => props.$alto};
+  width: ${(props) => props.$ancho};
+  display: flex;
+  background-color: ${(props) => props.color};
+  border-radius: 50%;
+  text-align: center;
 `;
