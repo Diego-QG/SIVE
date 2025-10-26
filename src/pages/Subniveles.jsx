@@ -4,15 +4,17 @@ import {
     Spinner1,
     useSubnivelesStore,
 } from "../index";
+import { useNivelesStore } from "../store/NivelesStore";
 
 export function Subniveles() {
     const mostrarsubniveles = useSubnivelesStore((state) => state.mostrarsubniveles);
+    const { mostrarniveles } = useNivelesStore();
     const buscarsubniveles = useSubnivelesStore((state) => state.buscarsubniveles);
     const buscador = useSubnivelesStore((state) => state.buscador);
     const trimmedBuscador = buscador?.trim?.() ?? "";
 
     const { isLoading, error } = useQuery({
-        queryKey: ["subniveles", trimmedBuscador],
+        queryKey: ["mostrar subniveles", trimmedBuscador],
         queryFn: async () => {
             if (trimmedBuscador) {
                 return buscarsubniveles({ descripcion: trimmedBuscador });
@@ -24,6 +26,13 @@ export function Subniveles() {
         staleTime: 60_000,
         placeholderData: (previousData) => previousData,
     });
+
+    useQuery({
+        queryKey: ["mostrar niveles"],
+        queryFn: () => mostrarniveles(),
+        refetchOnWindowFocus: false,
+    })
+
 
     if (isLoading) {
         return(<Spinner1 />)
