@@ -4,8 +4,6 @@ import { v } from "../../../styles/variables";
 import {
   InputText,
   Btn1,
-  Icono,
-  ConvertirCapitalize,
   useCursosStore,
   ContainerSelector,
   Selector,
@@ -13,7 +11,7 @@ import {
   useNivelesStore,
 } from "../../../index";
 import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function RegistrarCursos({
   onClose,
@@ -22,21 +20,24 @@ export function RegistrarCursos({
   setIsExploding,
   state,
 }) {
-  if(!state) return;
+  if (!state) return;
   const { insertarcurso, editarcurso } = useCursosStore();
   const { dataniveles, nivelesitemselect, selectnivel } = useNivelesStore();
   const [stateNivelesLista, setStateNivelesLista] = useState(false);
-  const ref = useRef(null);
   const {
     register,
     formState: { errors },
     handleSubmit,
   } = useForm();
+  const queryClient = useQueryClient();
   const { isPending, mutate: doInsertar } = useMutation({
     mutationFn: insertar,
-    mutationKey: "insertar cursos",
+    mutationKey: ["insertar cursos"],
     onError: (err) => console.log("El error", err.message),
-    onSuccess: () => cerrarFormulario(),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["mostrar cursos"] });
+      cerrarFormulario();
+    },
   });
   const handlesub = (data) => {
     console.log("[ED1-FORM] submit subniveles:", { data });
@@ -47,30 +48,46 @@ export function RegistrarCursos({
     if (typeof setIsExploding === "function") setIsExploding(true);
   };
   async function insertar(data) {
+    const selectedNivelId = nivelesitemselect?.id ?? dataSelect?.id_nivel;
+
+    if (!selectedNivelId) {
+      throw new Error("Seleccionar");
+    }
+
     if (accion === "Editar") {
       const p = {
         _nombre: data.nombre,
         _id: dataSelect.id,
-        _id_nivel: dataSelect?.id_nivel,
+        _id_nivel: selectedNivelId,
       };
-      {console.log(p)}
       await editarcurso(p);
     } else {
-      selectnivel(nivelesitemselect);
       const p = {
-        _id_nivel: nivelesitemselect?.id,
+        _id_nivel: selectedNivelId,
         _nombre: data.nombre,
       };
-      {console.log(p, nivelesitemselect)}
       await insertarcurso(p);
     }
   }
   useEffect(() => {
-    if (accion === "Editar") {
-    } else {
-      selectnivel(null);
+    if (!state) {
+      return;
     }
-  }, [accion, selectnivel]);
+
+    if (accion === "Editar" && dataSelect?.id_nivel) {
+      selectnivel({
+        id: dataSelect.id_nivel,
+        nombre: dataSelect?.nombre_nivel ?? dataSelect?.nivel ?? "",
+        nombre_nivel: dataSelect?.nombre_nivel ?? dataSelect?.nivel ?? "",
+      });
+      return;
+    }
+
+    selectnivel(null);
+  }, [accion, dataSelect, selectnivel, state]);
+  if (!state) {
+    return null;
+  }
   return (
     <Container>
       {isPending ? (
@@ -88,14 +105,18 @@ export function RegistrarCursos({
               <span onClick={onClose}>x</span>
             </section>
           </div>
-          <form className="formulario" onSubmit={handleSubmit(handlesub)}>
+          <form className="formulario" onSubmit={handleSubmit(doInsertar)}>
             <section className="form-subcontainer">
               <ContainerSelector>
                 <label>Nivel</label>
                 <Selector
                   state={stateNivelesLista}
-                  funcion={() => setStateNivelesLista(!stateNivelesLista)}
-                  texto2={nivelesitemselect && nivelesitemselect.nombre_nivel ? nivelesitemselect.nombre_nivel : "Seleccionar"}
+                  funcion={() => setStateNivelesLista((prev) => !prev)}
+                  texto2={
+                    nivelesitemselect?.nombre_nivel ??
+                    nivelesitemselect?.nombre ??
+                    "Seleccionar"
+                  }
                   color="#fc6027"
                 />
                 <ListaDesplegable
@@ -103,7 +124,7 @@ export function RegistrarCursos({
                   state={stateNivelesLista}
                   data={dataniveles}
                   top="4rem"
-                  setState={() => setStateNivelesLista(!stateNivelesLista)}
+                  setState={() => setStateNivelesLista((prev) => !prev)}
                 />
               </ContainerSelector>
 
