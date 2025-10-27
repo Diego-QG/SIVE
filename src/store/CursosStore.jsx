@@ -68,8 +68,18 @@ export const useCursosStore = create((set, get) => ({
   },
 
   buscarcursos: async (p) => {
-    const response = await buscarCursos(p);
-    set({ datacursos: response });
-    return response;
+    const payload = {
+      buscar: p?.buscar ?? "",
+    };
+
+    const response = await buscarCursos(payload);
+    const nextData = (response ?? []).map((item) => ({
+      ...item,
+      nombre: item?.nombre ?? item?.nombre_curso ?? "",
+      nombre_curso: item?.nombre_curso ?? item?.nombre ?? "",
+    }));
+
+    set({ datacursos: nextData });
+    return nextData;
   },
 }));

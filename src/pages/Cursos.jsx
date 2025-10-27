@@ -17,7 +17,7 @@ export function Cursos() {
         queryKey: ["mostrar cursos", trimmedBuscador],
         queryFn: async () => {
             if (trimmedBuscador) {
-                return buscarcursos({ descripcion: trimmedBuscador });
+                return buscarcursos({ buscar: trimmedBuscador });
             }
 
             return mostrarcursos();
