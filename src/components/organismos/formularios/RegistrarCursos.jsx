@@ -49,16 +49,17 @@ export function RegistrarCursos({
       const p = {
         _nombre: data.descripcion,
         _id: dataSelect.id,
-        _pais: data.pais,
-        _logo: dataSelect.logo ?? "-",
+        _id_nivel: data.nivelesitemselect?.id,
+        _tipo: data.tipo,
       };
       await editarcurso(p);
     } else {
       const p = {
-        _nivel: data.nivel,
-        _nombre: data.descripcion,
+        _id_nivel: data.nivelesitemselect?.id,
+        _nombre: data.nombre,
         _tipo: data.tipo,
       };
+      {console.log(p, nivelesitemselect)}
       await insertarcurso(p);
     }
   }
@@ -121,7 +122,7 @@ export function RegistrarCursos({
                 <InputText icono={<v.iconoflechaderecha />}>
                   <input
                     className="form__field"
-                    defaultValue={dataSelect?.tipo || ""}
+                    defaultValue={dataSelect?.tipo || "1"}
                     type="number"
                     step="1"
                     min="1"
