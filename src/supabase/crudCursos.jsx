@@ -4,7 +4,7 @@ import { supabase } from "../index";
 const tabla = "cursos";
 
 export async function insertarCurso(p) {
-    const { error, data } = await supabase.rpc("insertarcursos", p);
+    const { error, data } = await supabase.rpc("insertarcurso", p);
     if (error) {
         Swal.fire({
             icon: "error",

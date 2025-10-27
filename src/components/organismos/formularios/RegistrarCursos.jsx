@@ -55,10 +55,9 @@ export function RegistrarCursos({
       await editarcurso(p);
     } else {
       const p = {
+        _nivel: data.nivel,
         _nombre: data.descripcion,
-        // _color: currentColor,
-        _logo: "-",
-        _pais: data.pais,
+        _tipo: data.tipo,
       };
       await insertarcurso(p);
     }

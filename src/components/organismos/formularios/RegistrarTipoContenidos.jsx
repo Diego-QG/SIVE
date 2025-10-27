@@ -11,6 +11,7 @@ import {
   Selector,
   ListaDesplegable,
   useFamiliaContenidosStore,
+  Switch1,
 } from "../../../index";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
@@ -22,8 +23,9 @@ export function RegistrarTipoContenidos({
   setIsExploding,
 }) {
   const { insertartipocontenido, editartipocontenido } = useTipoContenidosStore();
-  const { datafamiliacontenidos, familiacontenidositemselect, selectnivel } = useFamiliaContenidosStore();
+  const { datafamiliacontenidos, familiacontenidositemselect, selectfamiliacontenido } = useFamiliaContenidosStore();
   const [stateFamiliaContenidosLista, setStateFamiliaContenidosLista] = useState(false);
+  const [stateMensual, setStateMensual] = useState(false);
   const ref = useRef(null);
   const {
     register,
@@ -96,8 +98,9 @@ export function RegistrarTipoContenidos({
                   texto2={familiacontenidositemselect?.nombre}
                   color="#fc6027"
                 />
+                {console.log(familiacontenidositemselect)}
                 <ListaDesplegable
-                  funcion={selectnivel}
+                  funcion={selectfamiliacontenido}
                   state={stateFamiliaContenidosLista}
                   data={datafamiliacontenidos}
                   top="4rem"
@@ -118,24 +121,11 @@ export function RegistrarTipoContenidos({
                   {errors.nombre?.type === "required" && <p>Campo requerido</p>}
                 </InputText>
               </article>
-              <article>
-                <InputText icono={<v.iconoflechaderecha />}>
-                  <input
-                    className="form__field"
-                    defaultValue={dataSelect?.tipo || ""}
-                    type="number"
-                    step="1"
-                    min="1"
-                    max="9"
-                    placeholder="tipo"
-                    {...register("tipo", { required: true })}
-                  />
-                  <label className="form__label">Tipo</label>
-                  {errors.tipo?.type === "required" && (
-                    <p>Campo requerido</p>
-                  )}
-                </InputText>
-              </article>
+
+              <ContainerSelector>
+                <label>¿Es mensual?</label>
+                <Switch1 state={stateMensual} setState={() => setStateMensual(!stateMensual)} />                
+              </ContainerSelector>
 
               {/* <article className="colorContainer">
                 <ContentTitle>
