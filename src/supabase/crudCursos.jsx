@@ -15,20 +15,29 @@ export async function insertarCurso(p) {
     }
 }
 
-export async function mostrarCursos(p) {
-    const { data } = await supabase
-        .from(tabla)
-        .select()
-        .order("id_nivel", { ascending: true })
-        .order("id", { ascending: false });
+export async function mostrarCursos() {
+    const { error, data } = await supabase.rpc("mostrarcursos");
+    if (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: error.message,
+        });
+        return;
+    }
     return data;
 }
 
 export async function buscarCursos(p) {
-    const { data } = await supabase
-        .from(tabla)
-        .select()
-        .ilike("nombre", "%" + p.descripcion + "%");
+    const { error, data } = await supabase.rpc("buscarcursos", p);
+    if (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: error.message,
+        });
+        return;
+    }
     return data;
 }
 

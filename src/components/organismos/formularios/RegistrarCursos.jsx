@@ -20,7 +20,9 @@ export function RegistrarCursos({
   dataSelect,
   accion,
   setIsExploding,
+  state,
 }) {
+  if(!state) return;
   const { insertarcurso, editarcurso } = useCursosStore();
   const { dataniveles, nivelesitemselect, selectnivel } = useNivelesStore();
   const [stateNivelesLista, setStateNivelesLista] = useState(false);
@@ -47,17 +49,17 @@ export function RegistrarCursos({
   async function insertar(data) {
     if (accion === "Editar") {
       const p = {
-        _nombre: data.descripcion,
+        _nombre: data.nombre,
         _id: dataSelect.id,
-        _id_nivel: nivelesitemselect?.id,
-        _tipo: data.tipo,
+        _id_nivel: dataSelect?.id_nivel,
       };
+      {console.log(p)}
       await editarcurso(p);
     } else {
+      selectnivel(nivelesitemselect);
       const p = {
         _id_nivel: nivelesitemselect?.id,
         _nombre: data.nombre,
-        _tipo: data.tipo,
       };
       {console.log(p, nivelesitemselect)}
       await insertarcurso(p);
@@ -65,10 +67,11 @@ export function RegistrarCursos({
   }
   useEffect(() => {
     if (accion === "Editar") {
-      // setColor(dataSelect.color);
-      // setFileurl(dataSelect.logo);
+      
+    } else {
+      selectnivel(null);
     }
-  }, []);
+  }, [accion, selectnivel]);
   return (
     <Container>
       {isPending ? (
@@ -118,34 +121,6 @@ export function RegistrarCursos({
                   {errors.nombre?.type === "required" && <p>Campo requerido</p>}
                 </InputText>
               </article>
-              <article>
-                <InputText icono={<v.iconoflechaderecha />}>
-                  <input
-                    className="form__field"
-                    defaultValue={dataSelect?.tipo || "1"}
-                    type="number"
-                    step="1"
-                    min="1"
-                    max="9"
-                    placeholder="tipo"
-                    {...register("tipo", { required: true })}
-                  />
-                  <label className="form__label">Tipo</label>
-                  {errors.tipo?.type === "required" && (
-                    <p>Campo requerido</p>
-                  )}
-                </InputText>
-              </article>
-
-              {/* <article className="colorContainer">
-                <ContentTitle>
-                  {<v.paletacolores />}
-                  <span>Color</span>
-                </ContentTitle>
-                <div className="colorPickerContent">
-                  <CirclePicker onChange={elegirColor} color={currentColor} />
-                </div>
-              </article> */}
 
               <Btn1
                 icono={<v.iconoguardar />}

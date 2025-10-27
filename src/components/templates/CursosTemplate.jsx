@@ -27,13 +27,13 @@ export function CursosTemplate() {
 
     return (
         <Container>
-            {openRegistro && (
-                <RegistrarCursos setIsExploding={setIsExploding}
-                    onClose={() => setOpenRegistro(!openRegistro)}
-                    dataSelect={dataSelect}
-                    accion={accion}
-                />
-            )}
+            <RegistrarCursos
+                setIsExploding={setIsExploding}
+                onClose={() => setOpenRegistro(!openRegistro)}
+                dataSelect={dataSelect}
+                accion={accion}
+                state={openRegistro}
+            />
             <section className="area1">
                 <Title>Cursos</Title>
                 <Btn1
@@ -47,10 +47,13 @@ export function CursosTemplate() {
                 <Buscador setBuscador={setBuscador} />
             </section>
             <section className="main">
-                {
-                    isExploding && <ConfettiExplosion />
-                }
-                <TablaCursos setdataSelect={setDataSelect} setAccion={setAccion} SetopenRegistro={setOpenRegistro} data={datacursos} />
+                {isExploding && <ConfettiExplosion />}
+                <TablaCursos
+                    setdataSelect={setDataSelect}
+                    setAccion={setAccion}
+                    SetopenRegistro={setOpenRegistro}
+                    data={datacursos}
+                />
             </section>
         </Container>
     );
