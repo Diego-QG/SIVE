@@ -19,6 +19,7 @@ export async function mostrarCursos(p) {
     const { data } = await supabase
         .from(tabla)
         .select()
+        .order("id_nivel", { ascending: true })
         .order("id", { ascending: false });
     return data;
 }

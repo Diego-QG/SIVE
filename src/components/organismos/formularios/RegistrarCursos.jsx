@@ -49,13 +49,13 @@ export function RegistrarCursos({
       const p = {
         _nombre: data.descripcion,
         _id: dataSelect.id,
-        _id_nivel: data.nivelesitemselect?.id,
+        _id_nivel: nivelesitemselect?.id,
         _tipo: data.tipo,
       };
       await editarcurso(p);
     } else {
       const p = {
-        _id_nivel: data.nivelesitemselect?.id,
+        _id_nivel: nivelesitemselect?.id,
         _nombre: data.nombre,
         _tipo: data.tipo,
       };
@@ -93,7 +93,7 @@ export function RegistrarCursos({
                 <Selector
                   state={stateNivelesLista}
                   funcion={() => setStateNivelesLista(!stateNivelesLista)}
-                  texto2={nivelesitemselect?.nombre}
+                  texto2={nivelesitemselect && nivelesitemselect.nombre ? nivelesitemselect.nombre : "Seleccionar"}
                   color="#fc6027"
                 />
                 <ListaDesplegable
