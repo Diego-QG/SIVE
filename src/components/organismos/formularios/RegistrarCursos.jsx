@@ -67,7 +67,6 @@ export function RegistrarCursos({
   }
   useEffect(() => {
     if (accion === "Editar") {
-      
     } else {
       selectnivel(null);
     }
@@ -96,7 +95,7 @@ export function RegistrarCursos({
                 <Selector
                   state={stateNivelesLista}
                   funcion={() => setStateNivelesLista(!stateNivelesLista)}
-                  texto2={nivelesitemselect && nivelesitemselect.nombre ? nivelesitemselect.nombre : "Seleccionar"}
+                  texto2={nivelesitemselect && nivelesitemselect.nombre_nivel ? nivelesitemselect.nombre_nivel : "Seleccionar"}
                   color="#fc6027"
                 />
                 <ListaDesplegable
