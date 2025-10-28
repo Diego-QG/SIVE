@@ -16,11 +16,16 @@ export async function insertarTipoContenido(p) {
 }
 
 export async function mostrarTipoContenidos(p) {
-    const { data } = await supabase
-        .from(tabla)
-        .select()
-        .order("id", { ascending: false });
-    return data;
+    const { error, data } = await supabase.rpc("mostrartipocontenidos", p);
+        if (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: error.message,
+            });
+            return;
+        }
+        return data;
 }
 
 export async function buscarTipoContenidos(p) {

@@ -3,10 +3,12 @@ import {
     TipoContenidosTemplate,
     Spinner1,
     useTipoContenidosStore,
+    useEmpresaStore,
 } from "../index";
 import { useFamiliaContenidosStore } from "../store/FamiliaContenidosStore";
 
 export function TipoContenidos() {
+    const empresaId = useEmpresaStore((state) => state.dataempresa?.id);
     const mostrartipocontenidos = useTipoContenidosStore((state) => state.mostrartipocontenidos);
     const { mostrarfamiliacontenidos } = useFamiliaContenidosStore();
     const buscartipocontenidos = useTipoContenidosStore((state) => state.buscartipocontenidos);
@@ -14,14 +16,16 @@ export function TipoContenidos() {
     const trimmedBuscador = buscador?.trim?.() ?? "";
 
     const { isLoading, error } = useQuery({
-        queryKey: ["mostrar tipocontenidos", trimmedBuscador],
+        queryKey: ["mostrar tipocontenidos", empresaId, trimmedBuscador],
         queryFn: async () => {
+            const payload = { id_empresa: empresaId };
             if (trimmedBuscador) {
                 return buscartipocontenidos({ descripcion: trimmedBuscador });
             }
 
             return mostrartipocontenidos();
         },
+        enabled: !!empresaId,
         refetchOnWindowFocus: false,
         staleTime: 60_000,
         placeholderData: (previousData) => previousData,
