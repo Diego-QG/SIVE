@@ -18,12 +18,12 @@ export function TipoContenidos() {
     const { isLoading, error } = useQuery({
         queryKey: ["mostrar tipocontenidos", empresaId, trimmedBuscador],
         queryFn: async () => {
-            const payload = { id_empresa: empresaId };
+            const payload = { _id_empresa: empresaId };
             if (trimmedBuscador) {
-                return buscartipocontenidos({ descripcion: trimmedBuscador });
+                return buscartipocontenidos({ buscar: trimmedBuscador, _id_empresa: empresaId });
             }
 
-            return mostrartipocontenidos();
+            return mostrartipocontenidos(payload);
         },
         enabled: !!empresaId,
         refetchOnWindowFocus: false,
@@ -36,13 +36,6 @@ export function TipoContenidos() {
         queryFn: () => mostrarfamiliacontenidos(),
         refetchOnWindowFocus: false,
     })
-
-    useQuery({
-        queryKey: ["mostrar tipocontenidos"],
-        queryFn: () => mostrartipocontenidos(),
-        refetchOnWindowFocus: false,
-    })
-
 
     if (isLoading) {
         return(<Spinner1 />)

@@ -30,11 +30,16 @@ export async function mostrarTipoContenidos(p) {
 }
 
 export async function buscarTipoContenidos(p) {
-    const { data } = await supabase
-        .from(tabla)
-        .select()
-        .ilike("nombre", "%" + p.descripcion + "%");
-    return data;
+    const { error, data } = await supabase.rpc("buscartipocontenido", p);
+        if (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: error.message,
+            });
+            return;
+        }
+        return data;
 }
 
 export async function eliminarTipoContenido(p) {
