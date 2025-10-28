@@ -19,7 +19,7 @@ export function Subniveles() {
         queryKey: ["mostrar subniveles", trimmedBuscador],
         queryFn: async () => {
             if (trimmedBuscador) {
-                return buscarsubniveles({ descripcion: trimmedBuscador });
+                return buscarsubniveles({ buscar: trimmedBuscador });
             }
 
             return mostrarsubniveles();

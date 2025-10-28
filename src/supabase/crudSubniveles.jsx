@@ -15,19 +15,29 @@ export async function insertarSubnivel(p) {
     }
 }
 
-export async function mostrarSubniveles(p) {
-    const { data } = await supabase
-        .from(tabla)
-        .select()
-        .order("id", { ascending: false });
+export async function mostrarSubniveles() {
+    const { error, data } = await supabase.rpc("mostrarsubniveles");
+    if (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: error.message,
+        });
+        return;
+    }
     return data;
 }
 
 export async function buscarSubniveles(p) {
-    const { data } = await supabase
-        .from(tabla)
-        .select()
-        .ilike("nombre", "%" + p.descripcion + "%");
+    const { error, data } = await supabase.rpc("buscarsubniveles", p);
+    if (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: error.message,
+        });
+        return;
+    }
     return data;
 }
 

@@ -71,7 +71,22 @@ export function TablaSubniveles({
   const columns = [
     
     {
-      accessorKey: "nombre",
+      accessorKey: "nombre_nivel",
+      header: "Nivel",
+      meta: {
+        dataTitle: "Nivel",
+      },
+      cell: (info) => <span>{info.getValue()}</span>,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
+
+    {
+      accessorKey: "nombre_subnivel",
       header: "Subnivel",
       meta: {
         dataTitle: "Subnivel",
