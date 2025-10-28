@@ -69,9 +69,23 @@ export function TablaTipoContenidos({
     setAccion("Editar");
   }
   const columns = [
-    
+
     {
-      accessorKey: "nombre",
+      accessorKey: "nombre_familiacontenido",
+      header: "Familia",
+      meta: {
+        dataTitle: "Familia",
+      },
+      cell: (info) => <span>{info.getValue()}</span>,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
+    {
+      accessorKey: "nombre_tipocontenido",
       header: "Tipo Contenido",
       meta: {
         dataTitle: "Tipo Contenido",
