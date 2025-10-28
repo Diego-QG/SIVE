@@ -40,18 +40,18 @@ export const useSubnivelesStore = create((set, get) => ({
   parametros: {},
 
   mostrarsubniveles: async (p) => {
-      const response = await mostrarSubniveles(p);
-      const nextData = (response ?? []).map((item) => ({
-        ...item,
-        nombre: item?.nombre ?? item?.nombre_subnivel ?? "",
-        nombre_subnivel: item?.nombre_subnivel ?? item?.nombre ?? "",
-      }));
-  
-      set({ parametros: p });
-      set({ datasubniveles: nextData });
-      set({ subnivelesitemselect: nextData?.[0] ?? null }); // guard
-      return nextData;
-    },
+    const response = await mostrarSubniveles(p);
+    const nextData = (response ?? []).map((item) => ({
+      ...item,
+      nombre: item?.nombre ?? item?.nombre_subnivel ?? "",
+      nombre_subnivel: item?.nombre_subnivel ?? item?.nombre ?? "",
+    }));
+
+    set({ parametros: p });
+    set({ datasubniveles: nextData });
+    set({ subnivelesitemselect: nextData?.[0] ?? null }); // guard
+    return nextData;
+  },
 
   selectsubnivel: (p) => set({ subnivelesitemselect: p }),
 
@@ -74,18 +74,18 @@ export const useSubnivelesStore = create((set, get) => ({
   },
 
   buscarsubniveles: async (p) => {
-      const payload = {
-        buscar: p?.buscar ?? "",
-      };
-  
-      const response = await buscarSubniveles(payload);
-      const nextData = (response ?? []).map((item) => ({
-        ...item,
-        nombre: item?.nombre ?? item?.nombre_subnivel ?? "",
-        nombre_subnivel: item?.nombre_subnivel ?? item?.nombre ?? "",
-      }));
-  
-      set({ datasubniveles: nextData });
-      return nextData;
-    },
+    const payload = {
+      buscar: p?.buscar ?? "",
+    };
+
+    const response = await buscarSubniveles(payload);
+    const nextData = (response ?? []).map((item) => ({
+      ...item,
+      nombre: item?.nombre ?? item?.nombre_subnivel ?? "",
+      nombre_subnivel: item?.nombre_subnivel ?? item?.nombre ?? "",
+    }));
+
+    set({ datasubniveles: nextData });
+    return nextData;
+  },
 }));

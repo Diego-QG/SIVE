@@ -99,27 +99,6 @@ export function TablaSubniveles({
         return filterStatuses.includes(status?.id);
       },
     },
-    {
-      accessorKey: "acciones",
-      header: "",
-      enableSorting: false,
-      meta: {
-        dataTitle: "Acciones",
-        className: "ContentCell",
-      },
-      cell: (info) => (
-        <ContentAccionesTabla
-          funcionEditar={() => editar(info.row.original)}
-          funcionEliminar={() => eliminar(info.row.original)}
-        />
-      ),
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
-    },
   ];
   const table = useReactTable({
     data,
@@ -230,9 +209,6 @@ const Container = styled.div`
   @media (min-width: ${v.bphomer}) {
     margin: 2em auto;
     /* max-width: ${v.bphomer}; */
-  }
-  .ioqlpo {
-    display: none !important; /* oculta el tacho si es el segundo botón */
   }
   .responsive-table {
     width: 100%;
