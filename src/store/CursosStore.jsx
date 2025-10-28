@@ -41,10 +41,16 @@ export const useCursosStore = create((set, get) => ({
 
   mostrarcursos: async (p) => {
     const response = await mostrarCursos(p);
+    const nextData = (response ?? []).map((item) => ({
+      ...item,
+      nombre: item?.nombre ?? item?.nombre_curso ?? "",
+      nombre_curso: item?.nombre_curso ?? item?.nombre ?? "",
+    }));
+
     set({ parametros: p });
-    set({ datacursos: response });
-    set({ cursositemselect: response?.[0] ?? null }); // guard
-    return response;
+    set({ datacursos: nextData });
+    set({ cursositemselect: nextData?.[0] ?? null }); // guard
+    return nextData;
   },
 
   selectcurso: (p) => set({ cursositemselect: p }),

@@ -74,13 +74,35 @@ export function RegistrarCursos({
       return;
     }
 
-    if (accion === "Editar" && dataSelect?.id_nivel) {
-      selectnivel({
-        id: dataSelect.id_nivel,
-        nombre: dataSelect?.nombre_nivel ?? dataSelect?.nivel ?? "",
-        nombre_nivel: dataSelect?.nombre_nivel ?? dataSelect?.nivel ?? "",
-      });
-      return;
+    if (accion === "Editar") {
+      const nivelId =
+        dataSelect?.id_nivel ??
+        null;
+
+      const nivelNombre =
+        dataSelect?.nombre_nivel ??
+        "";
+
+      const existingNivel =
+        dataniveles?.find((item) =>
+          nivelId != null ? item?.id === nivelId : false
+        ) ??
+        (nivelNombre
+          ? {
+              id: nivelId,
+              nombre: nivelNombre,
+              nombre_nivel: nivelNombre,
+            }
+          : null);
+
+      if (existingNivel) {
+        selectnivel(existingNivel);
+        return;
+      }
+
+      if (!dataniveles || dataniveles.length === 0) {
+        return;
+      }
     }
 
     selectnivel(null);
