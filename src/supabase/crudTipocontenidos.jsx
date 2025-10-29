@@ -30,7 +30,7 @@ export async function mostrarTipoContenidos(p) {
 }
 
 export async function buscarTipoContenidos(p) {
-    const { error, data } = await supabase.rpc("buscartipocontenido", p);
+    const { error, data } = await supabase.rpc("buscartipocontenidos", p);
         if (error) {
             Swal.fire({
                 icon: "error",
