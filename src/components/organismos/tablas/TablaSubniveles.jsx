@@ -106,6 +106,11 @@ export function TablaSubniveles({
     state: {
       columnFilters,
     },
+    initialState: {
+      pagination: {
+        pageSize: 20,
+      },
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -262,20 +267,20 @@ const Container = styled.div`
 
     th,
     td {
-      padding: 0.5em;
+      padding: 0.75em 0.5em;
       vertical-align: middle;
       @media (min-width: ${v.bplisa}) {
-        padding: 0.75em 0.5em;
+        padding: 1em 0.75em;
       }
       @media (min-width: ${v.bpbart}) {
         display: table-cell;
-        padding: 0.5em;
+        padding: 0.75em 0.75em;
       }
       @media (min-width: ${v.bpmarge}) {
-        padding: 0.75em 0.5em;
+        padding: 1em 0.75em;
       }
       @media (min-width: ${v.bphomer}) {
-        padding: 0.75em;
+        padding: 1.25em 1em;
       }
     }
     tbody {
