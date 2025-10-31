@@ -96,28 +96,7 @@ export function TablaCursos({
         const status = row.getValue(columnId);
         return filterStatuses.includes(status?.id);
       },
-    },
-    {
-      accessorKey: "acciones",
-      header: "",
-      enableSorting: false,
-      meta: {
-        dataTitle: "Acciones",
-        className: "ContentCell",
-      },
-      cell: (info) => (
-        <ContentAccionesTabla
-          funcionEditar={() => editar(info.row.original)}
-          funcionEliminar={() => eliminar(info.row.original)}
-        />
-      ),
-      enableColumnFilter: true,
-      filterFn: (row, columnId, filterStatuses) => {
-        if (filterStatuses.length === 0) return true;
-        const status = row.getValue(columnId);
-        return filterStatuses.includes(status?.id);
-      },
-    },
+    }
   ];
   const table = useReactTable({
     data,
