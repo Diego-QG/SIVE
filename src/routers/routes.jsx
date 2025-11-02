@@ -12,6 +12,7 @@ import {
   UserAuth,
   useUsuariosStore,
   TipoContenidos,
+  Materiales,
 } from "../index";
 import { useQuery } from "@tanstack/react-query";
 
@@ -61,6 +62,10 @@ export function MyRoutes() {
         <Route
           path="/herramientas/tipocontenidos"
           element={<TipoContenidos />}
+        ></Route>
+        <Route
+          path="/herramientas/materiales"
+          element={<Materiales />}
         ></Route>
       </Route>
 
