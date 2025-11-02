@@ -15,8 +15,8 @@ export async function insertarMaterial(p) {
     }
 }
 
-export async function mostrarMateriales() {
-    const { error, data } = await supabase.rpc("mostrarmateriales_editorial");
+export async function mostrarMateriales(p) {
+    const { error, data } = await supabase.rpc("mostrarmateriales_editorial", p);
     if (error) {
         Swal.fire({
             icon: "error",

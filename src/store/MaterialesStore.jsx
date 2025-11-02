@@ -40,14 +40,15 @@ export const useMaterialesStore = create((set, get) => ({
   parametros: {},
 
   mostrarmateriales: async (p) => {
-    const response = await mostrarMateriales(p);
+    const payload = p ?? {};
+    const response = await mostrarMateriales(payload);
     const nextData = (response ?? []).map((item) => ({
       ...item,
       nombre: item?.nombre ?? item?.nombre_material ?? "",
       nombre_material: item?.nombre_material ?? item?.nombre ?? "",
     }));
 
-    set({ parametros: p });
+    set({ parametros: payload });
     set({ datamateriales: nextData });
     set({ materialesitemselect: nextData?.[0] ?? null }); // guard
     return nextData;
@@ -76,6 +77,7 @@ export const useMaterialesStore = create((set, get) => ({
   buscarmateriales: async (p) => {
     const payload = {
       buscar: p?.buscar ?? "",
+      _id_empresa: p?._id_empresa,
     };
 
     const response = await buscarMateriales(payload);

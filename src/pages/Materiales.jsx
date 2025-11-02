@@ -3,10 +3,12 @@ import {
     MaterialesTemplate,
     Spinner1,
     useMaterialesStore,
+    useEmpresaStore,
 } from "../index";
 import { useNivelesStore } from "../store/NivelesStore";
 
 export function Materiales() {
+    const empresaId = useEmpresaStore((state) => state.dataempresa?.id);
     const mostrarmateriales = useMaterialesStore((state) => state.mostrarmateriales);
     const { mostrarniveles } = useNivelesStore();
     const buscarmateriales = useMaterialesStore((state) => state.buscarmateriales);
@@ -14,14 +16,15 @@ export function Materiales() {
     const trimmedBuscador = buscador?.trim?.() ?? "";
 
     const { isLoading, error } = useQuery({
-        queryKey: ["mostrar materiales", trimmedBuscador],
+        queryKey: ["mostrar materiales", empresaId, trimmedBuscador],
         queryFn: async () => {
             if (trimmedBuscador) {
-                return buscarmateriales({ buscar: trimmedBuscador });
+                return buscarmateriales({ buscar: trimmedBuscador, ...payload });
             }
 
-            return mostrarmateriales();
+            return mostrarmateriales(payload);
         },
+        enabled: !!empresaId,
         refetchOnWindowFocus: false,
         staleTime: 60_000,
         placeholderData: (previousData) => previousData,
@@ -34,8 +37,9 @@ export function Materiales() {
     })
 
     useQuery({
-        queryKey: ["mostrar materiales"],
-        queryFn: () => mostrarmateriales(),
+        queryKey: ["mostrar materiales", empresaId],
+        queryFn: () => mostrarmateriales({ _id_empresa: empresaId }),
+        enabled: !!empresaId,
         refetchOnWindowFocus: false,
     })
 
