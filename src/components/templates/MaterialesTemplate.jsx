@@ -2,11 +2,10 @@ import styled from "styled-components";
 import {
     Btn1,
     Buscador,
-    RegistrarCursos,
-    TablaCursos,
+    RegistrarMateriales,
     TablaMateriales,
     Title,
-    useCursosStore,
+    useMaterialesStore,
 } from "../../index";
 import { v } from "../../styles/variables";
 import { useState } from "react";
@@ -15,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 export function MaterialesTemplate() {
     const [openRegistro, setOpenRegistro] = useState(false);
-    const { datacursos, setBuscador } = useCursosStore();
+    const { datamateriales, setBuscador } = useMaterialesStore();
     const [accion, setAccion] = useState("");
     const [dataSelect, setDataSelect] = useState([]);
     const [isExploding, setIsExploding] = useState(false);
@@ -34,7 +33,7 @@ export function MaterialesTemplate() {
 
     return (
         <Container>
-            <RegistrarCursos
+            <RegistrarMateriales
                 setIsExploding={setIsExploding}
                 onClose={() => setOpenRegistro(!openRegistro)}
                 dataSelect={dataSelect}
@@ -62,7 +61,7 @@ export function MaterialesTemplate() {
                     setdataSelect={setDataSelect}
                     setAccion={setAccion}
                     SetopenRegistro={setOpenRegistro}
-                    data={datacursos}
+                    data={datamateriales}
                 />
             </section>
         </Container>

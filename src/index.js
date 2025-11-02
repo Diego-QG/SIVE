@@ -17,6 +17,7 @@ export * from './components/organismos/formularios/InputText';
 export * from './components/organismos/formularios/InputText2';
 export * from './components/organismos/formularios/RegistrarCursos';
 export * from './components/organismos/formularios/RegistrarEditoriales';
+export * from './components/organismos/formularios/RegistrarMateriales';
 export * from './components/organismos/formularios/RegistrarSubniveles';
 export * from './components/organismos/formularios/RegistrarTipoContenidos';
 export * from './components/organismos/sidebar/Sidebar';

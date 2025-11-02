@@ -18,6 +18,7 @@ export function Materiales() {
     const { isLoading, error } = useQuery({
         queryKey: ["mostrar materiales", empresaId, trimmedBuscador],
         queryFn: async () => {
+            const payload = { _id_empresa: empresaId };
             if (trimmedBuscador) {
                 return buscarmateriales({ buscar: trimmedBuscador, ...payload });
             }

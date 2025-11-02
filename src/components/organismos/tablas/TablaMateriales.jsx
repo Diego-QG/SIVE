@@ -70,6 +70,34 @@ export function TablaMateriales({
   }
   const columns = [
     {
+      accessorKey: "nombre_editorial",
+      header: "Editorial",
+      meta: {
+        dataTitle: "Editorial",
+      },
+      cell: (info) => <span>{info.getValue()}</span>,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
+    {
+      accessorKey: "nombre_tipocontenido",
+      header: "Tipo Contenido",
+      meta: {
+        dataTitle: "Tipo Contenido",
+      },
+      cell: (info) => <span>{info.getValue()}</span>,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
+    {
       accessorKey: "nombre_nivel",
       header: "Nivel",
       meta: {
@@ -84,10 +112,10 @@ export function TablaMateriales({
       },
     },
     {
-      accessorKey: "nombre_material",
-      header: "Material",
+      accessorKey: "nombre_subnivel",
+      header: "Subnivel",
       meta: {
-        dataTitle: "Material",
+        dataTitle: "Subnivel",
       },
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
@@ -96,7 +124,63 @@ export function TablaMateriales({
         const status = row.getValue(columnId);
         return filterStatuses.includes(status?.id);
       },
-    }
+    },
+    {
+      accessorKey: "contenido",
+      header: "Contenido",
+      meta: {
+        dataTitle: "Contenido",
+      },
+      cell: (info) => <span>{info.getValue()}</span>,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
+    {
+      accessorKey: "anio",
+      header: "Año",
+      meta: {
+        dataTitle: "Año",
+      },
+      cell: (info) => <span>{info.getValue()}</span>,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
+    {
+      accessorKey: "nombre_mes",
+      header: "Mes",
+      meta: {
+        dataTitle: "Mes",
+      },
+      cell: (info) => <span>{info.getValue()}</span>,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
+    {
+      accessorKey: "precio_con_moneda",
+      header: "Precio",
+      meta: {
+        dataTitle: "Precio",
+      },
+      cell: (info) => <span>{info.getValue()}</span>,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterStatuses) => {
+        if (filterStatuses.length === 0) return true;
+        const status = row.getValue(columnId);
+        return filterStatuses.includes(status?.id);
+      },
+    },
   ];
   const table = useReactTable({
     data,
@@ -106,7 +190,7 @@ export function TablaMateriales({
     },
     initialState: {
       pagination: {
-        pageSize: 20,
+        pageSize: 13,
       },
     },
     getCoreRowModel: getCoreRowModel(),
