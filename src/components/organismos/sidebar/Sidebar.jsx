@@ -22,57 +22,59 @@ export function Sidebar({ state, setState }) {
           </div>
           <h2>R&H SIVE</h2>
         </div>
-        {LinksArray.map(({ icon, label, to }) => (
-          <div
-            className={state ? "LinkContainer active" : "LinkContainer"}
-            key={label}
-          >
-            <NavLink
-              to={to}
-              className={({ isActive }) => `Links${isActive ? ` active` : ``}`}
+        <div className="LinksWrapper">
+          {LinksArray.map(({ icon, label, to }) => (
+            <div
+              className={state ? "LinkContainer active" : "LinkContainer"}
+              key={label}
             >
-              <section className={state ? "content open" : "content"}>
-                <Icon className="Linkicon" icon={icon} />
-                <span className={state ? "label_ver" : "label_oculto"}>
-                  {label}
-                </span>
-              </section>
-            </NavLink>
-          </div>
-        ))}
-        <Divider />
-        {SecondarylinksArray.map(({ icon, label, to, color }) => (
-          <div
-            className={state ? "LinkContainer active logout" : "LinkContainer logout"}
-            key={label}
-          >
-            <NavLink
-              to={to}
-              className={({ isActive }) => `Links${isActive ? ` active` : ``}`}
+              <NavLink
+                to={to}
+                className={({ isActive }) => `Links${isActive ? ` active` : ``}`}
+              >
+                <section className={state ? "content open" : "content"}>
+                  <Icon className="Linkicon" icon={icon} />
+                  <span className={state ? "label_ver" : "label_oculto"}>
+                    {label}
+                  </span>
+                </section>
+              </NavLink>
+            </div>
+          ))}
+          <Divider />
+          {SecondarylinksArray.map(({ icon, label, to, color }) => (
+            <div
+              className={state ? "LinkContainer active logout" : "LinkContainer logout"}
+              key={label}
             >
-              <section className={state ? "content open" : "content"}>
-                <Icon color={color} className="Linkicon" icon={icon} />
-                <span className={state ? "label_ver" : "label_oculto"}>
-                  {label}
-                </span>
-              </section>
-            </NavLink>
-          </div>
-        ))}
-        <div className={state ? "LinkContainer active" : "LinkContainer"}>
-          <div className="Links">
-            <section className={state ? "content open" : "content"}>
-              <Icon
-                color="#a31d1d"
-                className="Linkicon"
-                icon="material-symbols:logout"
-              />
-              <span className={state ? "label_ver" : "label_oculto"}>Cerrar sesión</span>
-            </section>
-          </div>
-         
+              <NavLink
+                to={to}
+                className={({ isActive }) => `Links${isActive ? ` active` : ``}`}
+              >
+                <section className={state ? "content open" : "content"}>
+                  <Icon color={color} className="Linkicon" icon={icon} />
+                  <span className={state ? "label_ver" : "label_oculto"}>
+                    {label}
+                  </span>
+                </section>
+              </NavLink>
+            </div>
+          ))}
         </div>
-
+        <div className="Logout">
+          <div className={state ? "LinkContainer active" : "LinkContainer"}>
+            <div className="Links">
+              <section className={state ? "content open" : "content"}>
+                <Icon
+                  color="#a31d1d"
+                  className="Linkicon"
+                  icon="material-symbols:logout"
+                />
+                <span className={state ? "label_ver" : "label_oculto"}>Cerrar sesión</span>
+              </section>
+            </div>
+          </div>
+        </div>
       </Container>
     </Main>
   );
@@ -89,6 +91,8 @@ const Container = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   border-right: 2px solid ${({ theme }) => theme.color2};
+  display: flex;
+  flex-direction: column;
   
   &::-webkit-scrollbar {
     width: 6px;
@@ -127,6 +131,12 @@ const Container = styled.div`
       display: ${({ $isopen }) => ($isopen === "true" ? `block` : `none`)};
     }
   }
+
+  .LinksWrapper {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 24px;
+  }
   
   .LinkContainer {
     margin: 9px 0;
@@ -138,16 +148,15 @@ const Container = styled.div`
     font-weight: 700;
   }
 
-  .LinkContainer:last-of-type{
-    position: absolute;
-    bottom: 24px;
-    left: 0;
-    right: 0;   /* ocupa el ancho normal del sidebar */
+  .Logout {
+    margin-top: auto;
+    padding: 0 8px 24px;
   }
 
-  .LinkContainer:last-of-type:hover {
+  .Logout .LinkContainer {
+    margin: 0;
     cursor: pointer;
-  } 
+  }
 
   .Links {
     border-radius: 12px;

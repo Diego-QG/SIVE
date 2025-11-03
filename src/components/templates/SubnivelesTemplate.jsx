@@ -87,7 +87,7 @@ const Container = styled.div`
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-left: 40px;
+      margin-left: 16px;
       width: 42px;
       height: 42px;
       border-radius: 50%;

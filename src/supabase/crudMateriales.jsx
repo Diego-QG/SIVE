@@ -3,6 +3,33 @@ import { supabase } from "../index";
 
 const tabla = "materiales";
 
+async function fetchAllFromRpc(functionName, payload, chunkSize = 1000) {
+    const allRows = [];
+    let from = 0;
+
+    while (true) {
+        const { data, error } = await supabase
+            .rpc(functionName, payload)
+            .range(from, from + chunkSize - 1);
+
+        if (error) {
+            return { error };
+        }
+
+        const rows = data ?? [];
+        allRows.push(...rows);
+
+        if (rows.length < chunkSize) {
+            break;
+        }
+
+        from += chunkSize;
+    }
+
+    return { data: allRows };
+}
+
+
 export async function insertarMaterial(p) {
     const { error, data } = await supabase.rpc("insertarmaterial", p);
     if (error) {
@@ -16,7 +43,7 @@ export async function insertarMaterial(p) {
 }
 
 export async function mostrarMateriales(p) {
-    const { error, data } = await supabase.rpc("mostrarmateriales_editorial", p);
+    const { error, data } = await fetchAllFromRpc("mostrarmateriales_editorial", p);
     if (error) {
         Swal.fire({
             icon: "error",
