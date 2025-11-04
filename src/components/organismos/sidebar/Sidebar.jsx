@@ -110,16 +110,17 @@ const Container = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: ${({ $isopen }) => ($isopen === "true" ? "12px" : "0")};
     padding-bottom: 60px;
     .imgcontent {
       display: flex;
       justify-content: center;
       align-items: center;
-      width: 30px;
+      width: ${({ $isopen }) => ($isopen === "true" ? "50px" : "30px")};
       cursor: pointer;
       transition: 0.3s ease;
       transform: ${({ $isopen }) =>
-          $isopen === "true" ? `scale(0.7)` : `scale(1.5)`}
+          $isopen === "true" ? `scale(0.95)` : `scale(1.5)`}
         rotate(${({ theme }) => theme.logorotate});
       img {
         width: 100%;

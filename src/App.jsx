@@ -5,6 +5,7 @@ import {
   Login,
   MyRoutes,
   Sidebar,
+  SwitchHamburguesa,
   useThemeStore,
 } from "./index";
 import { Device } from "./styles/breakpoints";
@@ -30,7 +31,7 @@ function App() {
               />
             </section>
 
-            <section className="contentMenuamburger">MENU</section>
+            <section className="contentMenuamburger"><SwitchHamburguesa /></section>
 
             <section className="contentRouters">
               <MyRoutes />

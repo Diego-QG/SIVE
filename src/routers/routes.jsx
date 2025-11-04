@@ -13,6 +13,7 @@ import {
   useUsuariosStore,
   TipoContenidos,
   Materiales,
+  POS,
 } from "../index";
 import { useQuery } from "@tanstack/react-query";
 
@@ -46,27 +47,13 @@ export function MyRoutes() {
     <Routes>
       <Route element={<ProtectedRoute user={user} redirectTo="/login" />}>
         <Route path="/" element={<Home />}></Route>
+        <Route path="/pos" element={<POS />}></Route>
         <Route path="/herramientas" element={<Herramientas />}></Route>
-        <Route
-          path="/herramientas/editoriales"
-          element={<Editoriales />}
-        ></Route>
-        <Route
-          path="/herramientas/subniveles"
-          element={<Subniveles />}
-        ></Route>
-        <Route
-          path="/herramientas/cursos"
-          element={<Cursos />}
-        ></Route>
-        <Route
-          path="/herramientas/tipocontenidos"
-          element={<TipoContenidos />}
-        ></Route>
-        <Route
-          path="/herramientas/materiales"
-          element={<Materiales />}
-        ></Route>
+        <Route path="/herramientas/editoriales" element={<Editoriales />}></Route>
+        <Route path="/herramientas/subniveles" element={<Subniveles />}></Route>
+        <Route path="/herramientas/cursos" element={<Cursos />}></Route>
+        <Route path="/herramientas/tipocontenidos" element={<TipoContenidos />}></Route>
+        <Route path="/herramientas/materiales" element={<Materiales />}></Route>
       </Route>
 
       <Route path="/login" element={<Login />}></Route>
