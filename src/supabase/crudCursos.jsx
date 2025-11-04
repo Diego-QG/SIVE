@@ -29,7 +29,11 @@ export async function mostrarCursos() {
 }
 
 export async function buscarCursos(p) {
-    const { error, data } = await supabase.rpc("buscarcursos", p);
+    const payload = {
+        buscador: `${p?.buscador ?? ""}`.trim(),
+    };
+
+    const { error, data } = await supabase.rpc("buscarcursos", payload);
     if (error) {
         Swal.fire({
             icon: "error",

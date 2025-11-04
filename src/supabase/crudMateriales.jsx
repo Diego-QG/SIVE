@@ -56,7 +56,15 @@ export async function mostrarMateriales(p) {
 }
 
 export async function buscarMateriales(p) {
-    const { error, data } = await supabase.rpc("buscarmateriales", p);
+    const payload = {
+        buscador: `${p?.buscador ?? ""}`.trim(),
+    };
+
+    if (p?._id_empresa !== undefined) {
+        payload._id_empresa = p._id_empresa;
+    }
+
+    const { error, data } = await supabase.rpc("buscarmateriales", payload);
     if (error) {
         Swal.fire({
             icon: "error",

@@ -20,7 +20,7 @@ export function TipoContenidos() {
         queryFn: async () => {
             const payload = { _id_empresa: empresaId };
             if (trimmedBuscador) {
-                return buscartipocontenidos({ buscar: trimmedBuscador, _id_empresa: empresaId });
+                return buscartipocontenidos({ buscador: trimmedBuscador, _id_empresa: empresaId });
             }
 
             return mostrartipocontenidos(payload);

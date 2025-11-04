@@ -9,30 +9,8 @@ import {
 
 export const useSubnivelesStore = create((set, get) => ({
   buscador: "",
-  setBuscador: async (p) => {
+  setBuscador: (p) => {
     set({ buscador: p });
-
-    const trimmedValue = p?.trim?.() ?? "";
-
-    if (!trimmedValue) {
-      const { parametros } = get();
-
-      if (parametros && Object.keys(parametros).length > 0) {
-        const response = await mostrarSubniveles(parametros);
-        const currentValue = get().buscador?.trim?.() ?? "";
-
-        if (currentValue) {
-          return;
-        }
-
-        const nextData = response ?? [];
-
-        set({
-          datasubniveles: nextData,
-          subnivelesitemselect: nextData?.[0] ?? null,
-        });
-      }
-    }
   },
 
   datasubniveles: [],
@@ -75,7 +53,7 @@ export const useSubnivelesStore = create((set, get) => ({
 
   buscarsubniveles: async (p) => {
     const payload = {
-      buscar: p?.buscar ?? "",
+      buscador: `${p?.buscador ?? ""}`.trim(),
     };
 
     const response = await buscarSubniveles(payload);

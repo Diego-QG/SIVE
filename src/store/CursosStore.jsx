@@ -9,30 +9,8 @@ import {
 
 export const useCursosStore = create((set, get) => ({
   buscador: "",
-  setBuscador: async (p) => {
+  setBuscador: (p) => {
     set({ buscador: p });
-
-    const trimmedValue = p?.trim?.() ?? "";
-
-    if (!trimmedValue) {
-      const { parametros } = get();
-
-      if (parametros && Object.keys(parametros).length > 0) {
-        const response = await mostrarCursos(parametros);
-        const currentValue = get().buscador?.trim?.() ?? "";
-
-        if (currentValue) {
-          return;
-        }
-
-        const nextData = response ?? [];
-
-        set({
-          datacursos: nextData,
-          cursositemselect: nextData?.[0] ?? null,
-        });
-      }
-    }
   },
 
   datacursos: [],
@@ -75,7 +53,7 @@ export const useCursosStore = create((set, get) => ({
 
   buscarcursos: async (p) => {
     const payload = {
-      buscar: p?.buscar ?? "",
+      buscador: `${p?.buscador ?? ""}`.trim(),
     };
 
     const response = await buscarCursos(payload);

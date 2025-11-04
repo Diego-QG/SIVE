@@ -20,7 +20,7 @@ export function Materiales() {
         queryFn: async () => {
             const payload = { _id_empresa: empresaId };
             if (trimmedBuscador) {
-                return buscarmateriales({ buscar: trimmedBuscador, ...payload });
+                return buscarmateriales({ buscador: trimmedBuscador, ...payload });
             }
 
             return mostrarmateriales(payload);

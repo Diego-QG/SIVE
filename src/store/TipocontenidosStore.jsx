@@ -9,30 +9,8 @@ import {
 
 export const useTipoContenidosStore = create((set, get) => ({
   buscador: "",
-  setBuscador: async (p) => {
+  setBuscador: (p) => {
     set({ buscador: p });
-
-    const trimmedValue = p?.trim?.() ?? "";
-
-    if (!trimmedValue) {
-      const { parametros } = get();
-
-      if (parametros && Object.keys(parametros).length > 0) {
-        const response = await mostrarTipoContenidos(parametros);
-        const currentValue = get().buscador?.trim?.() ?? "";
-
-        if (currentValue) {
-          return;
-        }
-
-        const nextData = response ?? [];
-
-        set({
-          datatipocontenidos: nextData,
-          tipocontenidositemselect: nextData?.[0] ?? null,
-        });
-      }
-    }
   },
 
   datatipocontenidos: [],
@@ -68,7 +46,15 @@ export const useTipoContenidosStore = create((set, get) => ({
   },
 
   buscartipocontenidos: async (p) => {
-    const response = await buscarTipoContenidos(p);
+    const payload = {
+      buscador: `${p?.buscador ?? ""}`.trim(),
+    };
+
+    if (p?._id_empresa !== undefined) {
+      payload._id_empresa = p._id_empresa;
+    }
+
+    const response = await buscarTipoContenidos(payload);
     set({ datatipocontenidos: response });
     return response;
   },

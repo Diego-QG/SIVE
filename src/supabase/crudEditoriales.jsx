@@ -73,11 +73,12 @@ export async function mostrarEditoriales(p) {
 }
 
 export async function buscarEditoriales(p) {
+    const buscador = `${p?.buscador ?? ""}`.trim();
     const { data } = await supabase
         .from(tabla)
         .select()
         .eq("id_empresa", p.id_empresa)
-        .ilike("nombre", "%" + p.descripcion + "%");
+        .ilike("nombre", `%${buscador}%`);
     return data;
 }
 

@@ -9,30 +9,8 @@ import {
 
 export const useMaterialesStore = create((set, get) => ({
   buscador: "",
-  setBuscador: async (p) => {
+  setBuscador: (p) => {
     set({ buscador: p });
-
-    const trimmedValue = p?.trim?.() ?? "";
-
-    if (!trimmedValue) {
-      const { parametros } = get();
-
-      if (parametros && Object.keys(parametros).length > 0) {
-        const response = await mostrarMateriales(parametros);
-        const currentValue = get().buscador?.trim?.() ?? "";
-
-        if (currentValue) {
-          return;
-        }
-
-        const nextData = response ?? [];
-
-        set({
-          datamateriales: nextData,
-          materialesitemselect: nextData?.[0] ?? null,
-        });
-      }
-    }
   },
 
   datamateriales: [],
@@ -76,9 +54,12 @@ export const useMaterialesStore = create((set, get) => ({
 
   buscarmateriales: async (p) => {
     const payload = {
-      buscar: p?.buscar ?? "",
-      _id_empresa: p?._id_empresa,
+      buscador: `${p?.buscador ?? ""}`.trim(),
     };
+
+    if (p?._id_empresa !== undefined) {
+      payload._id_empresa = p._id_empresa;
+    }
 
     const response = await buscarMateriales(payload);
     const nextData = (response ?? []).map((item) => ({

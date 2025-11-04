@@ -29,7 +29,11 @@ export async function mostrarSubniveles() {
 }
 
 export async function buscarSubniveles(p) {
-    const { error, data } = await supabase.rpc("buscarsubniveles", p);
+    const payload = {
+        buscador: `${p?.buscador ?? ""}`.trim(),
+    };
+
+    const { error, data } = await supabase.rpc("buscarsubniveles", payload);
     if (error) {
         Swal.fire({
             icon: "error",

@@ -9,30 +9,8 @@ import {
 
 export const useEditorialesStore = create((set, get) => ({
   buscador: "",
-  setBuscador: async (p) => {
+  setBuscador: (p) => {
     set({ buscador: p });
-
-    const trimmedValue = p?.trim?.() ?? "";
-
-    if (!trimmedValue) {
-      const { parametros } = get();
-
-      if (parametros && Object.keys(parametros).length > 0) {
-        const response = await mostrarEditoriales(parametros);
-        const currentValue = get().buscador?.trim?.() ?? "";
-
-        if (currentValue) {
-          return;
-        }
-
-        const nextData = response ?? [];
-
-        set({
-          dataeditoriales: nextData,
-          editorialesitemselect: nextData?.[0] ?? null,
-        });
-      }
-    }
   },
 
   dataeditoriales: [],
@@ -68,7 +46,12 @@ export const useEditorialesStore = create((set, get) => ({
   },
 
   buscareditoriales: async (p) => {
-    const response = await buscarEditoriales(p);
+    const payload = {
+      id_empresa: p?.id_empresa,
+      buscador: `${p?.buscador ?? ""}`.trim(),
+    };
+
+    const response = await buscarEditoriales(payload);
     set({ dataeditoriales: response });
     return response;
   },

@@ -22,7 +22,7 @@ export function Editoriales() {
                 return mostrareditoriales(payload);
             }
 
-            return buscareditoriales({ ...payload, descripcion: trimmedBuscador });
+            return buscareditoriales({ ...payload, buscador: trimmedBuscador });
         },
         enabled: !!empresaId,
         refetchOnWindowFocus: false,
