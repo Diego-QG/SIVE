@@ -64,6 +64,7 @@ export const useCursosStore = create((set, get) => ({
     }));
 
     set({ datacursos: nextData });
+    set({ cursositemselect: nextData?.[0] ?? null });
     return nextData;
   },
 }));

@@ -15,34 +15,52 @@ export function TipoContenidos() {
     const buscador = useTipoContenidosStore((state) => state.buscador);
     const trimmedBuscador = buscador?.trim?.() ?? "";
 
-    const { isLoading, error } = useQuery({
-        queryKey: ["mostrar tipocontenidos", empresaId, trimmedBuscador],
-        queryFn: async () => {
-            const payload = { _id_empresa: empresaId };
-            if (trimmedBuscador) {
-                return buscartipocontenidos({ buscador: trimmedBuscador, _id_empresa: empresaId });
-            }
+    const shouldSearch = trimmedBuscador.length > 0;
 
-            return mostrartipocontenidos(payload);
-        },
-        enabled: !!empresaId,
+    const {
+        isLoading: isLoadingTipoContenidos,
+        error,
+    } = useQuery({
+        queryKey: ["mostrar tipocontenidos", empresaId],
+        queryFn: () => mostrartipocontenidos({ _id_empresa: empresaId }),
+        enabled: !!empresaId && !shouldSearch,
         refetchOnWindowFocus: false,
         staleTime: 60_000,
         placeholderData: (previousData) => previousData,
     });
 
-    useQuery({
+    const {
+        isLoading: isLoadingBuscarTipoContenidos,
+        error: errorBuscarTipoContenidos,
+    } = useQuery({
+        queryKey: ["buscar tipocontenidos", empresaId, trimmedBuscador],
+        queryFn: () =>
+            buscartipocontenidos({
+                buscador: trimmedBuscador,
+                _id_empresa: empresaId,
+            }),
+        enabled: !!empresaId && shouldSearch,
+        refetchOnWindowFocus: false,
+        staleTime: 60_000,
+        placeholderData: (previousData) => previousData,
+    });
+
+    const {
+        isLoading: isLoadingFamiliaContenidos,
+        error: errorFamiliaContenidos,
+    } = useQuery({
         queryKey: ["mostrar familiacontenidos"],
         queryFn: () => mostrarfamiliacontenidos(),
         refetchOnWindowFocus: false,
-    })
+    });
 
-    if (isLoading) {
+    if (isLoadingTipoContenidos || isLoadingBuscarTipoContenidos || isLoadingFamiliaContenidos) {
         return(<Spinner1 />)
     }
 
-    if (error) {
-        return <span>Error al cargar los tipocontenidos</span>;
+    const queryError = error ?? errorBuscarTipoContenidos ?? errorFamiliaContenidos;
+    if (queryError) {
+        return <span>Error al cargar los tipocontenidos {queryError.message}</span>;
     }
 
     return <TipoContenidosTemplate />;

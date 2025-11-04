@@ -52,7 +52,10 @@ export const useEditorialesStore = create((set, get) => ({
     };
 
     const response = await buscarEditoriales(payload);
-    set({ dataeditoriales: response });
-    return response;
+    const nextData = response ?? [];
+
+    set({ dataeditoriales: nextData });
+    set({ editorialesitemselect: nextData?.[0] ?? null });
+    return nextData;
   },
 }));

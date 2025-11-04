@@ -13,39 +13,45 @@ export function Cursos() {
     const buscador = useCursosStore((state) => state.buscador);
     const trimmedBuscador = buscador?.trim?.() ?? "";
 
-    const { isLoading, error } = useQuery({
-        queryKey: ["mostrar cursos", trimmedBuscador],
-        queryFn: async () => {
-            if (trimmedBuscador) {
-                return buscarcursos({ buscador: trimmedBuscador });
-            }
+    const shouldSearch = trimmedBuscador.length > 0;
 
-            return mostrarcursos();
-        },
+    const {
+        isLoading: isLoadingCursos,
+        error,
+    } = useQuery({
+        queryKey: ["mostrar cursos"],
+        queryFn: () => mostrarcursos(),
+        enabled: !shouldSearch,
         refetchOnWindowFocus: false,
         staleTime: 60_000,
         placeholderData: (previousData) => previousData,
     });
 
-    useQuery({
+    const {
+        isLoading: isLoadingBuscarCursos,
+        error: errorBuscarCursos,
+    } = useQuery({
+        queryKey: ["buscar cursos", trimmedBuscador],
+        queryFn: () => buscarcursos({ buscador: trimmedBuscador }),
+        enabled: shouldSearch,
+        refetchOnWindowFocus: false,
+        staleTime: 60_000,
+        placeholderData: (previousData) => previousData,
+    });
+
+    const { isLoading: isLoadingNiveles } = useQuery({
         queryKey: ["mostrar niveles"],
         queryFn: () => mostrarniveles(),
         refetchOnWindowFocus: false,
-    })
+    });
 
-    useQuery({
-        queryKey: ["mostrar cursos"],
-        queryFn: () => mostrarcursos(),
-        refetchOnWindowFocus: false,
-    })
-
-
-    if (isLoading) {
+    if (isLoadingCursos || isLoadingBuscarCursos || isLoadingNiveles) {
         return(<Spinner1 />)
     }
 
-    if (error) {
-        return <span>Error al cargar los cursos {error.message} </span>;
+    const queryError = error ?? errorBuscarCursos;
+    if (queryError) {
+        return <span>Error al cargar los cursos {queryError.message} </span>;
     }
 
     return <CursosTemplate />;

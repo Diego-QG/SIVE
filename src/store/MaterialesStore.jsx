@@ -69,6 +69,7 @@ export const useMaterialesStore = create((set, get) => ({
     }));
 
     set({ datamateriales: nextData });
+    set({ materialesitemselect: nextData?.[0] ?? null });
     return nextData;
   },
 }));

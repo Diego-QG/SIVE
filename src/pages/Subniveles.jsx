@@ -15,39 +15,58 @@ export function Subniveles() {
     const buscador = useSubnivelesStore((state) => state.buscador);
     const trimmedBuscador = buscador?.trim?.() ?? "";
 
-    const { isLoading, error } = useQuery({
-        queryKey: ["mostrar subniveles", trimmedBuscador],
-        queryFn: async () => {
-            if (trimmedBuscador) {
-                return buscarsubniveles({ buscador: trimmedBuscador });
-            }
+    const shouldSearch = trimmedBuscador.length > 0;
 
-            return mostrarsubniveles();
-        },
+    const {
+        isLoading: isLoadingSubniveles,
+        error: errorSubniveles,
+    } = useQuery({
+        queryKey: ["mostrar subniveles"],
+        queryFn: () => mostrarsubniveles(),
+        enabled: !shouldSearch,
         refetchOnWindowFocus: false,
         staleTime: 60_000,
         placeholderData: (previousData) => previousData,
     });
 
-    useQuery({
+    const {
+        isLoading: isLoadingBuscarSubniveles,
+        error: errorBuscarSubniveles,
+    } = useQuery({
+        queryKey: ["buscar subniveles", trimmedBuscador],
+        queryFn: () => buscarsubniveles({ buscador: trimmedBuscador }),
+        enabled: shouldSearch,
+        refetchOnWindowFocus: false,
+        staleTime: 60_000,
+        placeholderData: (previousData) => previousData,
+    });
+
+    const {
+        isLoading: isLoadingNiveles,
+        error: errorNiveles,
+    } = useQuery({
         queryKey: ["mostrar niveles"],
         queryFn: () => mostrarniveles(),
         refetchOnWindowFocus: false,
-    })
+    });
 
-    useQuery({
+    const {
+        isLoading: isLoadingTiposSubniveles,
+        error: errorTiposSubniveles,
+    } = useQuery({
         queryKey: ["mostrar tipos de subniveles"],
         queryFn: () => mostrartiposubniveles(),
         refetchOnWindowFocus: false,
-    })
+    });
 
 
-    if (isLoading) {
+    if (isLoadingSubniveles || isLoadingBuscarSubniveles || isLoadingNiveles || isLoadingTiposSubniveles) {
         return(<Spinner1 />)
     }
 
-    if (error) {
-        return <span>Error al cargar las subniveles</span>;
+    const queryError = errorSubniveles ?? errorBuscarSubniveles ?? errorNiveles ?? errorTiposSubniveles;
+    if (queryError) {
+        return <span>Error al cargar las subniveles {queryError.message}</span>;
     }
 
     return <SubnivelesTemplate />;

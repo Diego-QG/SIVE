@@ -64,6 +64,7 @@ export const useSubnivelesStore = create((set, get) => ({
     }));
 
     set({ datasubniveles: nextData });
+    set({ subnivelesitemselect: nextData?.[0] ?? null });
     return nextData;
   },
 }));

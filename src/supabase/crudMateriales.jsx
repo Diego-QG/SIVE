@@ -64,7 +64,7 @@ export async function buscarMateriales(p) {
         payload._id_empresa = p._id_empresa;
     }
 
-    const { error, data } = await supabase.rpc("buscarmateriales", payload);
+    const { error, data } = await fetchAllFromRpc("buscarmateriales_editorial", payload);
     if (error) {
         Swal.fire({
             icon: "error",

@@ -55,7 +55,10 @@ export const useTipoContenidosStore = create((set, get) => ({
     }
 
     const response = await buscarTipoContenidos(payload);
-    set({ datatipocontenidos: response });
-    return response;
+    const nextData = response ?? [];
+
+    set({ datatipocontenidos: nextData });
+    set({ tipocontenidositemselect: nextData?.[0] ?? null });
+    return nextData;
   },
 }));
