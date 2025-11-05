@@ -7,44 +7,30 @@ import {
 } from "../index";
 
 export function Materiales() {
-  const empresaId = useEmpresaStore((state) => state.dataempresa?.id);
+  const { dataempresa } = useEmpresaStore();
   const { mostrarmateriales, buscarmateriales, buscador } = useMaterialesStore();
 
-  const trimmedBuscador = buscador?.trim?.() ?? "";
-  const shouldSearch = trimmedBuscador.length > 0;
-
-  const {
-    isLoading: isLoadingMateriales,
-    error: errorMateriales,
-  } = useQuery({
-    queryKey: ["mostrar materiales", empresaId],
-    queryFn: () => mostrarmateriales({ _id_empresa: empresaId }),
-    enabled: !!empresaId && !shouldSearch,
+  const { isLoading, error } = useQuery({
+    queryKey: ["mostrar materiales", dataempresa?.id],
+    queryFn: () => mostrarmateriales({ _id_empresa: dataempresa?.id }),
+    enabled: !!dataempresa,
     refetchOnWindowFocus: false,
-    placeholderData: (previousData) => previousData,
   });
 
-  const {
-    isLoading: isLoadingBuscarMateriales,
-    error: errorBuscarMateriales,
-  } = useQuery({
-    queryKey: ["buscar materiales", empresaId, trimmedBuscador],
+  useQuery({
+    queryKey: ["buscar materiales", dataempresa?.id, buscador],
     queryFn: () =>
-      buscarmateriales({ buscador: trimmedBuscador, _id_empresa: empresaId }),
-    enabled: !!empresaId && shouldSearch,
+      buscarmateriales({ buscador, _id_empresa: dataempresa?.id }),
+    enabled: !!dataempresa,
     refetchOnWindowFocus: false,
-    placeholderData: (previousData) => previousData,
   });
-
-  const isLoading = isLoadingMateriales || isLoadingBuscarMateriales;
-  const error = errorMateriales ?? errorBuscarMateriales;
 
   if (isLoading) {
     return <Spinner1 />;
   }
 
   if (error) {
-    return <span>Error al cargar los materiales {error.message}</span>;
+    return <span>error...</span>;
   }
 
   return <MaterialesTemplate />;

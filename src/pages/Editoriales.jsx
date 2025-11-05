@@ -7,49 +7,33 @@ import {
 } from "../index";
 
 export function Editoriales() {
-    const empresaId = useEmpresaStore((state) => state.dataempresa?.id);
-    const mostrareditoriales = useEditorialesStore((state) => state.mostrareditoriales);
-    const buscareditoriales = useEditorialesStore((state) => state.buscareditoriales);
-    const buscador = useEditorialesStore((state) => state.buscador);
-    const trimmedBuscador = buscador?.trim?.() ?? "";
+    const { dataempresa } = useEmpresaStore();
+    const { mostrareditoriales, buscareditoriales, buscador } = useEditorialesStore();
 
-    const shouldSearch = trimmedBuscador.length > 0;
-
-    const {
-        isLoading: isLoadingEditoriales,
-        error,
-    } = useQuery({
-        queryKey: ["editoriales", empresaId],
-        queryFn: () => mostrareditoriales({ id_empresa: empresaId }),
-        enabled: !!empresaId && !shouldSearch,
+    const { isLoading, error } = useQuery({
+        queryKey: ["editoriales", dataempresa?.id],
+        queryFn: () => mostrareditoriales({ id_empresa: dataempresa?.id }),
+        enabled: !!dataempresa,
         refetchOnWindowFocus: false,
-        staleTime: 60_000,
-        placeholderData: (previousData) => previousData,
     });
 
-    const {
-        isLoading: isLoadingBuscarEditoriales,
-        error: errorBuscarEditoriales,
-    } = useQuery({
-        queryKey: ["buscar editoriales", empresaId, trimmedBuscador],
+    useQuery({
+        queryKey: ["buscar editoriales", dataempresa?.id, buscador],
         queryFn: () =>
             buscareditoriales({
-                id_empresa: empresaId,
-                buscador: trimmedBuscador,
+                id_empresa: dataempresa?.id,
+                buscador,
             }),
-        enabled: !!empresaId && shouldSearch,
+        enabled: !!dataempresa,
         refetchOnWindowFocus: false,
-        staleTime: 60_000,
-        placeholderData: (previousData) => previousData,
     });
 
-    if (isLoadingEditoriales || isLoadingBuscarEditoriales) {
-        return(<Spinner1 />)
+    if (isLoading) {
+        return <Spinner1 />;
     }
 
-    const queryError = error ?? errorBuscarEditoriales;
-    if (queryError) {
-        return <span>Error al cargar las editoriales {queryError.message}</span>;
+    if (error) {
+        return <span>error...</span>;
     }
 
     return <EditorialesTemplate />;

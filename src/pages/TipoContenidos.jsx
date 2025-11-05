@@ -8,41 +8,26 @@ import {
 import { useFamiliaContenidosStore } from "../store/FamiliaContenidosStore";
 
 export function TipoContenidos() {
-    const empresaId = useEmpresaStore((state) => state.dataempresa?.id);
-    const mostrartipocontenidos = useTipoContenidosStore((state) => state.mostrartipocontenidos);
+    const { dataempresa } = useEmpresaStore();
+    const { mostrartipocontenidos, buscartipocontenidos, buscador } = useTipoContenidosStore();
     const { mostrarfamiliacontenidos } = useFamiliaContenidosStore();
-    const buscartipocontenidos = useTipoContenidosStore((state) => state.buscartipocontenidos);
-    const buscador = useTipoContenidosStore((state) => state.buscador);
-    const trimmedBuscador = buscador?.trim?.() ?? "";
 
-    const shouldSearch = trimmedBuscador.length > 0;
-
-    const {
-        isLoading: isLoadingTipoContenidos,
-        error,
-    } = useQuery({
-        queryKey: ["mostrar tipocontenidos", empresaId],
-        queryFn: () => mostrartipocontenidos({ _id_empresa: empresaId }),
-        enabled: !!empresaId && !shouldSearch,
+    const { isLoading, error } = useQuery({
+        queryKey: ["mostrar tipocontenidos", dataempresa?.id],
+        queryFn: () => mostrartipocontenidos({ _id_empresa: dataempresa?.id }),
+        enabled: !!dataempresa,
         refetchOnWindowFocus: false,
-        staleTime: 60_000,
-        placeholderData: (previousData) => previousData,
     });
 
-    const {
-        isLoading: isLoadingBuscarTipoContenidos,
-        error: errorBuscarTipoContenidos,
-    } = useQuery({
-        queryKey: ["buscar tipocontenidos", empresaId, trimmedBuscador],
+    useQuery({
+        queryKey: ["buscar tipocontenidos", dataempresa?.id, buscador],
         queryFn: () =>
             buscartipocontenidos({
-                buscador: trimmedBuscador,
-                _id_empresa: empresaId,
+                buscador,
+                _id_empresa: dataempresa?.id,
             }),
-        enabled: !!empresaId && shouldSearch,
+        enabled: !!dataempresa,
         refetchOnWindowFocus: false,
-        staleTime: 60_000,
-        placeholderData: (previousData) => previousData,
     });
 
     const {
@@ -54,13 +39,12 @@ export function TipoContenidos() {
         refetchOnWindowFocus: false,
     });
 
-    if (isLoadingTipoContenidos || isLoadingBuscarTipoContenidos || isLoadingFamiliaContenidos) {
-        return(<Spinner1 />)
+    if (isLoading || isLoadingFamiliaContenidos) {
+        return <Spinner1 />;
     }
 
-    const queryError = error ?? errorBuscarTipoContenidos ?? errorFamiliaContenidos;
-    if (queryError) {
-        return <span>Error al cargar los tipocontenidos {queryError.message}</span>;
+    if (error || errorFamiliaContenidos) {
+        return <span>error...</span>;
     }
 
     return <TipoContenidosTemplate />;

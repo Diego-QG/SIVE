@@ -53,7 +53,9 @@ export function MaterialesTemplate() {
                 />
             </section>
             <section className="area2">
-                <Buscador setBuscador={setBuscador} />
+                <div className="buscador-materiales">
+                    <Buscador setBuscador={setBuscador} />
+                </div>
             </section>
             <section className="main">
                 {isExploding && <ConfettiExplosion />}
@@ -112,6 +114,12 @@ const Container = styled.div`
     display: flex;
     justify-content: end;
     align-items: center;
+    .buscador-materiales {
+      width: clamp(260px, 45vw, 520px);
+    }
+    .buscador-materiales > div {
+      width: 100%;
+    }
   }
   .main {
     grid-area: main;
