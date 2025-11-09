@@ -1,11 +1,31 @@
 import styled from "styled-components";
-import { Btn1, Footer, InputText2, Linea, Title, useAuthStore } from "../../index";
+import {
+  Btn1,
+  Footer,
+  InputText2,
+  Linea,
+  Title,
+  useAuthStore,
+} from "../../index";
 import { v } from "../../styles/variables";
 import { Device } from "../../styles/breakpoints";
+import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export function LoginTemplate() {
-
-  const {loginGoogle, cerrarSesion} = useAuthStore()
+  const { loginGoogle, cerrarSesion, loginUsuario } = useAuthStore();
+  const { register, handleSubmit } = useForm();
+  const { mutate } = useMutation({
+    mutationKey: ["iniciar con email"],
+    mutationFn: loginUsuario,
+    onError: (error) => {
+      toast.error(`Error: ${error.message}`);
+    },
+  });
+  const manejadorEmailSesion = (data) => {
+    mutate({email: data.email, password:data.password})
+  }
 
   return (
     <Container>
@@ -15,9 +35,14 @@ export function LoginTemplate() {
           <span>R&H COMPAÑÍA PROVEEDORA DE BIENES Y SERVICIOS S. A. C.</span>
         </ContentLogo>
         <Title $paddingbottom="20px">Ingresar</Title>
-        <form>
+        <form onSubmit={handleSubmit(manejadorEmailSesion)}>
           <InputText2>
-            <input className="form__field" placeholder="Usuario" type="text" />
+            <input 
+              className="form__field" 
+              placeholder="Usuario" 
+              type="text"
+              {...register("email", {required: true})} 
+              />
           </InputText2>
 
           <InputText2>
@@ -25,6 +50,7 @@ export function LoginTemplate() {
               className="form__field"
               placeholder="Contraseña"
               type="password"
+              {...register("password", { required: true })}
             />
           </InputText2>
 
@@ -40,7 +66,12 @@ export function LoginTemplate() {
           <span>O</span>
         </Linea>
 
-        <Btn1 funcion={loginGoogle} titulo="Google" bgcolor="#fff" icono={<v.iconogoogle />} />
+        <Btn1
+          funcion={loginGoogle}
+          titulo="Google"
+          bgcolor="#fff"
+          icono={<v.iconogoogle />}
+        />
       </div>
 
       <Footer />
@@ -75,12 +106,12 @@ const ContentLogo = styled.section`
   align-items: center;
   justify-content: center;
   margin: 20px;
-  span{
+  span {
     font-weight: 700;
     margin-left: 30px;
     text-align: justify;
   }
-  img{
+  img {
     width: 10%;
   }
 `;

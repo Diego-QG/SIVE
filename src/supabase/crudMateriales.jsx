@@ -56,15 +56,10 @@ export async function mostrarMateriales(p) {
 }
 
 export async function buscarMateriales(p) {
-    const payload = {
-        buscador: `${p?.buscador ?? ""}`.trim(),
-    };
-
-    if (p?._id_empresa !== undefined) {
-        payload._id_empresa = p._id_empresa;
-    }
-
-    const { error, data } = await fetchAllFromRpc("buscarmateriales_editorial", payload);
+    const { data, error } = await fetchAllFromRpc("buscarmateriales_editorial", {
+        _id_empresa: p._id_empresa,
+        buscador: p.buscador,
+    });
     if (error) {
         Swal.fire({
             icon: "error",

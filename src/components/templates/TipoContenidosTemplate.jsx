@@ -10,6 +10,7 @@ import {
 import { v } from "../../styles/variables";
 import { useState } from "react";
 import ConfettiExplosion from "react-confetti-explosion";
+import { useNavigate } from "react-router-dom";
 
 export function TipoContenidosTemplate() {
     const [openRegistro, setOpenRegistro] = useState(false);
@@ -17,6 +18,11 @@ export function TipoContenidosTemplate() {
     const [accion, setAccion] = useState("");
     const [dataSelect, setDataSelect] = useState([]);
     const [isExploding, setIsExploding] = useState(false);
+    const navigate = useNavigate();
+
+    const handleBack = () => {
+        navigate("/herramientas");
+    };
 
     function nuevoRegistro() {
         setOpenRegistro(!openRegistro);
@@ -35,6 +41,9 @@ export function TipoContenidosTemplate() {
                 />
             )}
             <section className="area1">
+                <button type="button" className="back-button" onClick={handleBack}>
+                    <v.iconoflechaizquierda />
+                </button>
                 <Title>Tipo Contenidos</Title>
                 <Btn1
                     funcion={nuevoRegistro}
@@ -70,6 +79,29 @@ const Container = styled.div`
     justify-content: end;
     align-items: center;
     gap: 20px;
+    .back-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 16px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid ${v.colorPrincipal};
+      background-color: transparent;
+      color: ${v.colorPrincipal};
+      font-size: 20px;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .back-button:hover {
+      background-color: ${v.colorPrincipal};
+      color: #000;
+    }
+    ${Title} {
+      margin-left: auto;
+      text-align: right;
+    }
   }
   .area2 {
     grid-area: area2;

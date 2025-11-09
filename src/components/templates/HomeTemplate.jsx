@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import {ToggleTema, useAuthStore, UserAuth} from "../../index"
+import {Reloj, ToggleTema, useAuthStore, UserAuth} from "../../index"
 
 export function HomeTemplate() {
 
@@ -10,6 +10,9 @@ export function HomeTemplate() {
         <Container>
             <span>Home Template</span>
             <button onClick={cerrarSesion}>Cerrar</button>
+            <article className="contentfecha area3">
+                <Reloj />
+            </article>
             <ToggleWrapper>
                 <ToggleTema />
             </ToggleWrapper>

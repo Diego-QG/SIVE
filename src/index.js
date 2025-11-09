@@ -11,6 +11,7 @@ export * from './components/moleculas/SwitchHamburguesa';
 export * from './components/organismos/Buscador';
 export * from './components/organismos/Footer';
 export * from './components/organismos/ListaDesplegable';
+export * from './components/organismos/Reloj';
 export * from './components/organismos/Selector';
 export * from './components/organismos/Switch1';
 export * from './components/organismos/ToggleTema';

@@ -30,15 +30,10 @@ export async function mostrarTipoContenidos(p) {
 }
 
 export async function buscarTipoContenidos(p) {
-    const payload = {
-        buscador: `${p?.buscador ?? ""}`.trim(),
-    };
-
-    if (p?._id_empresa !== undefined) {
-        payload._id_empresa = p._id_empresa;
-    }
-
-    const { error, data } = await supabase.rpc("buscartipocontenidos", payload);
+    const { data, error } = await supabase.rpc("buscartipocontenidos", {
+            _id_empresa: p._id_empresa,
+            buscador: p.buscador,
+        });
         if (error) {
             Swal.fire({
                 icon: "error",

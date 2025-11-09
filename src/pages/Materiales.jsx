@@ -13,7 +13,7 @@ export function Materiales() {
   const { isLoading, error } = useQuery({
     queryKey: ["mostrar materiales", dataempresa?.id],
     queryFn: () => mostrarmateriales({ _id_empresa: dataempresa?.id }),
-    enabled: !!dataempresa,
+    enabled: !!dataempresa?.id,
     refetchOnWindowFocus: false,
   });
 
@@ -21,7 +21,7 @@ export function Materiales() {
     queryKey: ["buscar materiales", dataempresa?.id, buscador],
     queryFn: () =>
       buscarmateriales({ buscador, _id_empresa: dataempresa?.id }),
-    enabled: !!dataempresa,
+    enabled: !!dataempresa?.id,
     refetchOnWindowFocus: false,
   });
 

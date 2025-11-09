@@ -14,6 +14,24 @@ export async function mostrarUsuarios(p) {
 
 export async function insertarAdmin(p) {
     await supabase.from(tabla).insert(p);
+    if(error){
+        throw new Error(error.message)
+    }
+}
+
+export async function insertarUsuarios(p) {
+    const {error, data} = await supabase.from(tabla).insert(p);
+    if(error){
+        throw new Error(error.message)
+    }
+    return data
+}
+
+export async function insertarCredencialesUser(p) {
+    const {data, error} = await supabase.rpc("crearcredencialesuser", p)
+    if(error){
+        throw new Error(error.message)
+    }
 }
 
 export async function obtenerIDAuthSupabase(){

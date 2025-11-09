@@ -15,7 +15,7 @@ export function TipoContenidos() {
     const { isLoading, error } = useQuery({
         queryKey: ["mostrar tipocontenidos", dataempresa?.id],
         queryFn: () => mostrartipocontenidos({ _id_empresa: dataempresa?.id }),
-        enabled: !!dataempresa,
+        enabled: !!dataempresa?.id,
         refetchOnWindowFocus: false,
     });
 
@@ -26,7 +26,7 @@ export function TipoContenidos() {
                 buscador,
                 _id_empresa: dataempresa?.id,
             }),
-        enabled: !!dataempresa,
+        enabled: !!dataempresa?.id,
         refetchOnWindowFocus: false,
     });
 
