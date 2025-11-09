@@ -12,15 +12,21 @@ import { Device } from "../../styles/breakpoints";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export function LoginTemplate() {
   const { loginGoogle, cerrarSesion, loginUsuario } = useAuthStore();
   const { register, handleSubmit } = useForm();
+  const navigate = useNavigate();
   const { mutate } = useMutation({
     mutationKey: ["iniciar con email"],
     mutationFn: loginUsuario,
     onError: (error) => {
       toast.error(`Error: ${error.message}`);
+    },
+    onSuccess: () => {
+      toast.success("Inicio de sesión exitoso");
+      navigate("/");
     },
   });
   const manejadorEmailSesion = (data) => {
