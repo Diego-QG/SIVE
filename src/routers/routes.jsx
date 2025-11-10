@@ -6,57 +6,107 @@ import {
   Home,
   Login,
   ProtectedRoute,
-  Spinner1,
   Subniveles,
-  useEmpresaStore,
-  UserAuth,
-  useUsuariosStore,
   TipoContenidos,
   Materiales,
   POS,
+  Layout,
 } from "../index";
-import { useQuery } from "@tanstack/react-query";
 
 export function MyRoutes() {
-  const { user } = UserAuth();
-  const { datausuarios, mostrarusuarios } = useUsuariosStore();
-  const { mostrarempresa, dataempresa } = useEmpresaStore();
-  const usuarioId = Array.isArray(datausuarios)
-    ? datausuarios?.[0]?.id
-    : datausuarios?.id;
-  const { isLoading, error } = useQuery({
-    queryKey: ["mostrar usuarios"],
-    queryFn: mostrarusuarios,
-    refetchOnWindowFocus: false,
-  });
-  const { data: dtempresa } = useQuery({
-    queryKey: ["mostrar empresa", usuarioId],
-    queryFn: () => mostrarempresa({ _id_usuario: usuarioId }),
-    enabled: !!usuarioId,
-    refetchOnWindowFocus: false,
-  });
-
-  if (isLoading) {
-    return <Spinner1 />;
-  }
-  if (error) {
-    return <div>Error al cargar los usuarios</div>;
-  }
 
   return (
     <Routes>
-      <Route element={<ProtectedRoute user={user} redirectTo="/login" />}>
-        <Route path="/" element={<Home />}></Route>
-        <Route path="/pos" element={<POS />}></Route>
-        <Route path="/herramientas" element={<Herramientas />}></Route>
-        <Route path="/herramientas/editoriales" element={<Editoriales />}></Route>
-        <Route path="/herramientas/subniveles" element={<Subniveles />}></Route>
-        <Route path="/herramientas/cursos" element={<Cursos />}></Route>
-        <Route path="/herramientas/tipocontenidos" element={<TipoContenidos />}></Route>
-        <Route path="/herramientas/materiales" element={<Materiales />}></Route>
-      </Route>
 
-      <Route path="/login" element={<Login />}></Route>
+      <Route
+        path="/login"
+        element={
+          <ProtectedRoute accessBy="non-authenticated">
+            <Login />
+          </ProtectedRoute>
+        }
+      ></Route>
+
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <Home />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+
+        <Route
+        path="/pos"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <POS />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+
+        <Route
+        path="/herramientas"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <Herramientas />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+
+        <Route
+        path="/herramientas/editoriales"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <Editoriales />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+
+        <Route
+        path="/herramientas/subniveles"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <Subniveles />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+
+        <Route
+        path="/herramientas/cursos"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <Cursos />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+
+        <Route
+        path="/herramientas/tipocontenidos"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <TipoContenidos />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+
+        <Route
+        path="/herramientas/materiales"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <Materiales />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+      
     </Routes>
   );
 }

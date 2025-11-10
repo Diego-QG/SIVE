@@ -42,6 +42,7 @@ export * from './components/templates/SubnivelesTemplate';
 export * from './components/templates/TipoContenidosTemplate';
 export * from './context/AuthContent';
 export * from './hooks/GenerarCodigo';
+export * from './hooks/Layout';
 export * from './hooks/ProtectedRoute';
 export * from './main';
 export * from './pages/Cursos';

@@ -61,6 +61,7 @@ export function LoginTemplate() {
           </InputText2>
 
           <Btn1
+            border="2px"
             titulo="INGRESAR"
             bgcolor="#1CB0F6"
             color="255,255,255"
@@ -68,16 +69,6 @@ export function LoginTemplate() {
           />
         </form>
 
-        <Linea>
-          <span>O</span>
-        </Linea>
-
-        <Btn1
-          funcion={loginGoogle}
-          titulo="Google"
-          bgcolor="#fff"
-          icono={<v.iconogoogle />}
-        />
       </div>
 
       <Footer />
@@ -104,6 +95,11 @@ const Container = styled.div`
     @media ${Device.tablet} {
       width: 400px;
     }
+    form{
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
   }
 `;
 
@@ -118,6 +114,6 @@ const ContentLogo = styled.section`
     text-align: justify;
   }
   img {
-    width: 10%;
+    width: 15%;
   }
 `;
