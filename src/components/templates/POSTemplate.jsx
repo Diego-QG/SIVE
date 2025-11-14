@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import {
-  Buscador,
+  BuscadorPOS,
   TablaPOS,
   Title,
   useVentasStore,
@@ -47,7 +47,7 @@ export function POSTemplate() {
         </ActionButton>
       </HeroSection>
       <ControlsRow>
-        <Buscador setBuscador={setBuscador} />
+        <BuscadorPOS setBuscador={setBuscador} />
       </ControlsRow>
       <section className="main">
         <TablaPOS data={filteredVentas} />

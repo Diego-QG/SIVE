@@ -11,64 +11,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { FaArrowsAltV } from "react-icons/fa";
-const estadoPrioridad = [
-  "registro_estado",
-  "supervision_estado",
-  "evaluacion_estado",
-];
+import { obtenerEstilosEstado } from "../../../utils/posEstadosConfig";
 
-const estadoColores = {
-  registro_estado: {
-    borrador: {
-      background: "rgba(148, 163, 184, 0.35)",
-      accent: "rgba(100, 116, 139, 0.75)",
-    },
-  },
-  supervision_estado: {
-    pendiente: {
-      background: "rgba(251, 191, 36, 0.18)",
-      accent: "rgba(217, 119, 6, 0.7)",
-    },
-    aceptado: {
-      background: "rgba(34, 197, 94, 0.25)",
-      accent: "rgba(21, 128, 61, 0.8)",
-    },
-    rechazado: {
-      background: "rgba(248, 113, 113, 0.28)",
-      accent: "rgba(185, 28, 28, 0.85)",
-    },
-  },
-  evaluacion_estado: {
-    pendiente_evidencia: {
-      background: "rgba(251, 191, 36, 0.15)",
-      accent: "rgba(202, 138, 4, 0.7)",
-    },
-    en_evaluacion: {
-      background: "rgba(59, 130, 246, 0.18)",
-      accent: "rgba(37, 99, 235, 0.75)",
-    },
-    valido: {
-      background: "rgba(74, 222, 128, 0.23)",
-      accent: "rgba(22, 163, 74, 0.8)",
-    },
-    correccion: {
-      background: "rgba(249, 115, 22, 0.2)",
-      accent: "rgba(194, 65, 12, 0.85)",
-    },
-  },
-};
-
-const obtenerEstilosEstado = (rowData = {}) => {
-  for (const key of estadoPrioridad) {
-    const estado = rowData[key];
-    if (!estado) continue;
-    const estilos = estadoColores[key]?.[estado];
-    if (estilos) {
-      return estilos;
-    }
-  }
-  return null;
-};
 const obtenerPartesFecha = (valor) => {
   if (!valor) {
     return { fecha: "--/--/--", hora: "--:--" };
