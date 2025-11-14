@@ -63,9 +63,11 @@ const supervisionColors = {
     textLight: "#b91c1c",
     textDark: "#fecaca",
   }),
+  __fallback: fallbackPalette,
 };
 
 const evaluacionColors = {
+  pendiente: fallbackPalette,
   pendiente_evidencia: createStatePalette("#fbbf24", {
     textLight: "#b45309",
     textDark: "#fed7aa",
@@ -81,6 +83,7 @@ const evaluacionColors = {
     textLight: "#be123c",
     textDark: "#fecdd3",
   }),
+  __fallback: fallbackPalette,
 };
 
 const estadosConfig = (
