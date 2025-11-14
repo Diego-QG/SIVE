@@ -1,68 +1,55 @@
 import styled from "styled-components";
 import {
-    Btn1,
     Buscador,
-    RegistrarCursos,
     TablaPOS,
     Title,
-    useCursosStore,
+    useVentasStore,
 } from "../../index";
 import { v } from "../../styles/variables";
-import { useState } from "react";
-import ConfettiExplosion from "react-confetti-explosion";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function POSTemplate() {
-    const [openRegistro, setOpenRegistro] = useState(false);
-    const { datacursos, setBuscador } = useCursosStore();
-    const [accion, setAccion] = useState("");
-    const [dataSelect, setDataSelect] = useState([]);
-    const [isExploding, setIsExploding] = useState(false);
+    const { dataventas, buscador, setBuscador } = useVentasStore();
     const navigate = useNavigate();
 
     const handleBack = () => {
         navigate("/herramientas");
     };
 
-    function nuevoRegistro() {
-        setOpenRegistro(!openRegistro);
-        setAccion("Nuevo");
-        setDataSelect([]);
-        setIsExploding(false);
-    }
+    const filteredVentas = useMemo(() => {
+        if (!buscador) {
+            return dataventas;
+        }
+
+        const searchValue = buscador.toLowerCase();
+        return (dataventas ?? []).filter((venta) => {
+            const fieldsToSearch = [
+                venta?.fecha_str,
+                venta?.editorial,
+                venta?.nombre_docente,
+                venta?.material_resumen,
+            ];
+
+            return fieldsToSearch.some((field) =>
+                `${field ?? ""}`.toLowerCase().includes(searchValue)
+            );
+        });
+    }, [buscador, dataventas]);
 
     return (
         <Container>
-            <RegistrarCursos
-                setIsExploding={setIsExploding}
-                onClose={() => setOpenRegistro(!openRegistro)}
-                dataSelect={dataSelect}
-                accion={accion}
-                state={openRegistro}
-            />
             <section className="area1">
                 <button type="button" className="back-button" onClick={handleBack}>
                     <v.iconoflechaizquierda />
                 </button>
                 <Title>Ventas</Title>
-                <Btn1
-                    funcion={nuevoRegistro}
-                    bgcolor={v.colorPrincipal}
-                    titulo="Nueva Venta"
-                    icono={<v.iconoagregar />}
-                />
             </section>
             <section className="area2">
                 <Buscador setBuscador={setBuscador} />
             </section>
             <section className="main">
-                {isExploding && <ConfettiExplosion />}
-                <TablaPOS
-                    setdataSelect={setDataSelect}
-                    setAccion={setAccion}
-                    SetopenRegistro={setOpenRegistro}
-                    data={datacursos}
-                />
+                <TablaPOS data={filteredVentas} />
             </section>
         </Container>
     );
@@ -102,8 +89,9 @@ const Container = styled.div`
       color: #000;
     }
     ${Title} {
-      margin-left: auto;
-      text-align: right;
+      margin: 0 auto;
+      text-align: center;
+      flex: 1;
     }
   }
   .area2 {
