@@ -43,7 +43,7 @@ const Container = styled.section`
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   border-radius: 20px;
   padding: 20px;
-  box-shadow: 0 18px 28px rgba(7, 14, 24, 0.3);
+  box-shadow: none;
 
   @media (min-width: ${v.bpbart}) {
     flex-direction: row;
@@ -89,10 +89,13 @@ const LegendWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 24px;
+  justify-content: center;
+  gap: 10px 32px;
   margin-left: auto;
   font-size: 0.78rem;
-  color: rgba(${({ theme }) => theme.textRgba}, 0.7);
+  color: rgba(${({ theme }) => theme.textRgba}, 0.75);
+  text-align: center;
+  user-select: none;
 `;
 
 const LegendChip = styled.span`

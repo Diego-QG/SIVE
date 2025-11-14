@@ -36,10 +36,9 @@ export function POSTemplate() {
     <Container>
       <HeroSection>
         <div className="hero-text">
-          <Title>Ventas POS</Title>
+          <Title>Tu registro de ventas</Title>
           <p>
-            Visualiza el estado completo de cada registro POS y accede a las etapas
-            críticas en un clic.
+            Visualiza y da seguimiento a las ventas que has registrado, incluyendo su revisión y validación.
           </p>
         </div>
         <ActionButton type="button">
@@ -81,7 +80,6 @@ const HeroSection = styled.section`
   display: flex;
   flex-direction: column;
   gap: 18px;
-  box-shadow: 0 22px 36px rgba(7, 14, 24, 0.32);
   color: ${({ theme }) => theme.text};
 
   @media (min-width: ${v.bpbart}) {

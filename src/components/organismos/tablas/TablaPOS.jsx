@@ -154,14 +154,14 @@ export function TablaPOS({ data = [] }) {
       },
     },
     {
-      id: "total",
-      accessorFn: (row) => obtenerTotal(row),
+      accessorKey: "total_neto",
       header: "Total",
       meta: {
         dataTitle: "Total",
       },
-      cell: (info) => <span>{formatCurrency(info.getValue())}</span>,
+      cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
+      enableSorting: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
         const status = row.getValue(columnId);
@@ -239,7 +239,10 @@ export function TablaPOS({ data = [] }) {
           </thead>
           <tbody>
             {table.getRowModel().rows.map((item) => {
-              const estadoEstilos = obtenerEstilosEstado(item.original);
+              const isBorrador = item?.original?.estado_registro === "borrador";
+              const estadoEstilos = isBorrador
+                ? obtenerEstilosEstado(item.original)
+                : null;
               const rowClassName = estadoEstilos ? "status-colored" : undefined;
               const rowStyle = estadoEstilos
                 ? {
