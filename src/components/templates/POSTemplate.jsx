@@ -31,97 +31,6 @@ export function POSTemplate() {
     });
   }, [buscador, dataventas]);
 
-  const indicadores = useMemo(() => {
-    const data = Array.isArray(dataventas) ? dataventas : [];
-    const totalRegistros = data.length;
-    const totalMontos = data.reduce((acc, venta) => {
-      const posiblesMontos = [
-        venta?.total_general,
-        venta?.total_monto,
-        venta?.total_venta,
-        venta?.total,
-      ];
-      const monto = posiblesMontos.find(
-        (valor) => valor !== undefined && valor !== null && valor !== ""
-      );
-      const numericValue = Number(monto);
-      if (!Number.isNaN(numericValue)) {
-        return acc + numericValue;
-      }
-      return acc;
-    }, 0);
-
-    const docentesUnicos = new Set(
-      data
-        .map((venta) => venta?.nombre_docente)
-        .filter((value) => Boolean(value))
-    ).size;
-
-    const materialesUnicos = new Set(
-      data
-        .map((venta) => venta?.material_resumen)
-        .filter((value) => Boolean(value))
-    ).size;
-
-    const currencyFormatter = new Intl.NumberFormat("es-PE", {
-      style: "currency",
-      currency: "PEN",
-      minimumFractionDigits: 2,
-    });
-
-    const formattedMonto =
-      totalMontos > 0 ? currencyFormatter.format(totalMontos) : "S/ 0.00";
-    const ticketPromedio =
-      totalRegistros > 0 ? currencyFormatter.format(totalMontos / totalRegistros) : "S/ 0.00";
-
-    return [
-      {
-        id: "ventas",
-        titulo: "Ventas registradas",
-        descripcion: "Movimientos en POS",
-        valor: totalRegistros.toLocaleString("es-PE"),
-        background: "rgba(0, 174, 255, 0.12)",
-        borde: "rgba(0, 174, 255, 0.45)",
-        acento: "rgba(0, 174, 255, 0.9)",
-      },
-      {
-        id: "montos",
-        titulo: "Monto total",
-        descripcion: "Suma de importes",
-        valor: formattedMonto,
-        background: "rgba(64, 209, 149, 0.14)",
-        borde: "rgba(64, 209, 149, 0.45)",
-        acento: "rgba(64, 209, 149, 0.9)",
-      },
-      {
-        id: "ticket",
-        titulo: "Ticket promedio",
-        descripcion: "Por registro",
-        valor: ticketPromedio,
-        background: "rgba(255, 204, 92, 0.15)",
-        borde: "rgba(255, 204, 92, 0.6)",
-        acento: "rgba(255, 204, 92, 0.95)",
-      },
-      {
-        id: "materiales",
-        titulo: "Materiales únicos",
-        descripcion: "Resumenes trabajados",
-        valor: materialesUnicos.toLocaleString("es-PE"),
-        background: "rgba(180, 115, 255, 0.13)",
-        borde: "rgba(180, 115, 255, 0.55)",
-        acento: "rgba(180, 115, 255, 0.9)",
-      },
-      {
-        id: "docentes",
-        titulo: "Docentes atendidos",
-        descripcion: "Contactos únicos",
-        valor: docentesUnicos.toLocaleString("es-PE"),
-        background: "rgba(255, 120, 168, 0.15)",
-        borde: "rgba(255, 120, 168, 0.55)",
-        acento: "rgba(255, 120, 168, 0.95)",
-      },
-    ];
-  }, [dataventas]);
 
   return (
     <Container>
@@ -137,24 +46,6 @@ export function POSTemplate() {
           Registrar nueva venta
         </ActionButton>
       </HeroSection>
-      <IndicatorsGrid>
-        {indicadores.map((indicador) => (
-          <IndicatorCard
-            key={indicador.id}
-            $background={indicador.background}
-            $border={indicador.borde}
-          >
-            <IndicatorBadge $accent={indicador.acento} />
-            <div className="indicator-content">
-              <span className="indicator-label">{indicador.titulo}</span>
-              <strong className="indicator-value">{indicador.valor}</strong>
-              <span className="indicator-description">
-                {indicador.descripcion}
-              </span>
-            </div>
-          </IndicatorCard>
-        ))}
-      </IndicatorsGrid>
       <ControlsRow>
         <Buscador setBuscador={setBuscador} />
       </ControlsRow>
@@ -238,58 +129,6 @@ const ActionButton = styled.button`
   @media (min-width: ${v.bpbart}) {
     align-self: auto;
   }
-`;
-
-const IndicatorsGrid = styled.section`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-
-  @media (min-width: ${v.bpbart}) {
-    gap: 20px;
-  }
-`;
-
-const IndicatorCard = styled.article`
-  background: ${(props) => props.$background};
-  border: 1px solid ${(props) => props.$border};
-  border-radius: 20px;
-  padding: 18px;
-  display: flex;
-  gap: 14px;
-  min-height: 120px;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
-
-  .indicator-content {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .indicator-label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: rgba(${({ theme }) => theme.textRgba}, 0.78);
-  }
-
-  .indicator-value {
-    font-size: 1.5rem;
-    color: ${({ theme }) => theme.text};
-  }
-
-  .indicator-description {
-    font-size: 0.8rem;
-    color: rgba(${({ theme }) => theme.textRgba}, 0.65);
-  }
-`;
-
-const IndicatorBadge = styled.span`
-  width: 14px;
-  height: 14px;
-  margin-top: 4px;
-  border-radius: 50%;
-  background: ${(props) => props.$accent};
-  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.2);
 `;
 
 const ControlsRow = styled.section`
