@@ -1,44 +1,35 @@
 import styled from "styled-components";
-import { BsCloudUpload } from "react-icons/bs";
 import { RiShieldCheckLine } from "react-icons/ri";
 import { HiOutlineChartPie } from "react-icons/hi";
 import { PiCubeThin } from "react-icons/pi";
 
 const estadosConfig = [
   {
-    id: "sync",
-    Icon: BsCloudUpload,
-    color: "#2f855a",
-    background: "#e4f5ec",
-  },
-  {
     id: "secure",
     Icon: RiShieldCheckLine,
-    color: "#276749",
-    background: "#def7ef",
+    color: "#6b7280",
+    background: "#f3f4f6",
   },
   {
     id: "analytics",
     Icon: HiOutlineChartPie,
-    color: "#b7791f",
-    background: "#fff4df",
+    color: "#6b7280",
+    background: "#f3f4f6",
   },
   {
     id: "inventory",
     Icon: PiCubeThin,
-    color: "#2c5282",
-    background: "#e7f0fb",
+    color: "#6b7280",
+    background: "#f3f4f6",
   },
 ];
 
 export function ContentEstadosTabla({
-  onSync,
   onSecure,
   onAnalytics,
   onInventory,
 }) {
   const actions = {
-    sync: onSync,
     secure: onSecure,
     analytics: onAnalytics,
     inventory: onInventory,
@@ -72,7 +63,7 @@ const EstadoButton = styled.button`
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  border: none;
+  border: 1px solid #d1d5db;
   background-color: ${(props) => props.$background};
   color: ${(props) => props.$color};
   display: flex;

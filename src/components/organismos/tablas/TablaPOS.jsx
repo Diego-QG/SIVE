@@ -11,6 +11,101 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { FaArrowsAltV } from "react-icons/fa";
+const estadoPrioridad = [
+  "registro_estado",
+  "supervision_estado",
+  "evaluacion_estado",
+];
+
+const estadoColores = {
+  registro_estado: {
+    borrador: {
+      background: "rgba(148, 163, 184, 0.35)",
+      accent: "rgba(100, 116, 139, 0.75)",
+    },
+  },
+  supervision_estado: {
+    pendiente: {
+      background: "rgba(251, 191, 36, 0.18)",
+      accent: "rgba(217, 119, 6, 0.7)",
+    },
+    aceptado: {
+      background: "rgba(34, 197, 94, 0.25)",
+      accent: "rgba(21, 128, 61, 0.8)",
+    },
+    rechazado: {
+      background: "rgba(248, 113, 113, 0.28)",
+      accent: "rgba(185, 28, 28, 0.85)",
+    },
+  },
+  evaluacion_estado: {
+    pendiente_evidencia: {
+      background: "rgba(251, 191, 36, 0.15)",
+      accent: "rgba(202, 138, 4, 0.7)",
+    },
+    en_evaluacion: {
+      background: "rgba(59, 130, 246, 0.18)",
+      accent: "rgba(37, 99, 235, 0.75)",
+    },
+    valido: {
+      background: "rgba(74, 222, 128, 0.23)",
+      accent: "rgba(22, 163, 74, 0.8)",
+    },
+    correccion: {
+      background: "rgba(249, 115, 22, 0.2)",
+      accent: "rgba(194, 65, 12, 0.85)",
+    },
+  },
+};
+
+const obtenerEstilosEstado = (rowData = {}) => {
+  for (const key of estadoPrioridad) {
+    const estado = rowData[key];
+    if (!estado) continue;
+    const estilos = estadoColores[key]?.[estado];
+    if (estilos) {
+      return estilos;
+    }
+  }
+  return null;
+};
+const obtenerPartesFecha = (valor) => {
+  if (!valor) {
+    return { fecha: "--/--/--", hora: "--:--" };
+  }
+
+  if (typeof valor === "string") {
+    const [fechaParte, tiempoParte] = valor.trim().split(/\s+/);
+    if (fechaParte && fechaParte.includes("/")) {
+      return {
+        fecha: fechaParte,
+        hora: tiempoParte ? tiempoParte.slice(0, 5) : "--:--",
+      };
+    }
+
+    const parsed = new Date(valor);
+    if (!Number.isNaN(parsed.getTime())) {
+      const dia = String(parsed.getDate()).padStart(2, "0");
+      const mes = String(parsed.getMonth() + 1).padStart(2, "0");
+      const anio = String(parsed.getFullYear()).slice(-2);
+      const horas = String(parsed.getHours()).padStart(2, "0");
+      const minutos = String(parsed.getMinutes()).padStart(2, "0");
+      return { fecha: `${dia}/${mes}/${anio}`, hora: `${horas}:${minutos}` };
+    }
+  }
+
+  const parsed = new Date(valor);
+  if (!Number.isNaN(parsed.getTime())) {
+    const dia = String(parsed.getDate()).padStart(2, "0");
+    const mes = String(parsed.getMonth() + 1).padStart(2, "0");
+    const anio = String(parsed.getFullYear()).slice(-2);
+    const horas = String(parsed.getHours()).padStart(2, "0");
+    const minutos = String(parsed.getMinutes()).padStart(2, "0");
+    return { fecha: `${dia}/${mes}/${anio}`, hora: `${horas}:${minutos}` };
+  }
+
+  return { fecha: "--/--/--", hora: "--:--" };
+};
 export function TablaPOS({ data = [] }) {
   const tableData = Array.isArray(data) ? data : [];
   const [pagina, setPagina] = useState(1);
@@ -53,7 +148,15 @@ export function TablaPOS({ data = [] }) {
       meta: {
         dataTitle: "Fecha",
       },
-      cell: (info) => <span>{info.getValue()}</span>,
+      cell: (info) => {
+        const partes = obtenerPartesFecha(info.getValue());
+        return (
+          <FechaContent>
+            <span className="date">{partes.fecha}</span>
+            <span className="time">{partes.hora}</span>
+          </FechaContent>
+        );
+      },
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -69,6 +172,7 @@ export function TablaPOS({ data = [] }) {
       },
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
+      enableSorting: false,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
         const status = row.getValue(columnId);
@@ -83,6 +187,7 @@ export function TablaPOS({ data = [] }) {
       },
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
+      enableSorting: false,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
         const status = row.getValue(columnId);
@@ -97,6 +202,7 @@ export function TablaPOS({ data = [] }) {
       },
       cell: (info) => <span>{info.getValue()}</span>,
       enableColumnFilter: true,
+      enableSorting: false,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
         const status = row.getValue(columnId);
@@ -188,8 +294,17 @@ export function TablaPOS({ data = [] }) {
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((item) => (
-              <tr key={item.id}>
+            {table.getRowModel().rows.map((item) => {
+              const estadoEstilos = obtenerEstilosEstado(item.original);
+              const rowClassName = estadoEstilos ? "status-colored" : undefined;
+              const rowStyle = estadoEstilos
+                ? {
+                    "--row-status-bg": estadoEstilos.background,
+                    "--row-status-accent": estadoEstilos.accent,
+                  }
+                : undefined;
+              return (
+                <tr key={item.id} className={rowClassName} style={rowStyle}> 
                   {item.getVisibleCells().map((cell) => {
                     const { meta } = cell.column.columnDef;
                     const dataTitle =
@@ -212,7 +327,8 @@ export function TablaPOS({ data = [] }) {
                     );
                   })}
                 </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
         <Paginacion
@@ -325,6 +441,17 @@ const Container = styled.div`
           @media (min-width: ${v.bpbart}) {
           }
         }
+        &.status-colored {
+          background-color: var(--row-status-bg, transparent);
+          border: 1px solid var(--row-status-accent, transparent);
+          box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04),
+            inset 4px 0 0 var(--row-status-accent, transparent);
+          border-radius: 10px;
+          @media (min-width: ${v.bpbart}) {
+            border-radius: 0;
+            box-shadow: inset 5px 0 0 var(--row-status-accent, transparent);
+          }
+        }
       }
       th[scope="row"] {
         @media (min-width: ${v.bplisa}) {
@@ -370,6 +497,31 @@ const Container = styled.div`
     }
   }
 `;
+
+const FechaContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.3;
+
+  .date {
+    font-weight: 600;
+    color: ${({ theme }) => theme.text};
+  }
+
+  .time {
+    font-size: 0.85em;
+    color: rgba(${({ theme }) => theme.textRgba}, 0.7);
+  }
+
+  @media (min-width: ${v.bpbart}) {
+    align-items: center;
+    .time {
+      font-size: 0.8em;
+    }
+  }
+`;
+
 const Colorcontent = styled.div`
   justify-content: center;
   min-height: ${(props) => props.$alto};
