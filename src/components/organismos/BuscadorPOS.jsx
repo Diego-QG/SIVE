@@ -22,13 +22,11 @@ export function BuscadorPOS({ setBuscador }) {
           <LegendChip
             key={item.id}
             style={{
-              "--chip-bg": item.background,
               "--chip-accent": item.accent,
             }}
           >
             <span className="dot" />
-            <span className="chip-label">{item.label}:</span>
-            <span className="chip-desc">{item.description}</span>
+            <span className="chip-label">{item.description}</span>
           </LegendChip>
         ))}
       </LegendWrapper>
@@ -41,22 +39,18 @@ const Container = styled.section`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: linear-gradient(
-      135deg,
-      rgba(${({ theme }) => theme.textRgba}, 0.04),
-      rgba(${({ theme }) => theme.textRgba}, 0.01)
-    ),
-    ${({ theme }) => theme.bg3};
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  border-radius: 24px;
-  padding: 18px;
+  background: #10243b;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 18px 28px rgba(7, 14, 24, 0.3);
 
   @media (min-width: ${v.bpbart}) {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 28px;
-    gap: 24px;
+    padding: 22px 30px;
+    gap: 28px;
   }
 `;
 
@@ -67,14 +61,13 @@ const SearchWrapper = styled.div`
   align-items: center;
   gap: 10px;
   border-radius: 999px;
-  padding: 0 16px;
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.14);
-  background-color: rgba(${({ theme }) => theme.bodyRgba}, 0.45);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(3, 9, 18, 0.2);
 
   .icono {
     font-size: 1rem;
-    color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+    color: rgba(255, 255, 255, 0.6);
   }
 
   input {
@@ -83,46 +76,41 @@ const SearchWrapper = styled.div`
     border: 0;
     outline: none;
     background: transparent;
-    color: ${({ theme }) => theme.text};
+    color: #f7fbff;
 
     &::placeholder {
-      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+      color: rgba(247, 251, 255, 0.5);
     }
   }
 `;
 
 const LegendWrapper = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
   width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.75);
 `;
 
 const LegendChip = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: var(--chip-bg);
-  color: ${({ theme }) => theme.text};
-  font-size: 0.82rem;
-  font-weight: 500;
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+  gap: 8px;
+  color: inherit;
+  font-weight: 600;
 
   .dot {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: var(--chip-accent);
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
   }
 
   .chip-label {
-    opacity: 0.75;
-  }
-
-  .chip-desc {
-    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
   }
 `;

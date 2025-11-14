@@ -43,6 +43,7 @@ export function POSTemplate() {
           </p>
         </div>
         <ActionButton type="button">
+          <v.iconoagregar aria-hidden className="icon" />
           Registrar nueva venta
         </ActionButton>
       </HeroSection>
@@ -73,21 +74,17 @@ const Container = styled.div`
 `;
 
 const HeroSection = styled.section`
-  background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.04),
-      rgba(255, 255, 255, 0)
-    ),
-    ${({ theme }) => theme.bg6};
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  border-radius: 24px;
-  padding: 24px;
+  background: #10243b;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 28px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  box-shadow: 0 22px 36px rgba(7, 14, 24, 0.32);
 
   @media (min-width: ${v.bpbart}) {
-    padding: 32px 36px;
+    padding: 36px 42px;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
@@ -103,7 +100,7 @@ const HeroSection = styled.section`
       margin: 0;
       font-size: 1rem;
       line-height: 1.6;
-      color: rgba(${({ theme }) => theme.textRgba}, 0.82);
+      color: rgba(255, 255, 255, 0.75);
     }
   }
 `;
@@ -112,18 +109,25 @@ const ActionButton = styled.button`
   align-self: flex-start;
   border: none;
   border-radius: 999px;
-  padding: 14px 28px;
+  padding: 14px 30px;
   font-weight: 600;
   font-size: 0.95rem;
-  color: #0b1c29;
+  color: #071424;
   cursor: pointer;
-  background: linear-gradient(120deg, rgba(255, 238, 88, 0.95), rgba(0, 188, 212, 0.9));
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(120deg, #ffee58, #17e0c0);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  .icon {
+    font-size: 1rem;
+  }
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 28px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
   }
 
   @media (min-width: ${v.bpbart}) {
