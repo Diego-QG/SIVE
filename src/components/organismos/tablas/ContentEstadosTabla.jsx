@@ -115,9 +115,38 @@ const estadosConfig = (
   },
 ];
 
-const getEstadoStyles = (estado, palette, mode) => {
+const normalizeEstado = (estado) => {
+  if (typeof estado === "string") {
+    return estado.trim().toLowerCase();
+  }
+  return estado;
+};
+
+const estadoKeys = ["estado", "estatus", "status", "nombre", "name", "label"];
+
+const resolveEstadoLabel = (estado) => {
+  if (typeof estado === "string") {
+    const trimmed = estado.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  if (estado && typeof estado === "object") {
+    for (const key of estadoKeys) {
+      const value = estado[key];
+      if (typeof value === "string" && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+  }
+  return null;
+};
+
+const getEstadoStyles = (estadoLabel, palette, mode) => {
+  const normalizedEstado = normalizeEstado(estadoLabel);
+
   const paletteConfig =
-    (estado && palette?.[estado]) || palette?.__fallback || fallbackPalette;
+    (normalizedEstado && palette?.[normalizedEstado]) ||
+    palette?.__fallback ||
+    fallbackPalette;
   const themeMode = mode === "light" ? "light" : "dark";
   return {
     color: paletteConfig.color[themeMode] ?? paletteConfig.color.light,
@@ -150,8 +179,9 @@ export function ContentEstadosTabla({
         estadoEntregas,
         actions
       ).map(({ id, Icon, estado, palette, onClick }) => {
+        const estadoLabel = resolveEstadoLabel(estado);
         const { color, background, border } = getEstadoStyles(
-          estado,
+          estadoLabel,
           palette,
           theme
         );
@@ -163,8 +193,8 @@ export function ContentEstadosTabla({
             $color={color}
             $background={background}
             $border={border}
-            title={estado || "Sin estado"}
-            aria-label={`Estado ${id}: ${estado || "sin estado"}`}
+            title={estadoLabel || "Sin estado"}
+            aria-label={`Estado ${id}: ${estadoLabel || "sin estado"}`}
           >
             <Icon />
           </EstadoButton>
