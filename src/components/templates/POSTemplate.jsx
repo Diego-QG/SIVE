@@ -74,14 +74,15 @@ const Container = styled.div`
 `;
 
 const HeroSection = styled.section`
-  background: #10243b;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: ${({ theme }) => theme.heroSectionBg};
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   border-radius: 28px;
   padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 18px;
   box-shadow: 0 22px 36px rgba(7, 14, 24, 0.32);
+  color: ${({ theme }) => theme.text};
 
   @media (min-width: ${v.bpbart}) {
     padding: 36px 42px;
@@ -100,7 +101,7 @@ const HeroSection = styled.section`
       margin: 0;
       font-size: 1rem;
       line-height: 1.6;
-      color: rgba(255, 255, 255, 0.75);
+      color: rgba(${({ theme }) => theme.textRgba}, 0.75);
     }
   }
 `;

@@ -38,7 +38,10 @@ export const Light = {
   colortitlecard: "#363637",
   colorsubtitlecard: "#080808",
   color1: "#1cb0f6",
-  color2:"#E5E5E5"
+  color2:"#E5E5E5",
+  heroSectionBg: "rgba(15, 56, 92, 0.08)",
+  posPanelBg: "rgba(15, 56, 92, 0.06)",
+  posInputBg: "rgba(15, 56, 92, 0.04)"
 };
 export const Dark = {
   colortitlecard: "#8C9298",
@@ -80,5 +83,8 @@ export const Dark = {
   colorSubtitle: "#b7b7b7",
   colorScroll: "#434343",
   color1: "#1cb0f6",
-  color2:"#37464F"
+  color2:"#37464F",
+  heroSectionBg: "rgba(6, 18, 35, 0.85)",
+  posPanelBg: "rgba(6, 18, 35, 0.75)",
+  posInputBg: "rgba(3, 9, 18, 0.35)"
 };

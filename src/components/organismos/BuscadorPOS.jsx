@@ -39,8 +39,8 @@ const Container = styled.section`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: #10243b;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: ${({ theme }) => theme.posPanelBg};
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   border-radius: 20px;
   padding: 20px;
   box-shadow: 0 18px 28px rgba(7, 14, 24, 0.3);
@@ -62,12 +62,12 @@ const SearchWrapper = styled.div`
   gap: 10px;
   border-radius: 999px;
   padding: 0 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background-color: rgba(3, 9, 18, 0.2);
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.12);
+  background-color: ${({ theme }) => theme.posInputBg};
 
   .icono {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(${({ theme }) => theme.textRgba}, 0.55);
   }
 
   input {
@@ -76,10 +76,10 @@ const SearchWrapper = styled.div`
     border: 0;
     outline: none;
     background: transparent;
-    color: #f7fbff;
+    color: ${({ theme }) => theme.text};
 
     &::placeholder {
-      color: rgba(247, 251, 255, 0.5);
+      color: rgba(${({ theme }) => theme.textRgba}, 0.5);
     }
   }
 `;
@@ -92,7 +92,7 @@ const LegendWrapper = styled.div`
   gap: 12px 24px;
   margin-left: auto;
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(${({ theme }) => theme.textRgba}, 0.7);
 `;
 
 const LegendChip = styled.span`
