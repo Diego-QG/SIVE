@@ -73,18 +73,6 @@ export function TablaPOS({ data = [] }) {
     return null;
   };
 
-  const formatCurrency = (value) => {
-    if (value === null || value === undefined || value === "") return "-";
-    const numericValue = Number(value);
-    if (!Number.isNaN(numericValue)) {
-      return numericValue.toLocaleString("es-PE", {
-        style: "currency",
-        currency: "PEN",
-        minimumFractionDigits: 2,
-      });
-    }
-    return value;
-  };
   const columns = [
     {
       accessorKey: "fecha_str",
@@ -159,7 +147,10 @@ export function TablaPOS({ data = [] }) {
       meta: {
         dataTitle: "Total",
       },
-      cell: (info) => <span>{info.getValue()}</span>,
+      cell: (info) => {
+        const value = info.getValue();
+        return <span>{value === null || value === undefined || value === "" ? "-" : value}</span>;
+      },
       enableColumnFilter: true,
       enableSorting: true,
       filterFn: (row, columnId, filterStatuses) => {
@@ -176,7 +167,13 @@ export function TablaPOS({ data = [] }) {
         dataTitle: "Estados",
         className: "ContentCell",
       },
-      cell: () => <ContentEstadosTabla />,
+      cell: (info) => (
+        <ContentEstadosTabla
+          estadoSupervision={info.row?.original?.estado_supervision}
+          estadoContabilidad={info.row?.original?.estado_contabilidad}
+          estadoEntregas={info.row?.original?.estado_entregas}
+        />
+      ),
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;

@@ -3,28 +3,83 @@ import { RiShieldCheckLine } from "react-icons/ri";
 import { HiOutlineChartPie } from "react-icons/hi";
 import { PiCubeThin } from "react-icons/pi";
 
-const estadosConfig = [
+const supervisionColors = {
+  pendiente: {
+    color: "#6b7280",
+    background: "#f3f4f6",
+  },
+  aceptado: {
+    color: "#15803d",
+    background: "#dcfce7",
+  },
+  rechazado: {
+    color: "#b91c1c",
+    background: "#fee2e2",
+  },
+};
+
+const evaluacionColors = {
+  pendiente_evidencia: {
+    color: "#6b7280",
+    background: "#f3f4f6",
+  },
+  en_evaluacion: {
+    color: "#1d4ed8",
+    background: "#dbeafe",
+  },
+  valido: {
+    color: "#15803d",
+    background: "#dcfce7",
+  },
+  correccion: {
+    color: "#c2410c",
+    background: "#ffedd5",
+  },
+};
+
+const estadosConfig = (
+  estadoSupervision,
+  estadoContabilidad,
+  estadoEntregas,
+  actions
+) => [
   {
     id: "secure",
     Icon: RiShieldCheckLine,
-    color: "#6b7280",
-    background: "#f3f4f6",
+    estado: estadoSupervision,
+    palette: supervisionColors,
+    onClick: actions.secure,
   },
   {
     id: "analytics",
     Icon: HiOutlineChartPie,
-    color: "#6b7280",
-    background: "#f3f4f6",
+    estado: estadoContabilidad,
+    palette: evaluacionColors,
+    onClick: actions.analytics,
   },
   {
     id: "inventory",
     Icon: PiCubeThin,
-    color: "#6b7280",
-    background: "#f3f4f6",
+    estado: estadoEntregas,
+    palette: evaluacionColors,
+    onClick: actions.inventory,
   },
 ];
 
+const getEstadoStyles = (estado, palette) => {
+  if (estado && palette?.[estado]) {
+    return palette[estado];
+  }
+  return {
+    color: "#6b7280",
+    background: "#f3f4f6",
+  };
+};
+
 export function ContentEstadosTabla({
+  estadoSupervision,
+  estadoContabilidad,
+  estadoEntregas,
   onSecure,
   onAnalytics,
   onInventory,
@@ -37,17 +92,26 @@ export function ContentEstadosTabla({
 
   return (
     <Container>
-      {estadosConfig.map(({ id, Icon, color, background }) => (
-        <EstadoButton
-          key={id}
-          type="button"
-          onClick={() => actions[id]?.()}
-          $color={color}
-          $background={background}
-        >
-          <Icon />
-        </EstadoButton>
-      ))}
+      {estadosConfig(
+        estadoSupervision,
+        estadoContabilidad,
+        estadoEntregas,
+        actions
+      ).map(({ id, Icon, estado, palette, onClick }) => {
+        const { color, background } = getEstadoStyles(estado, palette);
+        return (
+          <EstadoButton
+            key={id}
+            type="button"
+            onClick={onClick}
+            $color={color}
+            $background={background}
+            title={estado || "Sin estado"}
+          >
+            <Icon />
+          </EstadoButton>
+        );
+      })}
     </Container>
   );
 }
