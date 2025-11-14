@@ -7,15 +7,9 @@ import {
 } from "../../index";
 import { v } from "../../styles/variables";
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 
 export function POSTemplate() {
     const { dataventas, buscador, setBuscador } = useVentasStore();
-    const navigate = useNavigate();
-
-    const handleBack = () => {
-        navigate("/herramientas");
-    };
 
     const filteredVentas = useMemo(() => {
         if (!buscador) {
@@ -40,9 +34,6 @@ export function POSTemplate() {
     return (
         <Container>
             <section className="area1">
-                <button type="button" className="back-button" onClick={handleBack}>
-                    <v.iconoflechaizquierda />
-                </button>
                 <Title>Ventas</Title>
             </section>
             <section className="area2">

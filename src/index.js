@@ -25,6 +25,7 @@ export * from './components/organismos/formularios/RegistrarTipoContenidos';
 export * from './components/organismos/sidebar/Sidebar';
 export * from './components/organismos/tablas/AccionesTabla';
 export * from './components/organismos/tablas/ContentAccionesTabla';
+export * from './components/organismos/tablas/ContentEstadosTabla';
 export * from './components/organismos/tablas/Paginacion';
 export * from './components/organismos/tablas/TablaCursos';
 export * from './components/organismos/tablas/TablaEditoriales';

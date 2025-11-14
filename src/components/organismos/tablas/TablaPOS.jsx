@@ -1,12 +1,5 @@
 import styled from "styled-components";
-import {
-  ContentAccionesTabla,
-  useCursosStore,
-  Paginacion,
-  ImagenContent,
-  Icono,
-} from "../../../index";
-import Swal from "sweetalert2";
+import { Paginacion, ContentEstadosTabla } from "../../../index";
 import { v } from "../../../styles/variables";
 import { useState } from "react";
 import {
@@ -18,59 +11,44 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { FaArrowsAltV } from "react-icons/fa";
-export function TablaPOS({
-  data,
-  SetopenRegistro,
-  setdataSelect,
-  setAccion,
-}) {
-  if (data == null) return;
+export function TablaPOS({ data = [] }) {
+  const tableData = Array.isArray(data) ? data : [];
   const [pagina, setPagina] = useState(1);
-  const [datas, setData] = useState(data);
   const [columnFilters, setColumnFilters] = useState([]);
 
-  const { eliminarcurso } = useCursosStore();
-  function eliminar(p) {
-    if (p.nombre === "General") {
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Este registro no se permite modificar ya que es valor por defecto.",
-        footer: '<a href="">...</a>',
-      });
-      return;
-    }
-    Swal.fire({
-      title: "¿Estás seguro(a)(e)?",
-      text: "Una vez eliminado, ¡no podrá recuperar este registro!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Si, eliminar",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await eliminarcurso({ id: p.id });
+  const totalKeys = [
+    "total",
+    "total_venta",
+    "total_monto",
+    "total_general",
+    "total_registrado",
+    "total_cajas",
+  ];
+
+  const obtenerTotal = (row) => {
+    for (const key of totalKeys) {
+      if (row?.[key] !== undefined && row?.[key] !== null) {
+        return row[key];
       }
-    });
-  }
-  function editar(data) {
-    if (data.nombre === "General") {
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Este registro no se permite modificar ya que es valor por defecto.",
-        footer: '<a href="">...</a>',
-      });
-      return;
     }
-    SetopenRegistro(true);
-    setdataSelect(data);
-    setAccion("Editar");
-  }
+    return null;
+  };
+
+  const formatCurrency = (value) => {
+    if (value === null || value === undefined || value === "") return "-";
+    const numericValue = Number(value);
+    if (!Number.isNaN(numericValue)) {
+      return numericValue.toLocaleString("es-PE", {
+        style: "currency",
+        currency: "PEN",
+        minimumFractionDigits: 2,
+      });
+    }
+    return value;
+  };
   const columns = [
     {
-      accessorKey: "nombre_nivel",
+      accessorKey: "fecha_str",
       header: "Fecha",
       meta: {
         dataTitle: "Fecha",
@@ -84,7 +62,7 @@ export function TablaPOS({
       },
     },
     {
-      accessorKey: "nombre_curso",
+      accessorKey: "editorial",
       header: "Editorial",
       meta: {
         dataTitle: "Editorial",
@@ -98,7 +76,7 @@ export function TablaPOS({
       },
     },
     {
-      accessorKey: "nombre_curso",
+      accessorKey: "nombre_docente",
       header: "Docente",
       meta: {
         dataTitle: "Docente",
@@ -112,7 +90,7 @@ export function TablaPOS({
       },
     },
     {
-      accessorKey: "nombre_curso",
+      accessorKey: "material_resumen",
       header: "Resumen",
       meta: {
         dataTitle: "Resumen",
@@ -126,12 +104,13 @@ export function TablaPOS({
       },
     },
     {
-      accessorKey: "nombre_curso",
+      id: "total",
+      accessorFn: (row) => obtenerTotal(row),
       header: "Total",
       meta: {
         dataTitle: "Total",
       },
-      cell: (info) => <span>{info.getValue()}</span>,
+      cell: (info) => <span>{formatCurrency(info.getValue())}</span>,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -140,19 +119,14 @@ export function TablaPOS({
       },
     },
     {
-      accessorKey: "acciones",
-      header: "",
+      id: "estados",
+      header: "Estados",
       enableSorting: false,
       meta: {
-        dataTitle: "Acciones",
+        dataTitle: "Estados",
         className: "ContentCell",
       },
-      cell: (info) => (
-        <ContentAccionesTabla
-          funcionEditar={() => editar(info.row.original)}
-          funcionEliminar={() => eliminar(info.row.original)}
-        />
-      ),
+      cell: () => <ContentEstadosTabla />,
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -162,7 +136,7 @@ export function TablaPOS({
     },
   ];
   const table = useReactTable({
-    data,
+    data: tableData,
     columns,
     state: {
       columnFilters,
@@ -177,19 +151,6 @@ export function TablaPOS({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     columnResizeMode: "onChange",
-    meta: {
-      updateData: (rowIndex, columnId, value) =>
-        setData((prev) =>
-          prev.map((row, index) =>
-            index === rowIndex
-              ? {
-                ...prev[rowIndex],
-                [columnId]: value,
-              }
-              : row
-          )
-        ),
-    },
   });
   return (
     <>
