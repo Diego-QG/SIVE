@@ -1,15 +1,13 @@
 import styled from "styled-components";
-import {Reloj, ToggleTema, useAuthStore, UserAuth} from "../../index"
+import {Reloj, ToggleTema, UserAuth} from "../../index"
 
 export function HomeTemplate() {
 
-    const {cerrarSesion} = useAuthStore();
     const {user} = UserAuth();
 
     return (
         <Container>
             <span>Home Template</span>
-            <button onClick={cerrarSesion}>Cerrar</button>
             <article className="contentfecha area3">
                 <Reloj />
             </article>

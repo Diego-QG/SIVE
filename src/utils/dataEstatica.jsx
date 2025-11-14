@@ -68,6 +68,14 @@ export const SecondarylinksArray = [
   },
   
 ];
+
+export const LogoutLinksArray = [
+  {
+    label: "Cerrar sesión",
+    icon: "material-symbols:logout",
+    color: "#a31d1d",
+  },
+];
 //temas
 export const TemasData = [
   {

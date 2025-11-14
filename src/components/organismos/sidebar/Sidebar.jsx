@@ -1,15 +1,17 @@
 import styled from "styled-components";
 import {
   LinksArray,
+  LogoutLinksArray,
   SecondarylinksArray,
+  useAuthStore,
 } from "../../../index";
 import { v } from "../../../styles/variables";
 import { NavLink } from "react-router-dom";
 import { Icon } from "@iconify/react";
 
-
 export function Sidebar({ state, setState }) {
- 
+  const { cerrarSesion } = useAuthStore();
+
   return (
     <Main $isopen={state.toString()}>
       <span className="Sidebarbutton" onClick={() => setState(!state)}>
@@ -30,7 +32,9 @@ export function Sidebar({ state, setState }) {
             >
               <NavLink
                 to={to}
-                className={({ isActive }) => `Links${isActive ? ` active` : ``}`}
+                className={({ isActive }) =>
+                  `Links${isActive ? ` active` : ``}`
+                }
               >
                 <section className={state ? "content open" : "content"}>
                   <Icon className="Linkicon" icon={icon} />
@@ -44,12 +48,16 @@ export function Sidebar({ state, setState }) {
           <Divider />
           {SecondarylinksArray.map(({ icon, label, to, color }) => (
             <div
-              className={state ? "LinkContainer active logout" : "LinkContainer logout"}
+              className={
+                state ? "LinkContainer active logout" : "LinkContainer logout"
+              }
               key={label}
             >
               <NavLink
                 to={to}
-                className={({ isActive }) => `Links${isActive ? ` active` : ``}`}
+                className={({ isActive }) =>
+                  `Links${isActive ? ` active` : ``}`
+                }
               >
                 <section className={state ? "content open" : "content"}>
                   <Icon color={color} className="Linkicon" icon={icon} />
@@ -63,14 +71,27 @@ export function Sidebar({ state, setState }) {
         </div>
         <div className="Logout">
           <div className={state ? "LinkContainer active" : "LinkContainer"}>
-            <div className="Links">
+            <div
+              className="Links"
+              role="button"
+              tabIndex={0}
+              onClick={cerrarSesion}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  cerrarSesion();
+                }
+              }}
+            >
               <section className={state ? "content open" : "content"}>
                 <Icon
                   color="#a31d1d"
                   className="Linkicon"
                   icon="material-symbols:logout"
                 />
-                <span className={state ? "label_ver" : "label_oculto"}>Cerrar sesión</span>
+                <span className={state ? "label_ver" : "label_oculto"}>
+                  Cerrar sesión
+                </span>
               </section>
             </div>
           </div>
@@ -93,7 +114,7 @@ const Container = styled.div`
   border-right: 2px solid ${({ theme }) => theme.color2};
   display: flex;
   flex-direction: column;
-  
+
   &::-webkit-scrollbar {
     width: 6px;
     border-radius: 10px;
@@ -120,7 +141,7 @@ const Container = styled.div`
       cursor: pointer;
       transition: 0.3s ease;
       transform: ${({ $isopen }) =>
-          $isopen === "true" ? `scale(0.95)` : `scale(1.5)`}
+    $isopen === "true" ? `scale(0.95)` : `scale(1.5)`}
         rotate(${({ theme }) => theme.logorotate});
       img {
         width: 100%;
@@ -138,11 +159,11 @@ const Container = styled.div`
     flex-direction: column;
     padding-bottom: 24px;
   }
-  
+
   .LinkContainer {
     margin: 9px 0;
-    margin-right:10px;
-    margin-left:8px;
+    margin-right: 10px;
+    margin-left: 8px;
     transition: all 0.3s ease-in-out;
     position: relative;
     text-transform: uppercase;
@@ -151,12 +172,7 @@ const Container = styled.div`
 
   .Logout {
     margin-top: auto;
-    padding: 0 8px 24px;
-  }
-
-  .Logout .LinkContainer {
-    margin: 0;
-    cursor: pointer;
+    padding: 0 0px 24px;
   }
 
   .Links {
@@ -164,10 +180,13 @@ const Container = styled.div`
     display: flex;
     align-items: center;
     text-decoration: none;
+    cursor: pointer;
+    padding: 0;
     width: 100%;
     color: ${(props) => props.theme.text};
     height: 60px;
     position: relative;
+    font-family: inherit;
     .content {
       display: flex;
       justify-content: center;
@@ -229,7 +248,7 @@ const Main = styled.div`
     transition: all 0.2s;
     z-index: 3;
     transform: ${({ $isopen }) =>
-      $isopen === "true" ? `translateX(173px) rotate(3.142rad)` : `initial`};
+    $isopen === "true" ? `translateX(173px) rotate(3.142rad)` : `initial`};
     color: ${(props) => props.theme.text};
   }
 `;

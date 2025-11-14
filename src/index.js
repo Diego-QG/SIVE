@@ -29,6 +29,7 @@ export * from './components/organismos/tablas/Paginacion';
 export * from './components/organismos/tablas/TablaCursos';
 export * from './components/organismos/tablas/TablaEditoriales';
 export * from './components/organismos/tablas/TablaMateriales';
+export * from './components/organismos/tablas/TablaPOS';
 export * from './components/organismos/tablas/TablaSubniveles';
 export * from './components/organismos/tablas/TablaTipoContenidos';
 export * from './components/templates/CursosTemplate';
