@@ -1,5 +1,9 @@
 import styled from "styled-components";
-import { Paginacion, ContentEstadosTabla } from "../../../index";
+import {
+  Paginacion,
+  ContentEstadosTabla,
+  ContentAccionesTabla,
+} from "../../../index";
 import { v } from "../../../styles/variables";
 import { useState } from "react";
 import {
@@ -149,7 +153,13 @@ export function TablaPOS({ data = [] }) {
       },
       cell: (info) => {
         const value = info.getValue();
-        return <span>{value === null || value === undefined || value === "" ? "-" : value}</span>;
+        return (
+          <span>
+            {value === null || value === undefined || value === ""
+              ? "-"
+              : value}
+          </span>
+        );
       },
       enableColumnFilter: true,
       enableSorting: true,
@@ -167,14 +177,25 @@ export function TablaPOS({ data = [] }) {
         dataTitle: "Estados",
         className: "ContentCell",
       },
-      cell: (info) => (
-        <ContentEstadosTabla
-          estadoSupervision={info.row?.original?.estado_supervision}
-          estadoContabilidad={info.row?.original?.estado_contabilidad}
-          estadoEntregas={info.row?.original?.estado_entregas}
-          {...console.log(info.row?.original)}
-        />
-      ),
+      cell: (info) => {
+        const estadoRegistro = `${info.row?.original?.estado_registro ?? ""}`
+          .toLowerCase()
+          .trim();
+        const esBorrador = estadoRegistro === "borrador";
+
+        if (esBorrador) {
+          return <ContentAccionesTabla />;
+        }
+
+        return (
+          <ContentEstadosTabla
+            estadoSupervision={info.row?.original?.estado_supervision}
+            estadoContabilidad={info.row?.original?.estado_contabilidad}
+            estadoEntregas={info.row?.original?.estado_entregas}
+            {...console.log(info.row?.original)}
+          />
+        );
+      },
       enableColumnFilter: true,
       filterFn: (row, columnId, filterStatuses) => {
         if (filterStatuses.length === 0) return true;
@@ -244,12 +265,12 @@ export function TablaPOS({ data = [] }) {
               const rowClassName = estadoEstilos ? "status-colored" : undefined;
               const rowStyle = estadoEstilos
                 ? {
-                    "--row-status-bg": estadoEstilos.background,
-                    "--row-status-accent": estadoEstilos.accent,
-                  }
+                  "--row-status-bg": estadoEstilos.background,
+                  "--row-status-accent": estadoEstilos.accent,
+                }
                 : undefined;
               return (
-                <tr key={item.id} className={rowClassName} style={rowStyle}> 
+                <tr key={item.id} className={rowClassName} style={rowStyle}>
                   {item.getVisibleCells().map((cell) => {
                     const { meta } = cell.column.columnDef;
                     const dataTitle =
@@ -272,7 +293,7 @@ export function TablaPOS({ data = [] }) {
                     );
                   })}
                 </tr>
-            );
+              );
             })}
           </tbody>
         </table>
