@@ -172,6 +172,7 @@ export function TablaPOS({ data = [] }) {
           estadoSupervision={info.row?.original?.estado_supervision}
           estadoContabilidad={info.row?.original?.estado_contabilidad}
           estadoEntregas={info.row?.original?.estado_entregas}
+          {...console.log(info.row?.original)}
         />
       ),
       enableColumnFilter: true,

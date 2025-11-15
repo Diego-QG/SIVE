@@ -4,86 +4,63 @@ import { HiOutlineChartPie } from "react-icons/hi";
 import { PiCubeThin } from "react-icons/pi";
 import { useThemeStore } from "../../../store/ThemeStore";
 
-const hexToRgba = (hex, alpha = 1) => {
-  if (typeof hex !== "string") return hex;
-  let normalized = hex.replace("#", "");
-  if (![3, 6].includes(normalized.length)) return hex;
-  if (normalized.length === 3) {
-    normalized = normalized
-      .split("")
-      .map((char) => char + char)
-      .join("");
-  }
-  const bigint = Number.parseInt(normalized, 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+const STATE_STYLES = {
+  gray: {
+    light: { background: "#e2e8f0", border: "#cbd5f5", color: "#475569" },
+    dark: {
+      background: "rgba(148, 163, 184, 0.18)",
+      border: "rgba(148, 163, 184, 0.45)",
+      color: "#e2e8f0",
+    },
+  },
+  green: {
+    light: { background: "#dcfce7", border: "#86efac", color: "#16a34a" },
+    dark: {
+      background: "rgba(34, 197, 94, 0.24)",
+      border: "rgba(34, 197, 94, 0.4)",
+      color: "#bbf7d0",
+    },
+  },
+  orange: {
+    light: { background: "#fef3c7", border: "#fcd34d", color: "#d97706" },
+    dark: {
+      background: "rgba(251, 189, 35, 0.24)",
+      border: "rgba(251, 189, 35, 0.45)",
+      color: "#fed7aa",
+    },
+  },
+  purple: {
+    light: { background: "#ede9fe", border: "#c4b5fd", color: "#7c3aed" },
+    dark: {
+      background: "rgba(196, 181, 253, 0.28)",
+      border: "rgba(196, 181, 253, 0.45)",
+      color: "#ddd6fe",
+    },
+  },
+  red: {
+    light: { background: "#fee2e2", border: "#fca5a5", color: "#dc2626" },
+    dark: {
+      background: "rgba(239, 68, 68, 0.24)",
+      border: "rgba(239, 68, 68, 0.45)",
+      color: "#fecaca",
+    },
+  },
 };
 
-const createStatePalette = (
-  hex,
-  {
-    textLight,
-    textDark,
-    lightBgAlpha = 0.2,
-    darkBgAlpha = 0.35,
-    lightBorderAlpha = 0.45,
-    darkBorderAlpha = 0.6,
-  } = {}
-) => ({
-  color: {
-    light: textLight ?? hex,
-    dark: textDark ?? hex,
-  },
-  background: {
-    light: hexToRgba(hex, lightBgAlpha),
-    dark: hexToRgba(hex, darkBgAlpha),
-  },
-  border: {
-    light: hexToRgba(hex, lightBorderAlpha),
-    dark: hexToRgba(hex, darkBorderAlpha),
-  },
-});
+const DEFAULT_STYLE = STATE_STYLES.gray;
 
-const fallbackPalette = createStatePalette("#94a3b8", {
-  textLight: "#475569",
-  textDark: "#e2e8f0",
-  darkBgAlpha: 0.28,
-  darkBorderAlpha: 0.45,
-});
-
-const supervisionColors = {
-  pendiente: fallbackPalette,
-  aceptado: createStatePalette("#22c55e", {
-    textLight: "#15803d",
-    textDark: "#a3e635",
-  }),
-  rechazado: createStatePalette("#ef4444", {
-    textLight: "#b91c1c",
-    textDark: "#fecaca",
-  }),
-  __fallback: fallbackPalette,
+const SUPERVISION_COLORS = {
+  pendiente: STATE_STYLES.gray,
+  aceptado: STATE_STYLES.green,
+  rechazado: STATE_STYLES.red,
 };
 
-const evaluacionColors = {
-  pendiente: fallbackPalette,
-  pendiente_evidencia: createStatePalette("#fbbf24", {
-    textLight: "#b45309",
-    textDark: "#fed7aa",
-    lightBgAlpha: 0.22,
-    darkBgAlpha: 0.4,
-  }),
-  en_evaluacion: createStatePalette("#a855f7", {
-    textLight: "#6d28d9",
-    textDark: "#ddd6fe",
-  }),
-  valido: supervisionColors.aceptado,
-  correccion: createStatePalette("#fb7185", {
-    textLight: "#be123c",
-    textDark: "#fecdd3",
-  }),
-  __fallback: fallbackPalette,
+const EVALUACION_COLORS = {
+  pendiente: STATE_STYLES.gray,
+  pendiente_evidencia: STATE_STYLES.orange,
+  en_evaluacion: STATE_STYLES.purple,
+  valido: STATE_STYLES.green,
+  correccion: STATE_STYLES.red,
 };
 
 const estadosConfig = (
@@ -96,43 +73,35 @@ const estadosConfig = (
     id: "secure",
     Icon: RiShieldCheckLine,
     estado: estadoSupervision,
-    palette: supervisionColors,
+    palette: SUPERVISION_COLORS,
     onClick: actions.secure,
   },
   {
     id: "analytics",
     Icon: HiOutlineChartPie,
     estado: estadoContabilidad,
-    palette: evaluacionColors,
+    palette: EVALUACION_COLORS,
     onClick: actions.analytics,
   },
   {
     id: "inventory",
     Icon: PiCubeThin,
     estado: estadoEntregas,
-    palette: evaluacionColors,
+    palette: EVALUACION_COLORS,
     onClick: actions.inventory,
   },
 ];
-
-const normalizeEstado = (estado) => {
-  if (typeof estado === "string") {
-    return estado.trim().toLowerCase();
-  }
-  return estado;
-};
 
 const estadoKeys = ["estado", "estatus", "status", "nombre", "name", "label"];
 
 const resolveEstadoLabel = (estado) => {
   if (typeof estado === "string") {
-    const trimmed = estado.trim();
-    return trimmed.length > 0 ? trimmed : null;
+    return estado.trim() || null;
   }
   if (estado && typeof estado === "object") {
     for (const key of estadoKeys) {
       const value = estado[key];
-      if (typeof value === "string" && value.trim().length > 0) {
+      if (typeof value === "string" && value.trim()) {
         return value.trim();
       }
     }
@@ -140,20 +109,13 @@ const resolveEstadoLabel = (estado) => {
   return null;
 };
 
-const getEstadoStyles = (estadoLabel, palette, mode) => {
-  const normalizedEstado = normalizeEstado(estadoLabel);
+const normalizeEstado = (estado) =>
+  typeof estado === "string" ? estado.trim().toLowerCase() : estado;
 
-  const paletteConfig =
-    (normalizedEstado && palette?.[normalizedEstado]) ||
-    palette?.__fallback ||
-    fallbackPalette;
-  const themeMode = mode === "light" ? "light" : "dark";
-  return {
-    color: paletteConfig.color[themeMode] ?? paletteConfig.color.light,
-    background:
-      paletteConfig.background[themeMode] ?? paletteConfig.background.light,
-    border: paletteConfig.border[themeMode] ?? paletteConfig.border.light,
-  };
+const getEstadoStyles = (estadoLabel, palette, mode = "light") => {
+  const normalized = normalizeEstado(estadoLabel);
+  const colors = (normalized && palette?.[normalized]) || DEFAULT_STYLE;
+  return colors[mode === "dark" ? "dark" : "light"];
 };
 
 export function ContentEstadosTabla({
