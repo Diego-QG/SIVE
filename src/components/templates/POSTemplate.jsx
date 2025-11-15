@@ -1,15 +1,21 @@
 import styled from "styled-components";
 import {
   BuscadorPOS,
+  RegistrarCursos,
   TablaPOS,
   Title,
   useVentasStore,
 } from "../../index";
 import { v } from "../../styles/variables";
-import { useMemo } from "react";
+import ConfettiExplosion from "react-confetti-explosion";
+import { useMemo, useState } from "react";
 
 export function POSTemplate() {
   const { dataventas, buscador, setBuscador } = useVentasStore();
+  const [openRegistro, setOpenRegistro] = useState(false);
+  const [accion, setAccion] = useState("Nuevo");
+  const [dataSelect, setDataSelect] = useState(null);
+  const [isExploding, setIsExploding] = useState(false);
 
   const filteredVentas = useMemo(() => {
     if (!buscador) {
@@ -31,25 +37,43 @@ export function POSTemplate() {
     });
   }, [buscador, dataventas]);
 
+  const handleNuevaVenta = () => {
+    setOpenRegistro(true);
+    setAccion("Nuevo");
+    setDataSelect(null);
+    setIsExploding(false);
+  };
+
+  const handleCloseRegistro = () => {
+    setOpenRegistro(false);
+  };
 
   return (
     <Container>
-      <HeroSection>
+      <RegistrarCursos
+        setIsExploding={setIsExploding}
+        onClose={handleCloseRegistro}
+        dataSelect={dataSelect}
+        accion={accion}
+        state={openRegistro}
+      />
+      <section className="area1">
         <div className="hero-text">
           <Title>Tu registro de ventas</Title>
           <p>
             Visualiza y da seguimiento a las ventas que has registrado, incluyendo su revisión y validación.
           </p>
         </div>
-        <ActionButton type="button">
+        <ActionButton type="button" onClick={handleNuevaVenta}>
           <v.iconoagregar aria-hidden className="icon" />
           Registrar nueva venta
         </ActionButton>
-      </HeroSection>
-      <ControlsRow>
+      </section>
+      <section className="area2">
         <BuscadorPOS setBuscador={setBuscador} />
-      </ControlsRow>
+      </section>
       <section className="main">
+        {isExploding && <ConfettiExplosion />}
         <TablaPOS data={filteredVentas} />
       </section>
     </Container>
@@ -58,8 +82,11 @@ export function POSTemplate() {
 const Container = styled.div`
   min-height: calc(100vh - 30px);
   padding: 24px 18px 32px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template:
+    "area1" auto
+    "area2" auto
+    "main" auto;
   gap: 24px;
 
   @media (min-width: ${v.bpbart}) {
@@ -67,40 +94,50 @@ const Container = styled.div`
     gap: 28px;
   }
 
+  .area1 {
+    grid-area: area1;
+    background: ${({ theme }) => theme.heroSectionBg};
+    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+    border-radius: 28px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    color: ${({ theme }) => theme.text};
+
+    @media (min-width: ${v.bpbart}) {
+      padding: 36px 42px;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hero-text {
+      max-width: 720px;
+
+      ${Title} {
+        display: block;
+        margin-bottom: 12px;
+      }
+
+      p {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: rgba(${({ theme }) => theme.textRgba}, 0.75);
+      }
+    }
+  }
+
+  .area2 {
+    grid-area: area2;
+  }
+
   .main {
-    flex: 1;
-  }
-`;
-
-const HeroSection = styled.section`
-  background: ${({ theme }) => theme.heroSectionBg};
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  border-radius: 28px;
-  padding: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  color: ${({ theme }) => theme.text};
-
-  @media (min-width: ${v.bpbart}) {
-    padding: 36px 42px;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .hero-text {
-    max-width: 720px;
-    ${Title} {
-      display: block;
-      margin-bottom: 12px;
-    }
-    p {
-      margin: 0;
-      font-size: 1rem;
-      line-height: 1.6;
-      color: rgba(${({ theme }) => theme.textRgba}, 0.75);
-    }
+    grid-area: main;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
   }
 `;
 
@@ -131,17 +168,5 @@ const ActionButton = styled.button`
 
   @media (min-width: ${v.bpbart}) {
     align-self: auto;
-  }
-`;
-
-const ControlsRow = styled.section`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  @media (min-width: ${v.bpbart}) {
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
   }
 `;

@@ -333,15 +333,10 @@ export function TablaPOS({ data = [] }) {
 }
 const Container = styled.div`
   position: relative;
-
-  margin: 5% 3%;
-  @media (min-width: ${v.bpbart}) {
-    margin: 2%;
-  }
-  @media (min-width: ${v.bphomer}) {
-    margin: 2em auto;
-    /* max-width: ${v.bphomer}; */
-  }
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  
   .ioqlpo {
     display: none !important; /* oculta el tacho si es el segundo botón */
   }
