@@ -4,14 +4,14 @@ import { v } from "../../../styles/variables";
 
 const ACTION_STYLES = {
   editar: {
-    color: "#fcd34d",
-    background: "rgba(250, 204, 21, 0.18)",
-    border: "rgba(250, 204, 21, 0.45)",
+    color: "#d97706",
+    background: "rgba(217, 119, 6, 0.2)",
+    border: "rgba(217, 119, 6, 0.55)",
   },
   eliminar: {
-    color: "#fda4af",
-    background: "rgba(239, 68, 68, 0.24)",
-    border: "rgba(239, 68, 68, 0.45)",
+    color: "#dc2626",
+    background: "rgba(220, 38, 38, 0.2)",
+    border: "rgba(220, 38, 38, 0.55)",
   },
 };
 

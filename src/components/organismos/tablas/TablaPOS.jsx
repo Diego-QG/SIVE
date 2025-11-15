@@ -136,7 +136,30 @@ export function TablaPOS({ data = [] }) {
       meta: {
         dataTitle: "Resumen",
       },
-      cell: (info) => <span>{info.getValue()}</span>,
+      cell: (info) => {
+        const value = info.getValue();
+        const normalizedEstado = `${
+          info.row?.original?.estado_registro ?? ""
+        }`
+          .toLowerCase()
+          .trim();
+        const esBorrador = normalizedEstado === "borrador";
+        const resumenLabel = value || "Sin resumen";
+
+        if (esBorrador) {
+          return <span>{resumenLabel}</span>;
+        }
+
+        return (
+          <ResumenButton
+            type="button"
+            title={resumenLabel}
+            aria-label={`Seleccionar resumen ${resumenLabel}`}
+          >
+            {resumenLabel}
+          </ResumenButton>
+        );
+      },
       enableColumnFilter: true,
       enableSorting: false,
       filterFn: (row, columnId, filterStatuses) => {
@@ -496,4 +519,27 @@ const Colorcontent = styled.div`
   background-color: ${(props) => props.color};
   border-radius: 50%;
   text-align: center;
+`;
+
+const ResumenButton = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  text-align: left;
+
+  &:hover {
+    color: rgba(${({ theme }) => theme.textRgba}, 0.85);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(${({ theme }) => theme.textRgba}, 0.3);
+    border-radius: 6px;
+  }
 `;

@@ -111,7 +111,7 @@ const ContentLogo = styled.section`
   span {
     font-weight: 700;
     margin-left: 30px;
-    text-align: justify;
+    text-align: center;
   }
   img {
     width: 15%;
