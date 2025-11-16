@@ -301,10 +301,11 @@ const VoucherSection = styled.div`
   section {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     flex-wrap: wrap;
     gap: 14px;
   }
+  
 
   h3 {
     margin: 0 0 4px;
@@ -318,10 +319,12 @@ const VoucherSection = styled.div`
   .voucher-section__cta {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-    min-width: 190px;
-    text-align: right;
+    align-items: stretch;
+    gap: 10px;
+    min-width: 220px;
+    width: min(260px, 100%);
+    text-align: left;
+    justify-content: center;
   }
 
   small {
@@ -330,23 +333,27 @@ const VoucherSection = styled.div`
 `;
 
 const UploadButton = styled.button`
-  border-radius: 16px;
-  border: 1.5px dashed rgba(255, 224, 130, 0.75);
-  background: rgba(255, 224, 130, 0.08);
-  padding: 10px 16px;
+  border-radius: 18px;
+  border: 1.5px dashed rgba(247, 199, 68, 0.95);
+  background: rgba(247, 199, 68, 0.2);
+  padding: 14px 20px;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-weight: 600;
+  font-size: 1rem;
   color: ${({ theme }) => theme.text};
   cursor: pointer;
+  width: 100%;
+  justify-content: center;
+  min-height: 58px;
 
   input {
     display: none;
   }
 
   .icon {
-    font-size: 20px;
+    font-size: 22px;
     color: #f7c744;
     display: flex;
   }
@@ -376,6 +383,7 @@ const VoucherPreview = styled.div`
           display: flex;
           flex-wrap: wrap;
           gap: 14px;
+          justify-content: center;
         `}
 
   .voucher-card {
@@ -389,7 +397,6 @@ const VoucherPreview = styled.div`
     gap: 8px;
     text-align: center;
     flex: 0 0 214px;
-    min-height: 250px;
 
     img {
       width: 100%;
