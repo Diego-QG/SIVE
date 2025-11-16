@@ -26,6 +26,9 @@ export function RegistrarTipoContenidos({
   const { datafamiliacontenidos, familiacontenidositemselect, selectfamiliacontenido } = useFamiliaContenidosStore();
   const [stateFamiliaContenidosLista, setStateFamiliaContenidosLista] = useState(false);
   const [stateMensual, setStateMensual] = useState(false);
+  const selectorWidth = "min(100%, 200px)";
+  const familiaNombre = familiacontenidositemselect?.nombre ?? "";
+  const hasSelectedFamilia = Boolean(familiaNombre?.trim());
   const ref = useRef(null);
   const {
     register,
@@ -65,6 +68,9 @@ export function RegistrarTipoContenidos({
       await insertartipocontenido(p);
     }
   }
+  const clearFamiliaSelection = () => {
+    selectfamiliacontenido(null);
+  };
   useEffect(() => {
     if (accion === "Editar") {
       // setColor(dataSelect.color);
@@ -91,20 +97,29 @@ export function RegistrarTipoContenidos({
           <form className="formulario" onSubmit={handleSubmit(handlesub)}>
             <section className="form-subcontainer">
               <ContainerSelector>
-                <label>FamiliaContenido</label>
+                <label>Familia de contenido</label>
                 <Selector
                   state={stateFamiliaContenidosLista}
                   funcion={() => setStateFamiliaContenidosLista(!stateFamiliaContenidosLista)}
-                  texto2={familiacontenidositemselect?.nombre}
+                  texto2={
+                    hasSelectedFamilia
+                      ? familiaNombre
+                      : "Seleccionar familia"
+                  }
                   color="#fc6027"
+                  isPlaceholder={!hasSelectedFamilia}
+                  width={selectorWidth}
                 />
-                {console.log(familiacontenidositemselect)}
                 <ListaDesplegable
                   funcion={selectfamiliacontenido}
                   state={stateFamiliaContenidosLista}
                   data={datafamiliacontenidos}
                   top="4rem"
                   setState={() => setStateFamiliaContenidosLista(!stateFamiliaContenidosLista)}
+                  onClear={
+                    hasSelectedFamilia ? clearFamiliaSelection : undefined
+                  }
+                  width={selectorWidth}
                 />
               </ContainerSelector>
 

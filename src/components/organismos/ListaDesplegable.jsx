@@ -9,8 +9,9 @@ export function ListaDesplegable({
   top,
   state,
   onClear,
-  clearLabel = "Quitar selección",
+  clearLabel = "Limpiar selección",
   emptyLabel = "Sin opciones disponibles",
+  width,
 }) {
   if (!state) return null;
 
@@ -27,7 +28,7 @@ export function ListaDesplegable({
   const hasItems = data?.length > 0;
 
   return (
-    <Container scroll={scroll} $top={top}>
+    <Container scroll={scroll} $top={top} $width={width}>
       <section className="panel-actions">
         <button
           type="button"
@@ -73,10 +74,10 @@ const Container = styled.div`
   color: ${({ theme }) => theme.text};
   position: absolute;
   top: ${(props) => props.$top};
-  width: 100%;
-  padding: 14px;
-  border-radius: 16px;
-  gap: 14px;
+  width: ${({ $width }) => $width ?? "min(100%, 340px)"};
+  padding: 12px;
+  border-radius: 14px;
+  gap: 12px;
   z-index: 3;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
@@ -87,7 +88,7 @@ const Container = styled.div`
 
   .panel-actions {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: 10px;
   }
@@ -108,8 +109,8 @@ const Container = styled.div`
   }
 
   .panel-actions .close {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     display: grid;
     place-items: center;
     font-size: 1rem;
@@ -119,7 +120,7 @@ const Container = styled.div`
 
   .contentItems {
     overflow-y: ${(props) => props.scroll};
-    max-height: 230px;
+    max-height: 210px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -130,8 +131,8 @@ const ItemContainer = styled.button`
   gap: 12px;
   display: flex;
   align-items: center;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: 0.3s;
   width: 100%;
@@ -155,7 +156,7 @@ const ItemContainer = styled.button`
 `;
 
 const EmptyState = styled.div`
-  padding: 18px 12px;
+  padding: 16px 12px;
   text-align: center;
   color: rgba(${({ theme }) => theme.textRgba}, 0.7);
   font-size: 0.9rem;

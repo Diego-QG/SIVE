@@ -10,7 +10,6 @@ export const useFamiliaContenidosStore = create((set) => ({
     mostrarfamiliacontenidos: async () => {
         const response = await mostrarFamiliaContenidos();
         set({ datafamiliacontenidos: response });
-        set({ familiacontenidositemselect: response?.[0] ?? null });
         return response;
     },
 }));

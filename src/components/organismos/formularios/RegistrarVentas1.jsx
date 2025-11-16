@@ -1,5 +1,5 @@
-import { useState } from "react";
-import styled from "styled-components";
+import { useEffect, useRef, useState } from "react";
+import styled, { css } from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
 import {
@@ -15,6 +15,9 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
   }
 
   const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
+  const [vouchers, setVouchers] = useState([]);
+  const fileInputRef = useRef(null);
+  const vouchersRef = useRef([]);
   const { dataeditoriales, editorialesitemselect, selecteditorial } =
     useEditorialesStore();
   const hasEditoriales = (dataeditoriales ?? []).length > 0;
@@ -34,6 +37,64 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
     if (!hasEditoriales) return;
     setStateEditorialesLista((prev) => !prev);
   };
+
+  const addVouchers = (incomingFiles) => {
+    if (!incomingFiles?.length) return;
+
+    const normalizedFiles = incomingFiles
+      .filter((file) => file.type.startsWith("image/"))
+      .map((file, index) => ({
+        id: `${file.name}-${Date.now()}-${index}`,
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+
+    if (!normalizedFiles.length) return;
+
+    setVouchers((prev) => [...prev, ...normalizedFiles]);
+  };
+
+  const handleFileSelection = (event) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    addVouchers(selectedFiles);
+    event.target.value = "";
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    const droppedFiles = Array.from(event.dataTransfer?.files ?? []);
+    addVouchers(droppedFiles);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+  };
+
+  const handleUploadZoneClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRemoveVoucher = (id) => {
+    setVouchers((prev) => {
+      const voucherToRemove = prev.find((voucher) => voucher.id === id);
+      if (voucherToRemove) {
+        URL.revokeObjectURL(voucherToRemove.preview);
+      }
+      return prev.filter((voucher) => voucher.id !== id);
+    });
+  };
+
+  useEffect(() => {
+    vouchersRef.current = vouchers;
+  }, [vouchers]);
+
+  useEffect(() => {
+    return () => {
+      vouchersRef.current.forEach((voucher) =>
+        URL.revokeObjectURL(voucher.preview)
+      );
+    };
+  }, []);
 
   return (
     <Overlay>
@@ -77,25 +138,62 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
             </EditorialSelectorRow>
           </section>
 
-          <UploadZone>
-            <div className="icon">
-              <v.iconoimagenvacia />
-            </div>
-            <div>
-              <h3>Subir voucher de venta</h3>
-              <p>Arrastra, suelta o haz clic para elegir archivos</p>
-            </div>
-            <small>No hay archivos seleccionados</small>
-          </UploadZone>
-
-          <VoucherPreview>
-            {Array.from({ length: 2 }).map((_, index) => (
-              <div key={`voucher-${index}`} className="voucher-card">
-                <span>Voucher {index + 1}</span>
-                <small>Sin vista previa disponible</small>
+          <VoucherSection>
+            <section>
+              <div>
+                <h3>Subir voucher de venta</h3>
+                <p>Arrastra, suelta o haz clic para elegir archivos</p>
               </div>
-            ))}
-          </VoucherPreview>
+
+              <div className="voucher-section__cta">
+                <small>
+                  {vouchers.length
+                    ? `${vouchers.length} archivo${
+                        vouchers.length > 1 ? "s" : ""
+                      } seleccionado${vouchers.length > 1 ? "s" : ""}`
+                    : "Puedes adjuntar varios vouchers"}
+                </small>
+                <UploadButton type="button" onClick={handleUploadZoneClick}>
+                  <div className="icon">
+                    <v.iconoimagenvacia />
+                  </div>
+                  <span>Seleccionar</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    ref={fileInputRef}
+                    onChange={handleFileSelection}
+                  />
+                </UploadButton>
+              </div>
+            </section>
+
+            <VoucherPreview
+              $isEmpty={!vouchers.length}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+            >
+              {vouchers.length === 0 ? (
+                <p className="empty">Aún no se han cargado vouchers</p>
+              ) : (
+                vouchers.map((voucher, index) => (
+                  <div key={voucher.id} className="voucher-card">
+                    <button
+                      type="button"
+                      className="voucher-card__remove"
+                      onClick={() => handleRemoveVoucher(voucher.id)}
+                      aria-label={`Eliminar voucher ${index + 1}`}
+                    >
+                      ×
+                    </button>
+                    <img src={voucher.preview} alt={`Voucher ${index + 1}`} />
+                    <span>Voucher {index + 1}</span>
+                  </div>
+                ))
+              )}
+            </VoucherPreview>
+          </VoucherSection>
         </Body>
 
         <Footer>
@@ -172,7 +270,7 @@ const Body = styled.div`
 
 const EditorialSelectorRow = styled.div`
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 `;
@@ -191,24 +289,25 @@ const DropdownWrapper = styled(ContainerSelector)`
   gap: 10px;
 `;
 
-const UploadZone = styled.div`
-  border-radius: 22px;
-  padding: 32px 24px;
-  border: 2px dashed rgba(255, 224, 130, 0.6);
-  background: rgba(255, 224, 130, 0.08);
+const VoucherSection = styled.div`
+  border-radius: 24px;
+  padding: 18px;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.04);
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  text-align: center;
+  gap: 16px;
 
-  .icon {
-    font-size: 48px;
-    color: #f7c744;
+  section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 14px;
   }
 
   h3 {
-    margin: 0;
+    margin: 0 0 4px;
   }
 
   p {
@@ -216,31 +315,109 @@ const UploadZone = styled.div`
     color: rgba(${({ theme }) => theme.textRgba}, 0.7);
   }
 
+  .voucher-section__cta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    min-width: 190px;
+    text-align: right;
+  }
+
   small {
-    color: rgba(${({ theme }) => theme.textRgba}, 0.55);
+    color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+  }
+`;
+
+const UploadButton = styled.button`
+  border-radius: 16px;
+  border: 1.5px dashed rgba(255, 224, 130, 0.75);
+  background: rgba(255, 224, 130, 0.08);
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+
+  input {
+    display: none;
+  }
+
+  .icon {
+    font-size: 20px;
+    color: #f7c744;
+    display: flex;
   }
 `;
 
 const VoucherPreview = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 14px;
+  flex: 1;
+  min-height: 180px;
+  border-radius: 20px;
+  border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
+  background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+  padding: 12px;
+
+  ${({ $isEmpty }) =>
+    $isEmpty
+      ? css`
+          display: grid;
+          place-items: center;
+
+          .empty {
+            margin: 0;
+            color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+            text-align: center;
+          }
+        `
+      : css`
+          display: flex;
+          flex-wrap: wrap;
+          gap: 14px;
+        `}
 
   .voucher-card {
-    padding: 14px;
-    border-radius: 18px;
+    position: relative;
+    border-radius: 16px;
     background: rgba(${({ theme }) => theme.textRgba}, 0.04);
-    border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
+    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
+    text-align: center;
+    flex: 0 0 214px;
+    min-height: 250px;
+
+    img {
+      width: 100%;
+      height: 170px;
+      object-fit: contain;
+      border-radius: 12px;
+      background: rgba(4, 18, 29, 0.3);
+      padding: 4px;
+    }
 
     span {
+      font-size: 0.85rem;
       font-weight: 600;
     }
 
-    small {
-      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+    &__remove {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      border: none;
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      cursor: pointer;
+      line-height: 1;
+      font-size: 1rem;
     }
   }
 `;

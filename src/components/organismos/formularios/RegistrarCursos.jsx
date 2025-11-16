@@ -24,6 +24,10 @@ export function RegistrarCursos({
   const { insertarcurso, editarcurso } = useCursosStore();
   const { dataniveles, nivelesitemselect, selectnivel } = useNivelesStore();
   const [stateNivelesLista, setStateNivelesLista] = useState(false);
+  const selectorWidth = "min(100%, 190px)";
+  const nivelNombre =
+    nivelesitemselect?.nombre_nivel ?? nivelesitemselect?.nombre ?? "";
+  const hasSelectedNivel = Boolean(nivelNombre?.trim());
   const {
     register,
     formState: { errors },
@@ -69,6 +73,9 @@ export function RegistrarCursos({
       await insertarcurso(p);
     }
   }
+  const clearNivelSelection = () => {
+    selectnivel(null);
+  };
   useEffect(() => {
     if (!state) {
       return;
@@ -135,11 +142,11 @@ export function RegistrarCursos({
                   state={stateNivelesLista}
                   funcion={() => setStateNivelesLista((prev) => !prev)}
                   texto2={
-                    nivelesitemselect?.nombre_nivel ??
-                    nivelesitemselect?.nombre ??
-                    "Seleccionar"
+                    hasSelectedNivel ? nivelNombre : "Seleccionar nivel"
                   }
                   color="#fc6027"
+                  isPlaceholder={!hasSelectedNivel}
+                  width={selectorWidth}
                 />
                 <ListaDesplegable
                   funcion={selectnivel}
@@ -147,6 +154,8 @@ export function RegistrarCursos({
                   data={dataniveles}
                   top="4rem"
                   setState={() => setStateNivelesLista((prev) => !prev)}
+                  onClear={hasSelectedNivel ? clearNivelSelection : undefined}
+                  width={selectorWidth}
                 />
               </ContainerSelector>
 

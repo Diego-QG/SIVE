@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { IoIosArrowDown, IoIosClose } from "react-icons/io";
+import { IoIosArrowDown } from "react-icons/io";
 
 export function Selector({
   color,
@@ -8,18 +8,19 @@ export function Selector({
   texto1,
   texto2,
   isPlaceholder,
-  onClear,
+  width,
+  minWidth,
 }) {
   const hasLabel = Boolean(texto1?.trim());
-  const showClear = Boolean(onClear) && !isPlaceholder;
-
-  const handleClear = (event) => {
-    event.stopPropagation();
-    onClear?.();
-  };
 
   return (
-    <Container color={color} onClick={funcion} data-open={state}>
+    <Container
+      color={color}
+      onClick={funcion}
+      data-open={state}
+      $width={width}
+      $minWidth={minWidth}
+    >
       <div className="texts">
         {hasLabel && <span className="label">{texto1}</span>}
         <span className={`value ${isPlaceholder ? "placeholder" : ""}`}>
@@ -27,16 +28,6 @@ export function Selector({
         </span>
       </div>
       <div className="actions">
-        {showClear && (
-          <button
-            type="button"
-            className="clear"
-            onClick={handleClear}
-            aria-label="Limpiar selección"
-          >
-            <IoIosClose />
-          </button>
-        )}
         <span className={state ? "open" : "close"}>
           <IoIosArrowDown />
         </span>
@@ -58,32 +49,35 @@ const Container = styled.div`
   align-items: center;
   cursor: pointer;
   border: 1px solid ${(props) => props.color};
-  border-radius: 14px;
-  padding: 12px 16px;
-  gap: 12px;
+  border-radius: 12px;
+  padding: 2px 10px;
+  gap: 10px;
   transition: 0.3s ease;
   font-weight: 600;
-  box-shadow: 0 14px 30px -20px ${(props) => props.color};
-  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
-  min-height: 56px;
+  box-shadow: 0 10px 24px -18px ${(props) => props.color};
+  background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+  min-height: 44px;
+  width: ${({ $width }) => $width ?? "min(100%, 340px)"};
+  min-width: ${({ $minWidth }) => $minWidth ?? "auto"};
+  max-width: 100%;
 
   .texts {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     flex: 1;
     min-width: 0;
   }
 
   .label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: rgba(${({ theme }) => theme.textRgba}, 0.6);
   }
 
   .value {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: ${({ theme }) => theme.text};
     white-space: nowrap;
     overflow: hidden;
@@ -98,25 +92,7 @@ const Container = styled.div`
   .actions {
     display: flex;
     align-items: center;
-    gap: 6px;
     color: ${({ theme }) => theme.text};
-  }
-
-  .clear {
-    border: none;
-    background: rgba(${({ theme }) => theme.textRgba}, 0.08);
-    color: ${({ theme }) => theme.text};
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: 0.2s ease;
-  }
-
-  .clear:hover {
-    background: rgba(${({ theme }) => theme.textRgba}, 0.15);
   }
 
   .open,
@@ -137,6 +113,6 @@ const Container = styled.div`
   &:hover {
     background-color: ${(props) => getHoverColor(props.color)};
     color: ${({ theme }) => theme.text};
-    box-shadow: 0 18px 35px -22px ${(props) => props.color};
+    box-shadow: 0 16px 32px -22px ${(props) => props.color};
   }
 `;
