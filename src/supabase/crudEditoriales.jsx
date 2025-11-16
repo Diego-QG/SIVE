@@ -130,9 +130,9 @@ export async function editarLogoStorage(id, file) {
     });
 }
 
-export async function mostrarEditorialesPorAsesor(p) {
+export async function mostrarEditorialesPorUsuario(p) {
     const { data, error } = await supabase.rpc("fn_mostrareditorialesxusuario", {
-        _id_asesor: p?._id_asesor ?? null,
+        _id_usuario: p?._id_usuario ?? null,
     });
 
     if (error) {

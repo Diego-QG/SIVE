@@ -5,6 +5,7 @@ import {
   eliminarEditorial,
   insertarEditorial,
   mostrarEditoriales,
+  mostrarEditorialesPorUsuario,
 } from "../index";
 
 export const useEditorialesStore = create((set, get) => ({
@@ -59,8 +60,8 @@ export const useEditorialesStore = create((set, get) => ({
     return nextData;
   },
 
-  mostrareditorialesporasesor: async (p) => {
-    const response = await mostrarEditorialesPorAsesor(p);
+  mostrareditorialesporusuario: async (p) => {
+    const response = await mostrarEditorialesPorUsuario(p);
     const nextData = (response ?? []).map((item) => ({
       ...item,
       nombre: item?.nombre ?? "",

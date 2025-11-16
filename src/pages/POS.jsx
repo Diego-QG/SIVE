@@ -4,7 +4,7 @@ import { POSTemplate, Spinner1, useEditorialesStore, useUsuariosStore, useVentas
 export function POS() {
     const { datausuarios } = useUsuariosStore();
     const { mostrarVentas } = useVentasStore();
-    const { mostrareditorialesporasesor } = useEditorialesStore();
+    const { mostrareditorialesporusuario } = useEditorialesStore();
 
     const {
         isLoading: isLoadingVentas,
@@ -21,7 +21,7 @@ export function POS() {
         error: errorEditoriales,
     } = useQuery({
         queryKey: ["mostrar editoriales asesor", datausuarios?.id],
-        queryFn: () => mostrareditorialesporasesor({ _id_asesor: datausuarios?.id }),
+        queryFn: () => mostrareditorialesporusuario({ _id_usuario: datausuarios?.id }),
         enabled: !!datausuarios?.id,
         refetchOnWindowFocus: false,
     });

@@ -1,11 +1,33 @@
+import { useState } from "react";
 import styled from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
+import {
+  ContainerSelector,
+  ListaDesplegable,
+  Selector,
+  useEditorialesStore,
+} from "../../../index";
 
 export function RegistrarVentas1({ state, onClose, onNext }) {
   if (!state) {
     return null;
   }
+
+  const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
+  const { dataeditoriales, editorialesitemselect, selecteditorial } = useEditorialesStore();
+  const hasEditoriales = (dataeditoriales ?? []).length > 0;
+
+  const selectorText = editorialesitemselect?.nombre?.trim()
+    ? editorialesitemselect?.nombre
+    : hasEditoriales
+    ? "Editoriales disponibles"
+    : "Sin editoriales disponibles";
+
+  const toggleEditoriales = () => {
+    if (!hasEditoriales) return;
+    setStateEditorialesLista((prev) => !prev);
+  };
 
   return (
     <Overlay>
@@ -25,9 +47,22 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
         <Body>
           <section>
             <Label>Seleccionar editorial</Label>
-            <GhostButton type="button">
-              <v.iconomarca className="icon" /> Editoriales disponibles
-            </GhostButton>
+            <DropdownWrapper>
+              <Selector
+                state={stateEditorialesLista}
+                funcion={toggleEditoriales}
+                texto1="Editorial"
+                texto2={selectorText}
+                color="#F9D70B"
+              />
+              <ListaDesplegable
+                state={stateEditorialesLista}
+                data={dataeditoriales}
+                funcion={selecteditorial}
+                top="4.3rem"
+                setState={() => setStateEditorialesLista((prev) => !prev)}
+              />
+            </DropdownWrapper>
           </section>
 
           <UploadZone>
@@ -128,23 +163,12 @@ const Label = styled.p`
   font-weight: 600;
 `;
 
-const GhostButton = styled.button`
+const DropdownWrapper = styled(ContainerSelector)`
   width: 100%;
-  border-radius: 18px;
-  border: 2px dashed rgba(${({ theme }) => theme.textRgba}, 0.25);
-  padding: 14px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
-  font-weight: 600;
-  color: ${({ theme }) => theme.text};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
-
-  .icon {
-    font-size: 1rem;
-  }
 `;
 
 const UploadZone = styled.div`
