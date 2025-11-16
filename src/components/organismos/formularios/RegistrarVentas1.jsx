@@ -6,8 +6,8 @@ import {
   ContainerSelector,
   ListaDesplegable,
   Selector,
-  VoucherMultiUploadSection,
   useEditorialesStore,
+  VoucherMultiUploadSection,
 } from "../../../index";
 
 export function RegistrarVentas1({ state, onClose, onNext }) {
@@ -64,7 +64,7 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
   const handleDragOver = (event) => {
     event.preventDefault();
   };
-
+  
   const handleRemoveVoucher = (id) => {
     setVouchers((prev) => {
       const voucherToRemove = prev.find((voucher) => voucher.id === id);
@@ -138,38 +138,7 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
             </EditorialSelectorRow>
           </section>
 
-          <VoucherSection>
-            <section>
-              <div>
-                <h3>Subir voucher de venta</h3>
-                <p>Arrastra, suelta o haz clic para elegir archivos</p>
-              </div>
-
-              <div className="voucher-section__cta">
-                <small>
-                  {vouchers.length
-                    ? `${vouchers.length} archivo${
-                        vouchers.length > 1 ? "s" : ""
-                      } seleccionado${vouchers.length > 1 ? "s" : ""}`
-                    : "Puedes adjuntar varios vouchers"}
-                </small>
-                <UploadButton type="button" onClick={handleUploadZoneClick}>
-                  <div className="icon">
-                    <v.iconoimagenvacia />
-                  </div>
-                  <span>Seleccionar</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    ref={fileInputRef}
-                    onChange={handleFileSelection}
-                  />
-                </UploadButton>
-              </div>
-            </section>
-
-            <VoucherMultiUploadSection
+          <VoucherMultiUploadSection
             vouchers={vouchers}
             onFilesSelected={addVouchers}
             onDrop={handleDrop}
@@ -178,7 +147,6 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
             onRemoveVoucher={handleRemoveVoucher}
             emptyMessage="Aún no se han cargado vouchers"
           />
-
         </Body>
 
         {focusedVoucher && (
