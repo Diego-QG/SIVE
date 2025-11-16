@@ -13,7 +13,7 @@ import {
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export function RegistrarVentas1({
+export function RegistrarVentas2({
   onClose,
   dataSelect,
   accion,
