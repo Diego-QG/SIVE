@@ -15,14 +15,20 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
   }
 
   const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
-  const { dataeditoriales, editorialesitemselect, selecteditorial } = useEditorialesStore();
+  const { dataeditoriales, editorialesitemselect, selecteditorial } =
+    useEditorialesStore();
   const hasEditoriales = (dataeditoriales ?? []).length > 0;
+  const hasSelectedEditorial = Boolean(editorialesitemselect?.nombre?.trim());
 
-  const selectorText = editorialesitemselect?.nombre?.trim()
+  const selectorText = hasSelectedEditorial
     ? editorialesitemselect?.nombre
     : hasEditoriales
     ? "Editoriales disponibles"
     : "Sin editoriales disponibles";
+
+  const clearEditorialSelection = () => {
+    selecteditorial(null);
+  };
 
   const toggleEditoriales = () => {
     if (!hasEditoriales) return;
@@ -46,23 +52,29 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
 
         <Body>
           <section>
-            <Label>Seleccionar editorial</Label>
-            <DropdownWrapper>
-              <Selector
-                state={stateEditorialesLista}
-                funcion={toggleEditoriales}
-                texto1="Editorial"
-                texto2={selectorText}
-                color="#F9D70B"
-              />
-              <ListaDesplegable
-                state={stateEditorialesLista}
-                data={dataeditoriales}
-                funcion={selecteditorial}
-                top="4.3rem"
-                setState={() => setStateEditorialesLista((prev) => !prev)}
-              />
-            </DropdownWrapper>
+            <EditorialSelectorRow>
+              <Label>Seleccionar editorial</Label>
+              <DropdownWrapper>
+                <Selector
+                  state={stateEditorialesLista}
+                  funcion={toggleEditoriales}
+                  texto1=""
+                  texto2={selectorText}
+                  color="#F9D70B"
+                  isPlaceholder={!hasSelectedEditorial}
+                  onClear={hasSelectedEditorial ? clearEditorialSelection : undefined}
+                />
+                <ListaDesplegable
+                  state={stateEditorialesLista}
+                  data={dataeditoriales}
+                  funcion={selecteditorial}
+                  top="3.5rem"
+                  setState={() => setStateEditorialesLista((prev) => !prev)}
+                  onClear={hasSelectedEditorial ? clearEditorialSelection : undefined}
+                  clearLabel="Limpiar selección"
+                />
+              </DropdownWrapper>
+            </EditorialSelectorRow>
           </section>
 
           <UploadZone>
@@ -158,13 +170,21 @@ const Body = styled.div`
   gap: 18px;
 `;
 
+const EditorialSelectorRow = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+`;
+
 const Label = styled.p`
-  margin: 0 0 6px;
+  margin: 0;
   font-weight: 600;
+  white-space: nowrap;
 `;
 
 const DropdownWrapper = styled(ContainerSelector)`
-  width: 100%;
+  width: min(320px, 100%);
   position: relative;
   flex-direction: column;
   align-items: stretch;
