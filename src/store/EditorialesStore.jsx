@@ -58,4 +58,13 @@ export const useEditorialesStore = create((set, get) => ({
     set({ editorialesitemselect: nextData?.[0] ?? null });
     return nextData;
   },
+
+  mostrareditorialesporasesor: async (p) => {
+          const response = await mostrarEditorialesPorAsesor(p);
+          const nextData = response ?? [];
+  
+          set({ parametros: p ?? {} });
+          set({ dataeditoriales: nextData });
+          return nextData;
+      },
 }));

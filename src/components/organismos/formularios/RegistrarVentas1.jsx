@@ -1,250 +1,235 @@
-import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { v } from "../../../styles/variables";
-import {
-  InputText,
-  Btn1,
-  useCursosStore,
-  ContainerSelector,
-  Selector,
-  ListaDesplegable,
-  useNivelesStore,
-} from "../../../index";
-import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
 
-export function RegistrarVentas1({
-  onClose,
-  dataSelect,
-  accion,
-  setIsExploding,
-  state,
-}) {
-  if (!state) return;
-  const { insertarcurso, editarcurso } = useCursosStore();
-  const { dataniveles, nivelesitemselect, selectnivel } = useNivelesStore();
-  const [stateNivelesLista, setStateNivelesLista] = useState(false);
-  const {
-    register,
-    formState: { errors },
-    handleSubmit,
-  } = useForm();
-  const queryClient = useQueryClient();
-  const { isPending, mutate: doInsertar } = useMutation({
-    mutationFn: insertar,
-    mutationKey: ["insertar cursos"],
-    onError: (err) => console.log("El error", err.message),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["mostrar cursos"] });
-      cerrarFormulario();
-    },
-  });
-  const handlesub = (data) => {
-    console.log("[ED1-FORM] submit subniveles:", { data });
-    doInsertar(data);
-  };
-  const cerrarFormulario = () => {
-    onClose?.();
-    if (typeof setIsExploding === "function") setIsExploding(true);
-  };
-  async function insertar(data) {
-    const selectedNivelId = nivelesitemselect?.id ?? dataSelect?.id_nivel;
-
-    if (!selectedNivelId) {
-      throw new Error("Seleccionar");
-    }
-
-    if (accion === "Editar") {
-      const p = {
-        _nombre: data.nombre,
-        _id: dataSelect.id,
-        _id_nivel: selectedNivelId,
-      };
-      await editarcurso(p);
-    } else {
-      const p = {
-        _id_nivel: selectedNivelId,
-        _nombre: data.nombre,
-      };
-      await insertarcurso(p);
-    }
-  }
-  useEffect(() => {
-    if (!state) {
-      return;
-    }
-
-    if (accion === "Editar") {
-      const nivelId =
-        dataSelect?.id_nivel ??
-        null;
-
-      const nivelNombre =
-        dataSelect?.nombre_nivel ??
-        "";
-
-      const existingNivel =
-        dataniveles?.find((item) =>
-          nivelId != null ? item?.id === nivelId : false
-        ) ??
-        (nivelNombre
-          ? {
-              id: nivelId,
-              nombre: nivelNombre,
-              nombre_nivel: nivelNombre,
-            }
-          : null);
-
-      if (existingNivel) {
-        selectnivel(existingNivel);
-        return;
-      }
-
-      if (!dataniveles || dataniveles.length === 0) {
-        return;
-      }
-    }
-
-    selectnivel(null);
-  }, [accion, dataSelect, selectnivel, state]);
+export function RegistrarVentas1({ state, onClose, onNext }) {
   if (!state) {
     return null;
   }
+
   return (
-    <Container>
-      {isPending ? (
-        <span>...🔼</span>
-      ) : (
-        <div className="sub-contenedor">
-          <div className="headers">
-            <section>
-              <h1>
-                {accion == "Editar" ? "Editar curso" : "Registrar nueva venta: Comprobantes"}
-              </h1>
-            </section>
-
-            <section>
-              <span onClick={onClose}>x</span>
-            </section>
+    <Overlay>
+      <Modal>
+        <Header>
+          <div>
+            <p>Registrar nueva venta</p>
+            <h2>Comprobantes</h2>
           </div>
-          <form className="formulario" onSubmit={handleSubmit(doInsertar)}>
-            <section className="form-subcontainer">
-              <ContainerSelector>
-                <label>Nivel</label>
-                <Selector
-                  state={stateNivelesLista}
-                  funcion={() => setStateNivelesLista((prev) => !prev)}
-                  texto2={
-                    nivelesitemselect?.nombre_nivel ??
-                    nivelesitemselect?.nombre ??
-                    "Seleccionar"
-                  }
-                  color="#fc6027"
-                />
-                <ListaDesplegable
-                  funcion={selectnivel}
-                  state={stateNivelesLista}
-                  data={dataniveles}
-                  top="4rem"
-                  setState={() => setStateNivelesLista((prev) => !prev)}
-                />
-              </ContainerSelector>
+          <button type="button" onClick={onClose} aria-label="Cerrar">
+            <v.iconocerrar />
+          </button>
+        </Header>
 
-              <article>
-                <InputText icono={<v.iconoflechaderecha />}>
-                  <input
-                    className="form__field"
-                    defaultValue={dataSelect?.nombre || ""}
-                    type="text"
-                    placeholder="nombre"
-                    {...register("nombre", { required: true })}
-                  />
-                  <label className="form__label">nombre</label>
-                  {errors.nombre?.type === "required" && <p>Campo requerido</p>}
-                </InputText>
-              </article>
+        <RegistroVentaStepper currentStep={1} />
 
-              <Btn1
-                icono={<v.iconoguardar />}
-                titulo="Guardar"
-                bgcolor="#F9D70B"
-              />
-            </section>
-          </form>
-        </div>
-      )}
-    </Container>
+        <Body>
+          <section>
+            <Label>Seleccionar editorial</Label>
+            <GhostButton type="button">
+              <v.iconomarca className="icon" /> Editoriales disponibles
+            </GhostButton>
+          </section>
+
+          <UploadZone>
+            <div className="icon">
+              <v.iconoimagenvacia />
+            </div>
+            <div>
+              <h3>Subir voucher de venta</h3>
+              <p>Arrastra, suelta o haz clic para elegir archivos</p>
+            </div>
+            <small>No hay archivos seleccionados</small>
+          </UploadZone>
+
+          <VoucherPreview>
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div key={`voucher-${index}`} className="voucher-card">
+                <span>Voucher {index + 1}</span>
+                <small>Sin vista previa disponible</small>
+              </div>
+            ))}
+          </VoucherPreview>
+        </Body>
+
+        <Footer>
+          <OutlineButton type="button" onClick={onClose}>
+            Cancelar
+          </OutlineButton>
+          <PrimaryButton type="button" onClick={onNext}>
+            Siguiente <v.icononext />
+          </PrimaryButton>
+        </Footer>
+      </Modal>
+    </Overlay>
   );
 }
-const Container = styled.div`
-  transition: 0.5s;
-  top: 0;
-  left: 0;
+
+const Overlay = styled.div`
   position: fixed;
-  background-color: rgba(10, 9, 9, 0.5);
+  inset: 0;
+  background: rgba(7, 20, 36, 0.55);
   display: flex;
-  width: 100%;
-  min-height: 100vh;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1200;
+  padding: 16px;
+`;
 
-  .sub-contenedor {
-    position: relative;
-    width: 500px;
-    max-width: 85%;
-    border-radius: 20px;
-    background: ${({ theme }) => theme.bgtotal};
-    box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.4);
-    padding: 13px 36px 20px 36px;
-    z-index: 100;
+const Modal = styled.div`
+  width: min(680px, 100%);
+  background: ${({ theme }) => theme.bgtotal};
+  border-radius: 28px;
+  padding: 28px 32px 32px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  color: ${({ theme }) => theme.text};
+`;
 
-    .headers {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+const Header = styled.header`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 
-      h1 {
-        font-size: 20px;
-        font-weight: 500;
-      }
-      span {
-        font-size: 20px;
-        cursor: pointer;
-      }
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: rgba(${({ theme }) => theme.textRgba}, 0.65);
+  }
+
+  h2 {
+    margin: 6px 0 0;
+    font-size: 1.4rem;
+  }
+
+  button {
+    border: none;
+    background: rgba(${({ theme }) => theme.textRgba}, 0.08);
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: ${({ theme }) => theme.text};
+    cursor: pointer;
+  }
+`;
+
+const Body = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+`;
+
+const Label = styled.p`
+  margin: 0 0 6px;
+  font-weight: 600;
+`;
+
+const GhostButton = styled.button`
+  width: 100%;
+  border-radius: 18px;
+  border: 2px dashed rgba(${({ theme }) => theme.textRgba}, 0.25);
+  padding: 14px;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
+  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  .icon {
+    font-size: 1rem;
+  }
+`;
+
+const UploadZone = styled.div`
+  border-radius: 22px;
+  padding: 32px 24px;
+  border: 2px dashed rgba(255, 224, 130, 0.6);
+  background: rgba(255, 224, 130, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+
+  .icon {
+    font-size: 48px;
+    color: #f7c744;
+  }
+
+  h3 {
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(${({ theme }) => theme.textRgba}, 0.7);
+  }
+
+  small {
+    color: rgba(${({ theme }) => theme.textRgba}, 0.55);
+  }
+`;
+
+const VoucherPreview = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+
+  .voucher-card {
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(${({ theme }) => theme.textRgba}, 0.04);
+    border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    span {
+      font-weight: 600;
     }
-    .formulario {
-      .form-subcontainer {
-        gap: 20px;
-        display: flex;
-        flex-direction: column;
-        .colorContainer {
-          .colorPickerContent {
-            padding-top: 15px;
-            min-height: 50px;
-          }
-        }
-      }
+
+    small {
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
     }
   }
 `;
 
-const ContentTitle = styled.div`
+const Footer = styled.footer`
   display: flex;
-  justify-content: start;
-  align-items: center;
-  gap: 20px;
+  justify-content: flex-end;
+  gap: 12px;
 
-  svg {
-    font-size: 25px;
+  @media (max-width: 520px) {
+    flex-direction: column;
   }
-  input {
-    border: none;
-    outline: none;
-    background: transparent;
-    padding: 2px;
-    width: 40px;
-    font-size: 28px;
-  }
+`;
+
+const OutlineButton = styled.button`
+  border-radius: 999px;
+  padding: 12px 24px;
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.35);
+  background: transparent;
+  color: ${({ theme }) => theme.text};
+  font-weight: 600;
+  cursor: pointer;
+`;
+
+const PrimaryButton = styled.button`
+  border-radius: 999px;
+  padding: 12px 28px;
+  border: none;
+  background: linear-gradient(120deg, #ffee58, #17e0c0);
+  color: #04121d;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
 `;

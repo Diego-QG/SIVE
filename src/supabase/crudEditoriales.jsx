@@ -129,3 +129,20 @@ export async function editarLogoStorage(id, file) {
         upsert: true,
     });
 }
+
+export async function mostrarEditorialesPorAsesor(p) {
+    const { data, error } = await supabase.rpc("fn_mostrareditorialesxusuario", {
+        _id_asesor: p?._id_asesor ?? null,
+    });
+
+    if (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: error.message,
+        });
+        return [];
+    }
+
+    return data ?? [];
+}

@@ -1,250 +1,243 @@
-import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { v } from "../../../styles/variables";
-import {
-  InputText,
-  Btn1,
-  useCursosStore,
-  ContainerSelector,
-  Selector,
-  ListaDesplegable,
-  useNivelesStore,
-} from "../../../index";
-import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
 
-export function RegistrarVentas2({
-  onClose,
-  dataSelect,
-  accion,
-  setIsExploding,
-  state,
-}) {
-  if (!state) return;
-  const { insertarcurso, editarcurso } = useCursosStore();
-  const { dataniveles, nivelesitemselect, selectnivel } = useNivelesStore();
-  const [stateNivelesLista, setStateNivelesLista] = useState(false);
-  const {
-    register,
-    formState: { errors },
-    handleSubmit,
-  } = useForm();
-  const queryClient = useQueryClient();
-  const { isPending, mutate: doInsertar } = useMutation({
-    mutationFn: insertar,
-    mutationKey: ["insertar cursos"],
-    onError: (err) => console.log("El error", err.message),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["mostrar cursos"] });
-      cerrarFormulario();
-    },
-  });
-  const handlesub = (data) => {
-    console.log("[ED1-FORM] submit subniveles:", { data });
-    doInsertar(data);
-  };
-  const cerrarFormulario = () => {
-    onClose?.();
-    if (typeof setIsExploding === "function") setIsExploding(true);
-  };
-  async function insertar(data) {
-    const selectedNivelId = nivelesitemselect?.id ?? dataSelect?.id_nivel;
-
-    if (!selectedNivelId) {
-      throw new Error("Seleccionar");
-    }
-
-    if (accion === "Editar") {
-      const p = {
-        _nombre: data.nombre,
-        _id: dataSelect.id,
-        _id_nivel: selectedNivelId,
-      };
-      await editarcurso(p);
-    } else {
-      const p = {
-        _id_nivel: selectedNivelId,
-        _nombre: data.nombre,
-      };
-      await insertarcurso(p);
-    }
-  }
-  useEffect(() => {
-    if (!state) {
-      return;
-    }
-
-    if (accion === "Editar") {
-      const nivelId =
-        dataSelect?.id_nivel ??
-        null;
-
-      const nivelNombre =
-        dataSelect?.nombre_nivel ??
-        "";
-
-      const existingNivel =
-        dataniveles?.find((item) =>
-          nivelId != null ? item?.id === nivelId : false
-        ) ??
-        (nivelNombre
-          ? {
-              id: nivelId,
-              nombre: nivelNombre,
-              nombre_nivel: nivelNombre,
-            }
-          : null);
-
-      if (existingNivel) {
-        selectnivel(existingNivel);
-        return;
-      }
-
-      if (!dataniveles || dataniveles.length === 0) {
-        return;
-      }
-    }
-
-    selectnivel(null);
-  }, [accion, dataSelect, selectnivel, state]);
+export function RegistrarVentas2({ state, onClose, onNext, onPrevious }) {
   if (!state) {
     return null;
   }
+
   return (
-    <Container>
-      {isPending ? (
-        <span>...🔼</span>
-      ) : (
-        <div className="sub-contenedor">
-          <div className="headers">
-            <section>
-              <h1>
-                {accion == "Editar" ? "Editar curso" : "Registrar nueva venta: Docente"}
-              </h1>
-            </section>
-
-            <section>
-              <span onClick={onClose}>x</span>
-            </section>
+    <Overlay>
+      <Modal>
+        <Header>
+          <div>
+            <p>Registrar nueva venta</p>
+            <h2>Datos del docente</h2>
           </div>
-          <form className="formulario" onSubmit={handleSubmit(doInsertar)}>
-            <section className="form-subcontainer">
-              <ContainerSelector>
-                <label>Nivel</label>
-                <Selector
-                  state={stateNivelesLista}
-                  funcion={() => setStateNivelesLista((prev) => !prev)}
-                  texto2={
-                    nivelesitemselect?.nombre_nivel ??
-                    nivelesitemselect?.nombre ??
-                    "Seleccionar"
-                  }
-                  color="#fc6027"
-                />
-                <ListaDesplegable
-                  funcion={selectnivel}
-                  state={stateNivelesLista}
-                  data={dataniveles}
-                  top="4rem"
-                  setState={() => setStateNivelesLista((prev) => !prev)}
-                />
-              </ContainerSelector>
+          <button type="button" onClick={onClose} aria-label="Cerrar">
+            <v.iconocerrar />
+          </button>
+        </Header>
 
-              <article>
-                <InputText icono={<v.iconoflechaderecha />}>
-                  <input
-                    className="form__field"
-                    defaultValue={dataSelect?.nombre || ""}
-                    type="text"
-                    placeholder="nombre"
-                    {...register("nombre", { required: true })}
-                  />
-                  <label className="form__label">nombre</label>
-                  {errors.nombre?.type === "required" && <p>Campo requerido</p>}
-                </InputText>
-              </article>
+        <RegistroVentaStepper currentStep={2} />
 
-              <Btn1
-                icono={<v.iconoguardar />}
-                titulo="Guardar"
-                bgcolor="#F9D70B"
-              />
-            </section>
-          </form>
-        </div>
-      )}
-    </Container>
+        <Body>
+          <InputGroup>
+            <label>Número de teléfono</label>
+            <input type="text" placeholder="Sin información" disabled />
+          </InputGroup>
+
+          <InputRow>
+            <InputGroup>
+              <label>DNI</label>
+              <input type="text" placeholder="Sin información" disabled />
+            </InputGroup>
+            <GhostButton type="button">Consultar</GhostButton>
+          </InputRow>
+
+          <DualGrid>
+            <InputGroup>
+              <label>Nombres</label>
+              <input type="text" placeholder="" disabled />
+            </InputGroup>
+            <InputGroup>
+              <label>Apellido paterno</label>
+              <input type="text" placeholder="" disabled />
+            </InputGroup>
+            <InputGroup>
+              <label>Apellido materno</label>
+              <input type="text" placeholder="" disabled />
+            </InputGroup>
+            <InputGroup>
+              <label>Código de IE</label>
+              <input type="text" placeholder="" disabled />
+            </InputGroup>
+          </DualGrid>
+
+          <SelectorGrid>
+            <SelectorColumn>
+              <span>Departamento</span>
+              <SelectorButton type="button">Departamentos</SelectorButton>
+            </SelectorColumn>
+            <SelectorColumn>
+              <span>Provincia</span>
+              <SelectorButton type="button">Provincias</SelectorButton>
+            </SelectorColumn>
+            <SelectorColumn>
+              <span>Distrito</span>
+              <SelectorButton type="button">Distritos</SelectorButton>
+            </SelectorColumn>
+          </SelectorGrid>
+        </Body>
+
+        <Footer>
+          <OutlineButton type="button" onClick={onPrevious}>
+            <v.iconoflechaizquierda /> Regresar
+          </OutlineButton>
+          <PrimaryButton type="button" onClick={onNext}>
+            Siguiente <v.icononext />
+          </PrimaryButton>
+        </Footer>
+      </Modal>
+    </Overlay>
   );
 }
-const Container = styled.div`
-  transition: 0.5s;
-  top: 0;
-  left: 0;
+
+const Overlay = styled.div`
   position: fixed;
-  background-color: rgba(10, 9, 9, 0.5);
+  inset: 0;
+  background: rgba(7, 20, 36, 0.55);
   display: flex;
-  width: 100%;
-  min-height: 100vh;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1200;
+  padding: 16px;
+`;
 
-  .sub-contenedor {
-    position: relative;
-    width: 500px;
-    max-width: 85%;
-    border-radius: 20px;
-    background: ${({ theme }) => theme.bgtotal};
-    box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.4);
-    padding: 13px 36px 20px 36px;
-    z-index: 100;
+const Modal = styled.div`
+  width: min(720px, 100%);
+  background: ${({ theme }) => theme.bgtotal};
+  border-radius: 28px;
+  padding: 28px 32px 32px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  color: ${({ theme }) => theme.text};
+`;
 
-    .headers {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+const Header = styled.header`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 
-      h1 {
-        font-size: 20px;
-        font-weight: 500;
-      }
-      span {
-        font-size: 20px;
-        cursor: pointer;
-      }
-    }
-    .formulario {
-      .form-subcontainer {
-        gap: 20px;
-        display: flex;
-        flex-direction: column;
-        .colorContainer {
-          .colorPickerContent {
-            padding-top: 15px;
-            min-height: 50px;
-          }
-        }
-      }
-    }
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: rgba(${({ theme }) => theme.textRgba}, 0.65);
+  }
+
+  h2 {
+    margin: 6px 0 0;
+    font-size: 1.4rem;
+  }
+
+  button {
+    border: none;
+    background: rgba(${({ theme }) => theme.textRgba}, 0.08);
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: ${({ theme }) => theme.text};
+    cursor: pointer;
   }
 `;
 
-const ContentTitle = styled.div`
+const Body = styled.div`
   display: flex;
-  justify-content: start;
-  align-items: center;
-  gap: 20px;
+  flex-direction: column;
+  gap: 18px;
+`;
 
-  svg {
-    font-size: 25px;
-  }
+const InputGroup = styled.label`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+
   input {
-    border: none;
-    outline: none;
-    background: transparent;
-    padding: 2px;
-    width: 40px;
-    font-size: 28px;
+    border-radius: 14px;
+    border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
+    padding: 12px 16px;
+    background: rgba(${({ theme }) => theme.textRgba}, 0.04);
+    color: rgba(${({ theme }) => theme.textRgba}, 0.7);
   }
+`;
+
+const InputRow = styled.div`
+  display: flex;
+  gap: 16px;
+
+  @media (max-width: 560px) {
+    flex-direction: column;
+  }
+`;
+
+const GhostButton = styled.button`
+  border: none;
+  border-radius: 14px;
+  padding: 0 26px;
+  background: rgba(23, 224, 192, 0.15);
+  color: #0c554a;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
+const DualGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+`;
+
+const SelectorGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+`;
+
+const SelectorColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+`;
+
+const SelectorButton = styled.button`
+  border-radius: 16px;
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.2);
+  padding: 12px 18px;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+  color: ${({ theme }) => theme.text};
+  text-align: left;
+  cursor: pointer;
+`;
+
+const Footer = styled.footer`
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+
+  @media (max-width: 520px) {
+    flex-direction: column;
+  }
+`;
+
+const OutlineButton = styled.button`
+  border-radius: 999px;
+  padding: 12px 24px;
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.35);
+  background: transparent;
+  color: ${({ theme }) => theme.text};
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+`;
+
+const PrimaryButton = styled.button`
+  border-radius: 999px;
+  padding: 12px 28px;
+  border: none;
+  background: linear-gradient(120deg, #ffee58, #17e0c0);
+  color: #04121d;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
 `;

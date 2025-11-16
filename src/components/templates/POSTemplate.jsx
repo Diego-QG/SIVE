@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 export function POSTemplate() {
   const { dataventas, buscador, setBuscador } = useVentasStore();
   const [openRegistro, setOpenRegistro] = useState(false);
+  const [registroStep, setRegistroStep] = useState(1);
   const [accion, setAccion] = useState("Nuevo");
   const [dataSelect, setDataSelect] = useState(null);
   const [isExploding, setIsExploding] = useState(false);
@@ -41,6 +42,7 @@ export function POSTemplate() {
 
   const handleNuevaVenta = () => {
     setOpenRegistro(true);
+    setRegistroStep(1);
     setAccion("Nuevo");
     setDataSelect(null);
     setIsExploding(false);
@@ -48,16 +50,32 @@ export function POSTemplate() {
 
   const handleCloseRegistro = () => {
     setOpenRegistro(false);
+    setRegistroStep(1);
+  };
+
+  const handleFinishRegistro = () => {
+    setIsExploding(true);
+    handleCloseRegistro();
   };
 
   return (
     <Container>
       <RegistrarVentas1
-        setIsExploding={setIsExploding}
         onClose={handleCloseRegistro}
-        dataSelect={dataSelect}
-        accion={accion}
-        state={openRegistro}
+        state={openRegistro && registroStep === 1}
+        onNext={() => setRegistroStep(2)}
+      />
+      <RegistrarVentas2
+        onClose={handleCloseRegistro}
+        state={openRegistro && registroStep === 2}
+        onNext={() => setRegistroStep(3)}
+        onPrevious={() => setRegistroStep(1)}
+      />
+      <RegistrarVentas3
+        onClose={handleCloseRegistro}
+        state={openRegistro && registroStep === 3}
+        onPrevious={() => setRegistroStep(2)}
+        onFinish={handleFinishRegistro}
       />
       <section className="area1">
         <div className="hero-text">
