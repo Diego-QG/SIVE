@@ -153,6 +153,8 @@ const Container = styled.div`
 
   .area2 {
     grid-area: area2;
+    display: flex;
+    justify-content: center;
 
     .buscador-pos {
       width: 100%;

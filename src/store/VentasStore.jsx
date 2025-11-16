@@ -1,13 +1,13 @@
 import { create } from "zustand";
-import { mostrarVentasPorAsesor } from "../index";
+import { mostrarVentasPorUsuario } from "../index";
 
 export const useVentasStore = create((set) => ({
     buscador: "",
     setBuscador: (p) => set({ buscador: p }),
     dataventas: [],
     parametros: {},
-    mostrarVentas: async (p) => {
-        const response = await mostrarVentasPorAsesor(p);
+    mostrarventasporusuario: async (p) => {
+        const response = await mostrarVentasPorUsuario(p);
         const nextData = response ?? [];
 
         set({ parametros: p ?? {} });

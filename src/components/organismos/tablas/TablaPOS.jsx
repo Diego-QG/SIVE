@@ -54,28 +54,18 @@ const obtenerPartesFecha = (valor) => {
 
   return { fecha: "--/--/--", hora: "--:--" };
 };
+
+const mostrarConGuion = (valor) => {
+  if (valor === null || valor === undefined || valor === "" || valor.trim() === "") {
+    return "-";
+  }
+  return valor;
+};
+
 export function TablaPOS({ data = [] }) {
   const tableData = Array.isArray(data) ? data : [];
   const [pagina, setPagina] = useState(1);
   const [columnFilters, setColumnFilters] = useState([]);
-
-  const totalKeys = [
-    "total",
-    "total_venta",
-    "total_monto",
-    "total_general",
-    "total_registrado",
-    "total_cajas",
-  ];
-
-  const obtenerTotal = (row) => {
-    for (const key of totalKeys) {
-      if (row?.[key] !== undefined && row?.[key] !== null) {
-        return row[key];
-      }
-    }
-    return null;
-  };
 
   const columns = [
     {
@@ -106,7 +96,7 @@ export function TablaPOS({ data = [] }) {
       meta: {
         dataTitle: "Editorial",
       },
-      cell: (info) => <span>{info.getValue()}</span>,
+      cell: (info) => <span>{mostrarConGuion(info.getValue())}</span>,
       enableColumnFilter: true,
       enableSorting: false,
       filterFn: (row, columnId, filterStatuses) => {
@@ -121,7 +111,7 @@ export function TablaPOS({ data = [] }) {
       meta: {
         dataTitle: "Docente",
       },
-      cell: (info) => <span>{info.getValue()}</span>,
+      cell: (info) => <span>{mostrarConGuion(info.getValue())}</span>,
       enableColumnFilter: true,
       enableSorting: false,
       filterFn: (row, columnId, filterStatuses) => {
@@ -178,9 +168,7 @@ export function TablaPOS({ data = [] }) {
         const value = info.getValue();
         return (
           <span>
-            {value === null || value === undefined || value === ""
-              ? "-"
-              : value}
+            {mostrarConGuion(value)}
           </span>
         );
       },

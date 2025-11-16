@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
 import {
   ContainerSelector,
   ListaDesplegable,
   Selector,
+  VoucherMultiUploadSection,
   useEditorialesStore,
 } from "../../../index";
 
@@ -16,7 +17,6 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
 
   const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
   const [vouchers, setVouchers] = useState([]);
-  const fileInputRef = useRef(null);
   const vouchersRef = useRef([]);
   const [focusedVoucher, setFocusedVoucher] = useState(null);
   const { dataeditoriales, editorialesitemselect, selecteditorial } =
@@ -55,12 +55,6 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
     setVouchers((prev) => [...prev, ...normalizedFiles]);
   };
 
-  const handleFileSelection = (event) => {
-    const selectedFiles = Array.from(event.target.files ?? []);
-    addVouchers(selectedFiles);
-    event.target.value = "";
-  };
-
   const handleDrop = (event) => {
     event.preventDefault();
     const droppedFiles = Array.from(event.dataTransfer?.files ?? []);
@@ -69,10 +63,6 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
 
   const handleDragOver = (event) => {
     event.preventDefault();
-  };
-
-  const handleUploadZoneClick = () => {
-    fileInputRef.current?.click();
   };
 
   const handleRemoveVoucher = (id) => {
@@ -179,45 +169,16 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
               </div>
             </section>
 
-            <VoucherPreview
-              $isEmpty={!vouchers.length}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-            >
-              {vouchers.length === 0 ? (
-                <p className="empty">Aún no se han cargado vouchers</p>
-              ) : (
-                vouchers.map((voucher, index) => (
-                  <div
-                    key={voucher.id}
-                    className="voucher-card"
-                    onClick={() => handleFocusVoucher(voucher)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        handleFocusVoucher(voucher);
-                      }
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="voucher-card__remove"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleRemoveVoucher(voucher.id);
-                      }}
-                      aria-label={`Eliminar voucher ${index + 1}`}
-                    >
-                      ×
-                    </button>
-                    <img src={voucher.preview} alt={`Voucher ${index + 1}`} />
-                    <span>Voucher {index + 1}</span>
-                  </div>
-                ))
-              )}
-            </VoucherPreview>
-          </VoucherSection>
+            <VoucherMultiUploadSection
+            vouchers={vouchers}
+            onFilesSelected={addVouchers}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onVoucherClick={handleFocusVoucher}
+            onRemoveVoucher={handleRemoveVoucher}
+            emptyMessage="Aún no se han cargado vouchers"
+          />
+
         </Body>
 
         {focusedVoucher && (

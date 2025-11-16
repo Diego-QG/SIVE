@@ -3,7 +3,7 @@ import { POSTemplate, Spinner1, useEditorialesStore, useUsuariosStore, useVentas
 
 export function POS() {
     const { datausuarios } = useUsuariosStore();
-    const { mostrarVentas } = useVentasStore();
+    const { mostrarventasporusuario } = useVentasStore();
     const { mostrareditorialesporusuario } = useEditorialesStore();
 
     const {
@@ -11,7 +11,7 @@ export function POS() {
         error: errorVentas,
     } = useQuery({
         queryKey: ["mostrar ventas", datausuarios?.id],
-        queryFn: () => mostrarVentas({ _id_asesor: datausuarios?.id }),
+        queryFn: () => mostrarventasporusuario({ _id_usuario: datausuarios?.id }),
         enabled: !!datausuarios?.id,
         refetchOnWindowFocus: false,
     });
@@ -20,13 +20,17 @@ export function POS() {
         isLoading: isLoadingEditoriales,
         error: errorEditoriales,
     } = useQuery({
-        queryKey: ["mostrar editoriales asesor", datausuarios?.id],
+        queryKey: ["mostrar editoriales usuario", datausuarios?.id],
         queryFn: () => mostrareditorialesporusuario({ _id_usuario: datausuarios?.id }),
         enabled: !!datausuarios?.id,
         refetchOnWindowFocus: false,
     });
 
-    if (isLoadingVentas || isLoadingEditoriales || !datausuarios?.id) {
+    if (
+        isLoadingVentas ||
+        isLoadingEditoriales ||
+        !datausuarios?.id
+    ) {
         return <Spinner1 />;
     }
 
