@@ -35,6 +35,7 @@ export function BuscadorPOS({ setBuscador }) {
 }
 
 const Container = styled.section`
+  box-sizing: border-box;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -55,6 +56,7 @@ const Container = styled.section`
 `;
 
 const SearchWrapper = styled.div`
+  box-sizing: border-box;
   width: 100%;
   height: 46px;
   display: flex;
@@ -85,6 +87,7 @@ const SearchWrapper = styled.div`
 `;
 
 const LegendWrapper = styled.div`
+  box-sizing: border-box;
   width: 100%;
   display: flex;
   flex-wrap: wrap;

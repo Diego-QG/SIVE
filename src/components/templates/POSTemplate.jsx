@@ -2,6 +2,8 @@ import styled from "styled-components";
 import {
   BuscadorPOS,
   RegistrarVentas1,
+  RegistrarVentas2,
+  RegistrarVentas3,
   TablaPOS,
   Title,
   useVentasStore,
@@ -133,11 +135,9 @@ const Container = styled.div`
 
   .area2 {
     grid-area: area2;
-    display: flex;
-    justify-content: center;
 
     .buscador-pos {
-      width: clamp(280px, 90vw, 960px);
+      width: 100%;
     }
 
     .buscador-pos > section {
