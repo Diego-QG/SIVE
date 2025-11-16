@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import {
   BuscadorPOS,
-  RegistrarCursos,
+  RegistrarVentas1,
   TablaPOS,
   Title,
   useVentasStore,
@@ -50,7 +50,7 @@ export function POSTemplate() {
 
   return (
     <Container>
-      <RegistrarCursos
+      <RegistrarVentas1
         setIsExploding={setIsExploding}
         onClose={handleCloseRegistro}
         dataSelect={dataSelect}
@@ -70,7 +70,9 @@ export function POSTemplate() {
         </ActionButton>
       </section>
       <section className="area2">
-        <BuscadorPOS setBuscador={setBuscador} />
+        <div className="buscador-pos">
+          <BuscadorPOS setBuscador={setBuscador} />
+        </div>
       </section>
       <section className="main">
         {isExploding && <ConfettiExplosion />}
@@ -131,6 +133,16 @@ const Container = styled.div`
 
   .area2 {
     grid-area: area2;
+    display: flex;
+    justify-content: center;
+
+    .buscador-pos {
+      width: clamp(280px, 90vw, 960px);
+    }
+
+    .buscador-pos > section {
+      width: 100%;
+    }
   }
 
   .main {
