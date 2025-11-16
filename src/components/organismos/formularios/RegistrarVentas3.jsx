@@ -94,9 +94,6 @@ export function RegistrarVentas3({ state, onClose, onPrevious, onFinish }) {
           <OutlineButton type="button" onClick={onPrevious}>
             <v.iconoflechaizquierda /> Regresar
           </OutlineButton>
-          <OutlineButton type="button" onClick={onClose}>
-            Cancelar
-          </OutlineButton>
           <PrimaryButton
             type="button"
             onClick={() => {

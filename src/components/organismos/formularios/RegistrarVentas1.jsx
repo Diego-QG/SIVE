@@ -18,6 +18,7 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
   const [vouchers, setVouchers] = useState([]);
   const fileInputRef = useRef(null);
   const vouchersRef = useRef([]);
+  const [focusedVoucher, setFocusedVoucher] = useState(null);
   const { dataeditoriales, editorialesitemselect, selecteditorial } =
     useEditorialesStore();
   const hasEditoriales = (dataeditoriales ?? []).length > 0;
@@ -82,7 +83,16 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
       }
       return prev.filter((voucher) => voucher.id !== id);
     });
+    if (focusedVoucher?.id === id) {
+      setFocusedVoucher(null);
+    }
   };
+
+  const handleFocusVoucher = (voucher) => {
+    setFocusedVoucher(voucher);
+  };
+
+  const closeFocusedVoucher = () => setFocusedVoucher(null);
 
   useEffect(() => {
     vouchersRef.current = vouchers;
@@ -178,11 +188,25 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
                 <p className="empty">Aún no se han cargado vouchers</p>
               ) : (
                 vouchers.map((voucher, index) => (
-                  <div key={voucher.id} className="voucher-card">
+                  <div
+                    key={voucher.id}
+                    className="voucher-card"
+                    onClick={() => handleFocusVoucher(voucher)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        handleFocusVoucher(voucher);
+                      }
+                    }}
+                  >
                     <button
                       type="button"
                       className="voucher-card__remove"
-                      onClick={() => handleRemoveVoucher(voucher.id)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleRemoveVoucher(voucher.id);
+                      }}
                       aria-label={`Eliminar voucher ${index + 1}`}
                     >
                       ×
@@ -195,6 +219,25 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
             </VoucherPreview>
           </VoucherSection>
         </Body>
+
+        {focusedVoucher && (
+          <VoucherLightboxOverlay onClick={closeFocusedVoucher}>
+            <VoucherLightboxContent onClick={(event) => event.stopPropagation()}>
+              <button
+                type="button"
+                className="close"
+                onClick={closeFocusedVoucher}
+                aria-label="Cerrar vista ampliada"
+              >
+                ×
+              </button>
+              <img
+                src={focusedVoucher.preview}
+                alt={`Vista ampliada del voucher ${focusedVoucher.id}`}
+              />
+            </VoucherLightboxContent>
+          </VoucherLightboxOverlay>
+        )}
 
         <Footer>
           <OutlineButton type="button" onClick={onClose}>
@@ -361,7 +404,8 @@ const UploadButton = styled.button`
 
 const VoucherPreview = styled.div`
   flex: 1;
-  min-height: 180px;
+  min-height: 244px;
+  max-height: 244px;
   border-radius: 20px;
   border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
   background: rgba(${({ theme }) => theme.textRgba}, 0.02);
@@ -372,6 +416,7 @@ const VoucherPreview = styled.div`
       ? css`
           display: grid;
           place-items: center;
+          overflow: hidden;
 
           .empty {
             margin: 0;
@@ -384,6 +429,22 @@ const VoucherPreview = styled.div`
           flex-wrap: wrap;
           gap: 14px;
           justify-content: center;
+          align-content: flex-start;
+          overflow-y: auto;
+
+          &::-webkit-scrollbar {
+            width: 8px;
+          }
+
+          &::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 999px;
+          }
+
+          &::-webkit-scrollbar-thumb {
+            background: rgba(${({ theme }) => theme.textRgba}, 0.15);
+            border-radius: 999px;
+          }
         `}
 
   .voucher-card {
@@ -428,6 +489,56 @@ const VoucherPreview = styled.div`
     }
   }
 `;
+
+const VoucherLightboxOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  padding: 16px;
+`;
+
+const VoucherLightboxContent = styled.div`
+  position: relative;
+  width: min(640px, calc(100% - 64px));
+  max-height: min(90vh, 820px);
+  background: ${({ theme }) => theme.bgtotal};
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+  img {
+    width: 100%;
+    height: auto;
+    max-height: calc(90vh - 160px);
+    object-fit: contain;
+    border-radius: 18px;
+    background: rgba(4, 18, 29, 0.75);
+    padding: 8px;
+  }
+
+  .close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    font-size: 1.3rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+`;
+
 
 const Footer = styled.footer`
   display: flex;
