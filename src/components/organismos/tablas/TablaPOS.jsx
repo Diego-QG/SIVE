@@ -65,9 +65,25 @@ const mostrarConGuion = (valor) => {
   return valor;
 };
 
-const obtenerPayloadEliminacion = (venta, usuarioId) => {
+const obtenerIdVenta = (venta) => {
+  if (!venta || typeof venta !== "object") {
+    return null;
+  }
 
-  const idVenta = venta?.id;
+  const possibleKeys = ["id", "id_venta", "venta_id"];
+
+  for (const key of possibleKeys) {
+    const value = venta[key];
+    if (value !== null && value !== undefined && value !== "") {
+      return value;
+    }
+  }
+
+  return null;
+};
+
+const obtenerPayloadEliminacion = (venta, usuarioId) => {
+  const idVenta = obtenerIdVenta(venta);
 
   if (!idVenta || !usuarioId) {
     return null;
@@ -121,15 +137,6 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
 
       const eliminado = await eliminarborrador(payload);
 
-      if (eliminado) {
-        Swal.fire({
-          title: "Eliminado",
-          text: "El borrador fue eliminado correctamente.",
-          icon: "success",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-      }
     });
   };
 
@@ -268,9 +275,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
                   ? () => editarBorrador(info.row.original)
                   : undefined
               }
-              funcionEliminar={() => {
-                {console.log(info.row.original)}
-                eliminarBorrador(info.row.original)}}
+              funcionEliminar={() => eliminarBorrador(info.row.original)}
             />
           );
         }
