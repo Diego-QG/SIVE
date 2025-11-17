@@ -202,6 +202,9 @@ const Modal = styled.div`
   flex-direction: column;
   gap: 22px;
   color: ${({ theme }) => theme.text};
+  height: min(760px, calc(100vh - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  overflow: hidden;
 `;
 
 const Header = styled.header`
@@ -238,6 +241,23 @@ const Body = styled.div`
   display: flex;
   flex-direction: column;
   gap: 18px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.2);
+    border-radius: 999px;
+  }
 `;
 
 const EditorialSelectorRow = styled.div`
@@ -259,164 +279,6 @@ const DropdownWrapper = styled(ContainerSelector)`
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
-`;
-
-const VoucherSection = styled.div`
-  border-radius: 24px;
-  padding: 18px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.04);
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-
-  section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 14px;
-  }
-  
-
-  h3 {
-    margin: 0 0 4px;
-  }
-
-  p {
-    margin: 0;
-    color: rgba(${({ theme }) => theme.textRgba}, 0.7);
-  }
-
-  .voucher-section__cta {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    min-width: 220px;
-    width: min(260px, 100%);
-    text-align: left;
-    justify-content: center;
-  }
-
-  small {
-    color: rgba(${({ theme }) => theme.textRgba}, 0.6);
-  }
-`;
-
-const UploadButton = styled.button`
-  border-radius: 18px;
-  border: 1.5px dashed rgba(247, 199, 68, 0.95);
-  background: rgba(247, 199, 68, 0.2);
-  padding: 14px 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 600;
-  font-size: 1rem;
-  color: ${({ theme }) => theme.text};
-  cursor: pointer;
-  width: 100%;
-  justify-content: center;
-  min-height: 58px;
-
-  input {
-    display: none;
-  }
-
-  .icon {
-    font-size: 22px;
-    color: #f7c744;
-    display: flex;
-  }
-`;
-
-const VoucherPreview = styled.div`
-  flex: 1;
-  min-height: 244px;
-  max-height: 244px;
-  border-radius: 20px;
-  border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
-  background: rgba(${({ theme }) => theme.textRgba}, 0.02);
-  padding: 12px;
-
-  ${({ $isEmpty }) =>
-    $isEmpty
-      ? css`
-          display: grid;
-          place-items: center;
-          overflow: hidden;
-
-          .empty {
-            margin: 0;
-            color: rgba(${({ theme }) => theme.textRgba}, 0.6);
-            text-align: center;
-          }
-        `
-      : css`
-          display: flex;
-          flex-wrap: wrap;
-          gap: 14px;
-          justify-content: center;
-          align-content: flex-start;
-          overflow-y: auto;
-
-          &::-webkit-scrollbar {
-            width: 8px;
-          }
-
-          &::-webkit-scrollbar-track {
-            background: transparent;
-            border-radius: 999px;
-          }
-
-          &::-webkit-scrollbar-thumb {
-            background: rgba(${({ theme }) => theme.textRgba}, 0.15);
-            border-radius: 999px;
-          }
-        `}
-
-  .voucher-card {
-    position: relative;
-    border-radius: 16px;
-    background: rgba(${({ theme }) => theme.textRgba}, 0.04);
-    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    text-align: center;
-    flex: 0 0 214px;
-
-    img {
-      width: 100%;
-      height: 170px;
-      object-fit: contain;
-      border-radius: 12px;
-      background: rgba(4, 18, 29, 0.3);
-      padding: 4px;
-    }
-
-    span {
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-
-    &__remove {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      border: none;
-      background: rgba(0, 0, 0, 0.45);
-      color: #fff;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      cursor: pointer;
-      line-height: 1;
-      font-size: 1rem;
-    }
-  }
 `;
 
 const VoucherLightboxOverlay = styled.div`
