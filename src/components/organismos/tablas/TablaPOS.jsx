@@ -3,6 +3,8 @@ import {
   Paginacion,
   ContentEstadosTabla,
   ContentAccionesTabla,
+  useVentasStore,
+  useUsuariosStore,
 } from "../../../index";
 import { v } from "../../../styles/variables";
 import { useState } from "react";
@@ -16,6 +18,7 @@ import {
 } from "@tanstack/react-table";
 import { FaArrowsAltV } from "react-icons/fa";
 import { obtenerEstilosEstado } from "../../../utils/posEstadosConfig";
+import Swal from "sweetalert2";
 
 const obtenerPartesFecha = (valor) => {
   if (!valor) {
@@ -62,10 +65,73 @@ const mostrarConGuion = (valor) => {
   return valor;
 };
 
-export function TablaPOS({ data = [] }) {
+const obtenerPayloadEliminacion = (venta, usuarioId) => {
+
+  const idVenta = venta?.id;
+
+  if (!idVenta || !usuarioId) {
+    return null;
+  }
+
+  return {
+    _id_venta: idVenta,
+    _id_usuario: usuarioId,
+  };
+};
+
+export function TablaPOS({ data = [], onEditarBorrador }) {
   const tableData = Array.isArray(data) ? data : [];
   const [pagina, setPagina] = useState(1);
   const [columnFilters, setColumnFilters] = useState([]);
+  const { eliminarborrador } = useVentasStore();
+  const { datausuarios } = useUsuariosStore();
+  const canEditBorrador = typeof onEditarBorrador === "function";
+
+  const editarBorrador = (venta) => {
+    if (canEditBorrador) {
+      onEditarBorrador(venta);
+    }
+  };
+
+  const eliminarBorrador = (venta) => {
+    const usuarioId = datausuarios?.id;
+    const payload = obtenerPayloadEliminacion(venta, usuarioId);
+
+    if (!payload) {
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "No se pudo identificar el borrador que deseas eliminar (ID faltante).",
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: "¿Estás seguro(a)(e)?",
+      text: "Una vez eliminado, ¡no podrás recuperar este borrador!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Si, eliminar",
+    }).then(async (result) => {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      const eliminado = await eliminarborrador(payload);
+
+      if (eliminado) {
+        Swal.fire({
+          title: "Eliminado",
+          text: "El borrador fue eliminado correctamente.",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      }
+    });
+  };
 
   const columns = [
     {
@@ -195,7 +261,18 @@ export function TablaPOS({ data = [] }) {
         const esBorrador = estadoRegistro === "borrador";
 
         if (esBorrador) {
-          return <ContentAccionesTabla />;
+          return (
+            <ContentAccionesTabla
+              funcionEditar={
+                canEditBorrador
+                  ? () => editarBorrador(info.row.original)
+                  : undefined
+              }
+              funcionEliminar={() => {
+                {console.log(info.row.original)}
+                eliminarBorrador(info.row.original)}}
+            />
+          );
         }
 
         return (
@@ -203,7 +280,6 @@ export function TablaPOS({ data = [] }) {
             estadoSupervision={info.row?.original?.estado_supervision}
             estadoContabilidad={info.row?.original?.estado_contabilidad}
             estadoEntregas={info.row?.original?.estado_entregas}
-            {...console.log(info.row?.original)}
           />
         );
       },

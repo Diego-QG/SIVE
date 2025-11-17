@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { RiShieldCheckLine } from "react-icons/ri";
 import { HiOutlineChartPie } from "react-icons/hi";
 import { PiCubeThin } from "react-icons/pi";
-import { useThemeStore } from "../../../store/ThemeStore";
+import { EstadoTabla, useThemeStore } from "../../../index";
 
 const STATE_STYLES = {
   gray: {
@@ -148,18 +148,16 @@ export function ContentEstadosTabla({
           theme
         );
         return (
-          <EstadoButton
+          <EstadoTabla
             key={id}
-            type="button"
-            onClick={onClick}
-            $color={color}
-            $background={background}
-            $border={border}
+            funcion={onClick}
+            icono={<Icon />}
+            color={color}
+            background={background}
+            border={border}
             title={estadoLabel || "Sin estado"}
-            aria-label={`Estado ${id}: ${estadoLabel || "sin estado"}`}
-          >
-            <Icon />
-          </EstadoButton>
+            ariaLabel={`Estado ${id}: ${estadoLabel || "sin estado"}`}
+          />
         );
       })}
     </Container>
@@ -171,25 +169,4 @@ const Container = styled.div`
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
-`;
-
-const EstadoButton = styled.button`
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 1px solid ${(props) => props.$border || "transparent"};
-  background-color: ${(props) => props.$background};
-  color: ${(props) => props.$color};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease,
-    border-color 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 14px rgba(0, 0, 0, 0.18);
-  }
 `;
