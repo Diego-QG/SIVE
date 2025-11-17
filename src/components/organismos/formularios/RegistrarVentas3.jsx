@@ -1,11 +1,29 @@
 import styled from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
+import { useUsuariosStore, useVentasStore } from "../../../index";
 
-export function RegistrarVentas3({ state, onClose, onPrevious, onFinish }) {
+export function RegistrarVentas3({
+  state,
+  onClose,
+  onPrevious,
+  onFinish,
+  ventaDraftId,
+  ventaTieneDatos,
+}) {
+  const { datausuarios } = useUsuariosStore();
+  const { eliminarborrador } = useVentasStore();
   if (!state) {
     return null;
   }
+
+  const handleRequestClose = async () => {
+    if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
+      await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
+    }
+
+    onClose?.();
+  };
 
   const resumen = [];
   const total = resumen.reduce((sum, item) => sum + item.precio, 0);
@@ -18,7 +36,7 @@ export function RegistrarVentas3({ state, onClose, onPrevious, onFinish }) {
             <p>Registrar nueva venta</p>
             <h2>Datos de venta</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Cerrar">
+          <button type="button" onClick={handleRequestClose} aria-label="Cerrar">
             <v.iconocerrar />
           </button>
         </Header>

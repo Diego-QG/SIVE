@@ -7,13 +7,21 @@ import {
   ListaDesplegable,
   Selector,
   useEditorialesStore,
+  useUsuariosStore,
+  useVentasStore,
   VoucherMultiUploadSection,
 } from "../../../index";
 
-export function RegistrarVentas1({ state, onClose, onNext }) {
-  if (!state) {
-    return null;
-  }
+export function RegistrarVentas1({
+  state,
+  onClose,
+  onNext,
+  ventaDraftId,
+  onDraftCreated,
+  ventaTieneDatos,
+  onVentaTieneDatosChange,
+  onDraftCreationStateChange,
+}) {
 
   const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
   const [vouchers, setVouchers] = useState([]);
@@ -21,6 +29,9 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
   const [focusedVoucher, setFocusedVoucher] = useState(null);
   const { dataeditoriales, editorialesitemselect, selecteditorial } =
     useEditorialesStore();
+  const { datausuarios } = useUsuariosStore();
+  const { insertarborrador, eliminarborrador, insertareditorialenventa } = useVentasStore();
+  const [isSavingEditorial, setIsSavingEditorial] = useState(false);
   const hasEditoriales = (dataeditoriales ?? []).length > 0;
   const hasSelectedEditorial = Boolean(editorialesitemselect?.nombre?.trim());
 
@@ -32,6 +43,26 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
 
   const clearEditorialSelection = () => {
     selecteditorial(null);
+    onVentaTieneDatosChange?.(false);
+  };
+
+  const handleEditorialSelection = async (editorial) => {
+    if (!editorial?.id || !ventaDraftId) {
+      clearEditorialSelection();
+      return;
+    }
+
+    setIsSavingEditorial(true);
+    const isSaved = await insertareditorialenventa({
+      _id_venta: ventaDraftId,
+      _id_editorial: editorial.id,
+    });
+    setIsSavingEditorial(false);
+
+    if (isSaved) {
+      selecteditorial(editorial);
+      onVentaTieneDatosChange?.(true);
+    }
   };
 
   const toggleEditoriales = () => {
@@ -96,6 +127,47 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
     };
   }, []);
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    const crearBorrador = async () => {
+      if (!state || ventaDraftId || !datausuarios?.id) {
+        return;
+      }
+
+      onDraftCreationStateChange?.(true);
+      const nuevoId = await insertarborrador({ _id_usuario: datausuarios.id });
+      onDraftCreationStateChange?.(false);
+
+      if (isCancelled || !nuevoId) {
+        return;
+      }
+
+      onDraftCreated?.(nuevoId);
+      onVentaTieneDatosChange?.(false);
+      selecteditorial(null);
+    };
+
+    crearBorrador();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [state, ventaDraftId, datausuarios?.id, insertarborrador, onDraftCreated, onDraftCreationStateChange, onVentaTieneDatosChange, selecteditorial]);
+
+  if (!state) {
+    return null;
+  }
+
+  const handleRequestClose = async () => {
+    if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
+      await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
+    }
+
+    clearEditorialSelection();
+    onClose?.();
+  };
+
   return (
     <Overlay>
       <Modal>
@@ -104,7 +176,7 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
             <p>Registrar nueva venta</p>
             <h2>Comprobantes</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Cerrar">
+          <button type="button" onClick={handleRequestClose} aria-label="Cerrar">
             <v.iconocerrar />
           </button>
         </Header>
@@ -120,15 +192,15 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
                   state={stateEditorialesLista}
                   funcion={toggleEditoriales}
                   texto1=""
-                  texto2={selectorText}
+                  texto2={isSavingEditorial ? "Guardando..." : selectorText}
                   color="#F9D70B"
-                  isPlaceholder={!hasSelectedEditorial}
+                  isPlaceholder={!hasSelectedEditorial || isSavingEditorial}
                   onClear={hasSelectedEditorial ? clearEditorialSelection : undefined}
                 />
                 <ListaDesplegable
                   state={stateEditorialesLista}
                   data={dataeditoriales}
-                  funcion={selecteditorial}
+                  funcion={handleEditorialSelection}
                   top="3.5rem"
                   setState={() => setStateEditorialesLista((prev) => !prev)}
                   onClear={hasSelectedEditorial ? clearEditorialSelection : undefined}
@@ -169,7 +241,7 @@ export function RegistrarVentas1({ state, onClose, onNext }) {
         )}
 
         <Footer>
-          <OutlineButton type="button" onClick={onClose}>
+          <OutlineButton type="button" onClick={handleRequestClose}>
             Cancelar
           </OutlineButton>
           <PrimaryButton type="button" onClick={onNext}>
@@ -202,8 +274,8 @@ const Modal = styled.div`
   flex-direction: column;
   gap: 22px;
   color: ${({ theme }) => theme.text};
-  height: min(760px, calc(100vh - 32px));
-  max-height: min(760px, calc(100vh - 32px));
+  height: min(720px, calc(100vh - 100px));
+  max-height: min(720px, calc(100vh - 100px));
   overflow: hidden;
 `;
 

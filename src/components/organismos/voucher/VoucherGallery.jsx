@@ -55,9 +55,9 @@ export function VoucherGallery({
 
 const VoucherPreview = styled.div`
   flex: none;
-  height: 244px;
-  min-height: 244px;
-  max-height: 244px;
+  height: auto;
+  min-height: 250px;
+  max-height: 250px;
   box-sizing: border-box;
   border-radius: 20px;
   border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);

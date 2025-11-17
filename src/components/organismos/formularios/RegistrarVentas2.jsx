@@ -1,11 +1,29 @@
 import styled from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
+import { useUsuariosStore, useVentasStore } from "../../../index";
 
-export function RegistrarVentas2({ state, onClose, onNext, onPrevious }) {
+export function RegistrarVentas2({
+  state,
+  onClose,
+  onNext,
+  onPrevious,
+  ventaDraftId,
+  ventaTieneDatos,
+}) {
+  const { datausuarios } = useUsuariosStore();
+  const { eliminarborrador } = useVentasStore();
   if (!state) {
     return null;
   }
+
+  const handleRequestClose = async () => {
+    if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
+      await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
+    }
+
+    onClose?.();
+  };
 
   return (
     <Overlay>
@@ -15,7 +33,7 @@ export function RegistrarVentas2({ state, onClose, onNext, onPrevious }) {
             <p>Registrar nueva venta</p>
             <h2>Datos del docente</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Cerrar">
+          <button type="button" onClick={handleRequestClose} aria-label="Cerrar">
             <v.iconocerrar />
           </button>
         </Header>

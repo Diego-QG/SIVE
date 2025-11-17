@@ -22,7 +22,7 @@ export function VoucherMultiUploadSection({
   return (
     <SectionWrapper>
       <section>
-        <div>
+        <div className="voucher-section__info">
           <h3>{title}</h3>
           <p>{description}</p>
         </div>
@@ -59,11 +59,21 @@ const SectionWrapper = styled.div`
   gap: 16px;
 
   section {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
     align-items: center;
-    flex-wrap: wrap;
-    gap: 14px;
+    gap: 24px;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .voucher-section__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
   }
 
   h3 {
@@ -80,8 +90,7 @@ const SectionWrapper = styled.div`
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
-    min-width: 220px;
-    width: min(260px, 100%);
+    width: 100%;
     text-align: left;
     justify-content: center;
   }

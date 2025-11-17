@@ -19,6 +19,9 @@ export function POSTemplate() {
   const [accion, setAccion] = useState("Nuevo");
   const [dataSelect, setDataSelect] = useState(null);
   const [isExploding, setIsExploding] = useState(false);
+  const [ventaDraftId, setVentaDraftId] = useState(null);
+  const [ventaTieneDatos, setVentaTieneDatos] = useState(false);
+  const [isCreatingDraft, setIsCreatingDraft] = useState(false);
 
   const filteredVentas = useMemo(() => {
     if (!buscador) {
@@ -41,16 +44,24 @@ export function POSTemplate() {
   }, [buscador, dataventas]);
 
   const handleNuevaVenta = () => {
+    if (openRegistro || isCreatingDraft) {
+      return;
+    }
     setOpenRegistro(true);
     setRegistroStep(1);
     setAccion("Nuevo");
     setDataSelect(null);
     setIsExploding(false);
+    setVentaDraftId(null);
+    setVentaTieneDatos(false);
   };
 
   const handleCloseRegistro = () => {
     setOpenRegistro(false);
     setRegistroStep(1);
+    setVentaDraftId(null);
+    setVentaTieneDatos(false);
+    setIsCreatingDraft(false);
   };
 
   const handleFinishRegistro = () => {
@@ -64,18 +75,27 @@ export function POSTemplate() {
         onClose={handleCloseRegistro}
         state={openRegistro && registroStep === 1}
         onNext={() => setRegistroStep(2)}
+        ventaDraftId={ventaDraftId}
+        onDraftCreated={setVentaDraftId}
+        ventaTieneDatos={ventaTieneDatos}
+        onVentaTieneDatosChange={setVentaTieneDatos}
+        onDraftCreationStateChange={setIsCreatingDraft}
       />
       <RegistrarVentas2
         onClose={handleCloseRegistro}
         state={openRegistro && registroStep === 2}
         onNext={() => setRegistroStep(3)}
         onPrevious={() => setRegistroStep(1)}
+        ventaDraftId={ventaDraftId}
+        ventaTieneDatos={ventaTieneDatos}
       />
       <RegistrarVentas3
         onClose={handleCloseRegistro}
         state={openRegistro && registroStep === 3}
         onPrevious={() => setRegistroStep(2)}
         onFinish={handleFinishRegistro}
+        ventaDraftId={ventaDraftId}
+        ventaTieneDatos={ventaTieneDatos}
       />
       <section className="area1">
         <div className="hero-text">
@@ -84,7 +104,7 @@ export function POSTemplate() {
             Visualiza y da seguimiento a las ventas que has registrado, incluyendo su revisión y validación.
           </p>
         </div>
-        <ActionButton type="button" onClick={handleNuevaVenta}>
+        <ActionButton type="button" onClick={handleNuevaVenta} disabled={isCreatingDraft || openRegistro}>
           <v.iconoagregar aria-hidden className="icon" />
           Registrar nueva venta
         </ActionButton>
@@ -196,6 +216,13 @@ const ActionButton = styled.button`
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
   }
 
   @media (min-width: ${v.bpbart}) {
