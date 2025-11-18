@@ -19,15 +19,6 @@ const generateVoucherId = () => {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
-const resolveArchivoNombre = (file, fallbackId) => {
-  const rawName = typeof file?.name === "string" ? file.name.trim() : "";
-  if (rawName) {
-    return rawName;
-  }
-
-  return `voucher_recibido_${fallbackId ?? Date.now()}`;
-};
-
 export const useEvidenciasStore = create((set, get) => ({
   ventaidactual: null,
   voucherspendientes: [],
@@ -110,7 +101,7 @@ export const useEvidenciasStore = create((set, get) => ({
         {
           _id_venta: ventaDestino,
           _id_usuario: idUsuario ?? null,
-          _archivo: resolveArchivoNombre(file, voucher.id),
+          _archivo: null,
         },
         file
       );
