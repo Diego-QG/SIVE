@@ -10,7 +10,7 @@ import {
 } from "../../index";
 import { v } from "../../styles/variables";
 import ConfettiExplosion from "react-confetti-explosion";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 export function POSTemplate() {
   const { dataventas, buscador, setBuscador } = useVentasStore();
@@ -22,6 +22,11 @@ export function POSTemplate() {
   const [ventaDraftId, setVentaDraftId] = useState(null);
   const [ventaTieneDatos, setVentaTieneDatos] = useState(false);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
+  const beforeCloseRegistroRef = useRef(null);
+
+  const handleBeforeCloseChange = useCallback((handler) => {
+    beforeCloseRegistroRef.current = handler;
+  }, []);
 
   const filteredVentas = useMemo(() => {
     if (!buscador) {
@@ -56,12 +61,18 @@ export function POSTemplate() {
     setVentaTieneDatos(false);
   };
 
-  const handleCloseRegistro = () => {
-    setOpenRegistro(false);
-    setRegistroStep(1);
-    setVentaDraftId(null);
-    setVentaTieneDatos(false);
-    setIsCreatingDraft(false);
+  const handleCloseRegistro = async (options = {}) => {
+    try {
+      if (!options?.skipBeforeClose && typeof beforeCloseRegistroRef.current === "function") {
+        await beforeCloseRegistroRef.current();
+      }
+    } finally {
+      setOpenRegistro(false);
+      setRegistroStep(1);
+      setVentaDraftId(null);
+      setVentaTieneDatos(false);
+      setIsCreatingDraft(false);
+    }
   };
 
   const handleFinishRegistro = () => {
@@ -80,6 +91,7 @@ export function POSTemplate() {
         ventaTieneDatos={ventaTieneDatos}
         onVentaTieneDatosChange={setVentaTieneDatos}
         onDraftCreationStateChange={setIsCreatingDraft}
+        onBeforeCloseChange={handleBeforeCloseChange}
       />
       <RegistrarVentas2
         onClose={handleCloseRegistro}

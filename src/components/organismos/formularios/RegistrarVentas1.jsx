@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
@@ -7,6 +7,7 @@ import {
   ListaDesplegable,
   Selector,
   useEditorialesStore,
+  useEvidenciasStore,
   useUsuariosStore,
   useVentasStore,
   VoucherMultiUploadSection,
@@ -21,11 +22,18 @@ export function RegistrarVentas1({
   ventaTieneDatos,
   onVentaTieneDatosChange,
   onDraftCreationStateChange,
+  onBeforeCloseChange,
 }) {
 
   const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
-  const [vouchers, setVouchers] = useState([]);
-  const vouchersRef = useRef([]);
+  const {
+    voucherspendientes: vouchers,
+    agregarvoucherspendientes,
+    removervoucherpendiente,
+    setventaactual,
+    limpiarvoucherspendientes,
+    subirvoucherspendientes,
+  } = useEvidenciasStore();
   const [focusedVoucher, setFocusedVoucher] = useState(null);
   const { dataeditoriales, editorialesitemselect, selecteditorial } =
     useEditorialesStore();
@@ -83,7 +91,7 @@ export function RegistrarVentas1({
 
     if (!normalizedFiles.length) return;
 
-    setVouchers((prev) => [...prev, ...normalizedFiles]);
+    agregarvoucherspendientes(normalizedFiles);
   };
 
   const handleDrop = (event) => {
@@ -97,13 +105,7 @@ export function RegistrarVentas1({
   };
   
   const handleRemoveVoucher = (id) => {
-    setVouchers((prev) => {
-      const voucherToRemove = prev.find((voucher) => voucher.id === id);
-      if (voucherToRemove) {
-        URL.revokeObjectURL(voucherToRemove.preview);
-      }
-      return prev.filter((voucher) => voucher.id !== id);
-    });
+    removervoucherpendiente(id);
     if (focusedVoucher?.id === id) {
       setFocusedVoucher(null);
     }
@@ -115,17 +117,30 @@ export function RegistrarVentas1({
 
   const closeFocusedVoucher = () => setFocusedVoucher(null);
 
-  useEffect(() => {
-    vouchersRef.current = vouchers;
-  }, [vouchers]);
+  const handleBeforeClose = useCallback(async () => {
+    if (ventaDraftId) {
+      await subirvoucherspendientes({
+        idVenta: ventaDraftId,
+        idUsuario: datausuarios?.id ?? null,
+      });
+      return;
+    }
+
+    limpiarvoucherspendientes();
+  }, [ventaDraftId, datausuarios?.id, subirvoucherspendientes, limpiarvoucherspendientes]);
 
   useEffect(() => {
-    return () => {
-      vouchersRef.current.forEach((voucher) =>
-        URL.revokeObjectURL(voucher.preview)
-      );
-    };
-  }, []);
+    onBeforeCloseChange?.(handleBeforeClose);
+    return () => onBeforeCloseChange?.(null);
+  }, [handleBeforeClose, onBeforeCloseChange]);
+
+  useEffect(() => {
+    if (!state || !ventaDraftId) {
+      return;
+    }
+
+    setventaactual(ventaDraftId);
+  }, [state, setventaactual, ventaDraftId]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -160,12 +175,14 @@ export function RegistrarVentas1({
   }
 
   const handleRequestClose = async () => {
+    await handleBeforeClose();
+
     if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
       await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
     }
 
     clearEditorialSelection();
-    onClose?.();
+    onClose?.({ skipBeforeClose: true });
   };
 
   return (

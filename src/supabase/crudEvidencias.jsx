@@ -18,7 +18,7 @@ export async function insertarVoucherRecibido(p, file) {
         const nuevo_id = data;
         const urlImagen = await subirImagen(nuevo_id, file);
         const pLogoEditar = {
-            logo: urlImagen.publicUrl,
+            archivo: urlImagen.publicUrl,
             id: nuevo_id,
         };
         await editarVoucherEvidencia(pLogoEditar);
