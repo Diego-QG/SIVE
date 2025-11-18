@@ -130,10 +130,11 @@ const Container = styled.div`
     "area2" auto
     "main" auto;
   gap: 24px;
+  align-content: start;
 
   @media (min-width: ${v.bpbart}) {
     padding: 32px 32px 40px;
-    gap: 28px;
+    gap: 35px;
   }
 
   .area1 {
@@ -175,9 +176,11 @@ const Container = styled.div`
     grid-area: area2;
     display: flex;
     justify-content: center;
+    height: auto;
 
     .buscador-pos {
-      width: 100%;
+      width: min(100%, 1040px);
+      flex: 1;
     }
 
     .buscador-pos > section {

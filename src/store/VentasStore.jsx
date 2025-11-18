@@ -6,21 +6,38 @@ import {
     mostrarVentasPorUsuario,
 } from "../index";
 
-export const useVentasStore = create((set) => ({
+export const useVentasStore = create((set, get) => ({
     buscador: "",
     setBuscador: (p) => set({ buscador: p }),
     dataventas: [],
     parametros: {},
+    refrescarVentas: async () => {
+        const params = get().parametros;
+        if (!params || Object.keys(params).length === 0) {
+            return [];
+        }
+
+        return get().mostrarventasporusuario(params);
+    },
     insertarborrador: async (p) => {
         const data = await insertarBorrador(p);
+        if (data) {
+            await get().refrescarVentas();
+        }
         return data;
     },
     eliminarborrador: async (p) => {
         const response = await eliminarBorrador(p);
+        if (response) {
+            await get().refrescarVentas();
+        }
         return response;
     },
     insertareditorialenventa: async (p) => {
         const response = await insertarEditorialEnVenta(p);
+        if (response) {
+            await get().refrescarVentas();
+        }
         return response;
     },
     mostrarventasporusuario: async (p) => {
