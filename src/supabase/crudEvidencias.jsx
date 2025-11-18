@@ -1,9 +1,12 @@
 import Swal from "sweetalert2";
 import { supabase } from "../index";
+const STORAGE_BUCKET_IMAGENES = "imagenes";
+const STORAGE_FOLDER_VOUCHERS = "vouchers_recibidos";
+
+const obtenerRutaVoucher = (evidenciaId) =>
+    evidenciaId ? `${STORAGE_FOLDER_VOUCHERS}/${evidenciaId}` : null;
 
 const tabla = "evidencias";
-const storageBucket = "imagenes";
-const storageFolder = "vouchers_recibidos";
 
 export async function insertarVoucherRecibido(p, file) {
     const { error, data: nuevoId } = await supabase.rpc("fn_insertarvoucherrecibido", p);
@@ -34,9 +37,12 @@ export async function insertarVoucherRecibido(p, file) {
 }
 
 async function subirImagen(idevidencia, file) {
-    const ruta = `${storageFolder}/${idevidencia}`;
+    const ruta = obtenerRutaVoucher(idevidencia);
+    if (!ruta) {
+        return null;
+    }
     const { data, error } = await supabase.storage
-        .from(storageBucket)
+        .from(STORAGE_BUCKET_IMAGENES)
         .upload(ruta, file, {
             cacheControl: "0",
             upsert: true,
@@ -56,7 +62,7 @@ async function subirImagen(idevidencia, file) {
     }
 
     const { data: urlimagen } = await supabase.storage
-        .from(storageBucket)
+        .from(STORAGE_BUCKET_IMAGENES)
         .getPublicUrl(ruta);
     return urlimagen?.publicUrl ?? null;
 }
@@ -84,6 +90,8 @@ export async function eliminarVoucherRecibido(p) {
         return;
     }
 
-    const ruta = `${storageFolder}/${p.id}`;
-    await supabase.storage.from(storageBucket).remove([ruta]);
+    const ruta = obtenerRutaVoucher(p.id);
+    if (ruta) {
+        await supabase.storage.from(STORAGE_BUCKET_IMAGENES).remove([ruta]);
+    }
 }
