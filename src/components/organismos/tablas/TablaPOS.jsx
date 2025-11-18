@@ -123,7 +123,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
     }
 
     Swal.fire({
-      title: "¿Estás seguro(a)(e)?",
+      title: "¿Estás seguro(a)?",
       text: "Una vez eliminado, ¡no podrás recuperar este borrador!",
       icon: "warning",
       showCancelButton: true,
@@ -316,79 +316,81 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   return (
     <>
       <Container>
-        <table className="responsive-table">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th key={header.id}>
-                    {header.column.columnDef.header}
-                    {header.column.getCanSort() && (
-                      <span
-                        style={{ cursor: "pointer" }}
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        <FaArrowsAltV />
-                      </span>
-                    )}
-                    {
+        <TableScrollArea>
+          <table className="responsive-table">
+            <thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th key={header.id}>
+                      {header.column.columnDef.header}
+                      {header.column.getCanSort() && (
+                        <span
+                          style={{ cursor: "pointer" }}
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          <FaArrowsAltV />
+                        </span>
+                      )}
                       {
-                        asc: " 🔼",
-                        desc: " 🔽",
-                      }[header.column.getIsSorted()]
-                    }
-                    <div
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""
-                        }`}
-                    />
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((item) => {
-              const isBorrador = item?.original?.estado_registro === "borrador";
-              const estadoEstilos = isBorrador
-                ? obtenerEstilosEstado(item.original)
-                : null;
-              const rowClassName = estadoEstilos ? "status-colored" : undefined;
-              const rowStyle = estadoEstilos
-                ? {
-                  "--row-status-bg": estadoEstilos.background,
-                  "--row-status-accent": estadoEstilos.accent,
-                }
-                : undefined;
-              return (
-                <tr key={item.id} className={rowClassName} style={rowStyle}>
-                  {item.getVisibleCells().map((cell) => {
-                    const { meta } = cell.column.columnDef;
-                    const dataTitle =
-                      typeof meta?.dataTitle === "string"
-                        ? meta.dataTitle
-                        : undefined;
-                    const className = meta?.className ?? undefined;
-
-                    return (
-                      <td
-                        key={cell.id}
-                        data-title={dataTitle}
-                        className={className}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    );
-                  })}
+                        {
+                          asc: " 🔼",
+                          desc: " 🔽",
+                        }[header.column.getIsSorted()]
+                      }
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""
+                          }`}
+                      />
+                    </th>
+                  ))}
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.map((item) => {
+                const isBorrador = item?.original?.estado_registro === "borrador";
+                const estadoEstilos = isBorrador
+                  ? obtenerEstilosEstado(item.original)
+                  : null;
+                const rowClassName = estadoEstilos ? "status-colored" : undefined;
+                const rowStyle = estadoEstilos
+                  ? {
+                    "--row-status-bg": estadoEstilos.background,
+                    "--row-status-accent": estadoEstilos.accent,
+                  }
+                  : undefined;
+                return (
+                  <tr key={item.id} className={rowClassName} style={rowStyle}>
+                    {item.getVisibleCells().map((cell) => {
+                      const { meta } = cell.column.columnDef;
+                      const dataTitle =
+                        typeof meta?.dataTitle === "string"
+                          ? meta.dataTitle
+                          : undefined;
+                      const className = meta?.className ?? undefined;
+
+                      return (
+                        <td
+                          key={cell.id}
+                          data-title={dataTitle}
+                          className={className}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </TableScrollArea>
         <Paginacion
           table={table}
           irinicio={() => table.setPageIndex(0)}
@@ -551,11 +553,38 @@ const Container = styled.div`
   }
 `;
 
+const TableScrollArea = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 16px;
+
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.08);
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.35);
+    border-radius: 999px;
+  }
+
+  @media (max-width: ${v.bpbart}) {
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+`;
+
 const FechaContent = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
+  text-align: right;
   line-height: 1.3;
+  width: 100%;
 
   .date {
     font-weight: 600;
@@ -569,6 +598,7 @@ const FechaContent = styled.div`
 
   @media (min-width: ${v.bpbart}) {
     align-items: center;
+    text-align: center;
     .time {
       font-size: 0.8em;
     }
