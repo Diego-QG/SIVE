@@ -1,10 +1,10 @@
 import Swal from "sweetalert2";
 import { supabase } from "../index";
 
-const tabla = "editoriales";
+const tabla = "evidencias";
 
-export async function insertarEditorial(p, file) {
-    const { error, data } = await supabase.rpc("insertareditorial", p);
+export async function insertarVoucherRecibido(p, file) {
+    const { error, data } = await supabase.rpc("fn_insertarvoucherrecibido", p);
     if (error) {
         Swal.fire({
             icon: "error",
@@ -21,12 +21,12 @@ export async function insertarEditorial(p, file) {
             logo: urlImagen.publicUrl,
             id: nuevo_id,
         };
-        await editarLogoEditorial(pLogoEditar);
+        await editarVoucherEvidencia(pLogoEditar);
     }
 }
 
-async function subirImagen(ideditorial, file) {
-    const ruta = "editoriales/" + ideditorial;
+async function subirImagen(idevidencia, file) {
+    const ruta = "vouchers_recibidos/" + idevidencia;
     const { data, error } = await supabase.storage
         .from("imagenes")
         .upload(ruta, file, {
@@ -51,8 +51,8 @@ async function subirImagen(ideditorial, file) {
     }
 }
 
-async function editarLogoEditorial(p) {
-    const { error } = await supabase.from("editoriales").update(p).eq("id", p.id);
+async function editarVoucherEvidencia(p) {
+    const { error } = await supabase.from("evidencias").update(p).eq("id", p.id);
     if (error) {
         Swal.fire({
             icon: "error",
@@ -63,26 +63,7 @@ async function editarLogoEditorial(p) {
     }
 }
 
-export async function mostrarEditoriales(p) {
-    const { data } = await supabase
-        .from(tabla)
-        .select()
-        .eq("id_empresa", p.id_empresa)
-        .order("id", { ascending: false });
-    return data;
-}
-
-export async function buscarEditoriales(p) {
-    const buscador = `${p?.buscador ?? ""}`.trim();
-    const { data } = await supabase
-        .from(tabla)
-        .select()
-        .eq("id_empresa", p.id_empresa)
-        .ilike("nombre", `%${buscador}%`);
-    return data;
-}
-
-export async function eliminarEditorial(p) {
+export async function eliminarVoucherRecibido(p) {
     const { error } = await supabase.from(tabla).delete().eq("id", p.id);
     if (error) {
         Swal.fire({
@@ -93,56 +74,7 @@ export async function eliminarEditorial(p) {
         return;
     }
     if (p.logo != "-") {
-        const ruta = "editoriales/" + p.id;
+        const ruta = "vouchers_recibidos/" + p.id;
         await supabase.storage.from("imagenes").remove([ruta]);
     }
-}
-
-export async function editarEditorial(p, fileold, filenew) {
-    const { error } = await supabase.rpc("editareditorial", p);
-    if (error) {
-        Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            text: error.message,
-        });
-        return;
-    }
-    if (filenew != "-" && filenew.size != undefined) {
-        if (fileold != "-") {
-            await editarLogoStorage(p._id, filenew);
-        } else {
-            const dataImagen = await subirImagen(p._id, filenew);
-            const pLogoEditar = {
-                logo: dataImagen.publicUrl,
-                id: p._id,
-            };
-            await editarLogoEditorial(pLogoEditar);
-        }
-    }
-}
-
-export async function editarLogoStorage(id, file) {
-    const ruta = "editoriales/" + id;
-    await supabase.storage.from("imagenes").update(ruta, file, {
-        cacheControl: "0",
-        upsert: true,
-    });
-}
-
-export async function mostrarEditorialesPorUsuario(p) {
-    const { data, error } = await supabase.rpc("fn_mostrareditorialesxusuario", {
-        _id_usuario: p?._id_usuario ?? null,
-    });
-
-    if (error) {
-        Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            text: error.message,
-        });
-        return [];
-    }
-
-    return data ?? [];
 }
