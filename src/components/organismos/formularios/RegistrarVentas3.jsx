@@ -1,4 +1,5 @@
-import styled from "styled-components";
+import { useEffect, useState } from "react";
+import styled, { keyframes } from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
 import { useUsuariosStore, useVentasStore } from "../../../index";
@@ -13,16 +14,35 @@ export function RegistrarVentas3({
 }) {
   const { datausuarios } = useUsuariosStore();
   const { eliminarborrador } = useVentasStore();
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    if (state) {
+      setIsClosing(false);
+    }
+  }, [state]);
+
   if (!state) {
     return null;
   }
 
   const handleRequestClose = async () => {
-    if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
-      await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
+    if (isClosing) {
+      return;
     }
 
-    onClose?.();
+    setIsClosing(true);
+
+    try {
+      if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
+        await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
+      }
+
+      onClose?.();
+    } catch (error) {
+      console.error(error);
+      setIsClosing(false);
+    }
   };
 
   const resumen = [];
@@ -30,13 +50,13 @@ export function RegistrarVentas3({
 
   return (
     <Overlay>
-      <Modal>
+      <Modal aria-busy={isClosing}>
         <Header>
           <div>
             <p>Registrar nueva venta</p>
             <h2>Datos de venta</h2>
           </div>
-          <button type="button" onClick={handleRequestClose} aria-label="Cerrar">
+          <button type="button" onClick={handleRequestClose} aria-label="Cerrar" disabled={isClosing}>
             <v.iconocerrar />
           </button>
         </Header>
@@ -109,7 +129,7 @@ export function RegistrarVentas3({
         </Body>
 
         <Footer>
-          <OutlineButton type="button" onClick={onPrevious}>
+          <OutlineButton type="button" onClick={onPrevious} disabled={isClosing}>
             <v.iconoflechaizquierda /> Regresar
           </OutlineButton>
           <PrimaryButton
@@ -117,10 +137,18 @@ export function RegistrarVentas3({
             onClick={() => {
               onFinish?.();
             }}
+            disabled={isClosing}
           >
             Registrar venta <v.iconocheck />
           </PrimaryButton>
         </Footer>
+        {isClosing && (
+          <ClosingOverlay>
+            <Spinner />
+            <strong>Guardando cambios...</strong>
+            <small>Por favor espera un momento.</small>
+          </ClosingOverlay>
+        )}
       </Modal>
     </Overlay>
   );
@@ -147,6 +175,7 @@ const Modal = styled.div`
   flex-direction: column;
   gap: 22px;
   color: ${({ theme }) => theme.text};
+  position: relative;
 `;
 
 const Header = styled.header`
@@ -274,6 +303,11 @@ const ResumenCard = styled.section`
       gap: 8px;
       cursor: pointer;
     }
+
+    button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
   }
 
   ul {
@@ -344,6 +378,12 @@ const OutlineButton = styled.button`
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  transition: opacity 0.2s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 const PrimaryButton = styled.button`
@@ -357,4 +397,41 @@ const PrimaryButton = styled.button`
   align-items: center;
   gap: 10px;
   cursor: pointer;
+  transition: opacity 0.2s ease;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+`;
+
+const spin = keyframes`
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const ClosingOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 18, 29, 0.78);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: inherit;
+  color: #fff;
+  text-align: center;
+  z-index: 10;
+  padding: 24px;
+`;
+
+const Spinner = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: ${spin} 0.8s linear infinite;
 `;

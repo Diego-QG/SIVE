@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
 import {
@@ -40,6 +40,7 @@ export function RegistrarVentas1({
   const { datausuarios } = useUsuariosStore();
   const { insertarborrador, eliminarborrador, insertareditorialenventa } = useVentasStore();
   const [isSavingEditorial, setIsSavingEditorial] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const hasEditoriales = (dataeditoriales ?? []).length > 0;
   const hasSelectedEditorial = Boolean(editorialesitemselect?.nombre?.trim());
 
@@ -135,6 +136,12 @@ export function RegistrarVentas1({
   }, [handleBeforeClose, onBeforeCloseChange]);
 
   useEffect(() => {
+    if (state) {
+      setIsClosing(false);
+    }
+  }, [state]);
+
+  useEffect(() => {
     if (!state || !ventaDraftId) {
       return;
     }
@@ -175,25 +182,36 @@ export function RegistrarVentas1({
   }
 
   const handleRequestClose = async () => {
-    await handleBeforeClose();
-
-    if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
-      await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
+    if (isClosing) {
+      return;
     }
 
-    clearEditorialSelection();
-    onClose?.({ skipBeforeClose: true });
+    setIsClosing(true);
+
+    try {
+      await handleBeforeClose();
+
+      if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
+        await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
+      }
+
+      clearEditorialSelection();
+      onClose?.({ skipBeforeClose: true });
+    } catch (error) {
+      console.error(error);
+      setIsClosing(false);
+    }
   };
 
   return (
     <Overlay>
-      <Modal>
+      <Modal aria-busy={isClosing}>
         <Header>
           <div>
             <p>Registrar nueva venta</p>
             <h2>Comprobantes</h2>
           </div>
-          <button type="button" onClick={handleRequestClose} aria-label="Cerrar">
+          <button type="button" onClick={handleRequestClose} aria-label="Cerrar" disabled={isClosing}>
             <v.iconocerrar />
           </button>
         </Header>
@@ -258,13 +276,17 @@ export function RegistrarVentas1({
         )}
 
         <Footer>
-          <OutlineButton type="button" onClick={handleRequestClose}>
-            Cancelar
-          </OutlineButton>
-          <PrimaryButton type="button" onClick={onNext}>
+          <PrimaryButton type="button" onClick={onNext} disabled={isClosing}>
             Siguiente <v.icononext />
           </PrimaryButton>
         </Footer>
+        {isClosing && (
+          <ClosingOverlay>
+            <Spinner />
+            <strong>Guardando cambios...</strong>
+            <small>Por favor espera un momento.</small>
+          </ClosingOverlay>
+        )}
       </Modal>
     </Overlay>
   );
@@ -294,6 +316,7 @@ const Modal = styled.div`
   height: min(720px, calc(100vh - 100px));
   max-height: min(720px, calc(100vh - 100px));
   overflow: hidden;
+  position: relative;
 `;
 
 const Header = styled.header`
@@ -324,6 +347,12 @@ const Header = styled.header`
     color: ${({ theme }) => theme.text};
     cursor: pointer;
   }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
 `;
 
 const Body = styled.div`
@@ -438,6 +467,12 @@ const OutlineButton = styled.button`
   color: ${({ theme }) => theme.text};
   font-weight: 600;
   cursor: pointer;
+  transition: opacity 0.2s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 const PrimaryButton = styled.button`
@@ -451,4 +486,41 @@ const PrimaryButton = styled.button`
   align-items: center;
   gap: 10px;
   cursor: pointer;
+  transition: opacity 0.2s ease;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+`;
+
+const spin = keyframes`
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const ClosingOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 18, 29, 0.78);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: inherit;
+  color: #fff;
+  text-align: center;
+  z-index: 10;
+  padding: 24px;
+`;
+
+const Spinner = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: ${spin} 0.8s linear infinite;
 `;
