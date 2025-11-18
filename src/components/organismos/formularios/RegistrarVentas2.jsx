@@ -13,6 +13,7 @@ import {
 } from "../../../index";
 
 const DEFAULT_PAIS_ID = 1;
+const SELECTOR_BORDER_COLOR = "#CBD5E1";
 
 export function RegistrarVentas2({
   state,
@@ -157,26 +158,6 @@ export function RegistrarVentas2({
           <LocationSelectorsGrid>
             <DropdownWrapper>
               <Selector
-                state={openDropdown === "pais"}
-                funcion={() => toggleDropdown("pais")}
-                texto1="País"
-                texto2={paisSeleccionado?.nombre ?? "Selecciona un país"}
-                color="#F9D70B"
-                isPlaceholder={!paisSeleccionado}
-                width="100%"
-              />
-              <ListaDesplegable
-                state={openDropdown === "pais"}
-                data={paises}
-                funcion={seleccionarpais}
-                setState={closeDropdown}
-                width="100%"
-                top="3.5rem"
-                emptyLabel="No hay países disponibles"
-              />
-            </DropdownWrapper>
-            <DropdownWrapper>
-              <Selector
                 state={openDropdown === "departamento"}
                 funcion={() =>
                   toggleDropdown(
@@ -191,7 +172,7 @@ export function RegistrarVentas2({
                     ? "Selecciona un departamento"
                     : "Selecciona un país primero")
                 }
-                color="#5CE1E6"
+                color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={!departamentoSeleccionado}
                 width="100%"
               />
@@ -202,6 +183,7 @@ export function RegistrarVentas2({
                 setState={closeDropdown}
                 width="100%"
                 top="3.5rem"
+                placement="top"
                 emptyLabel={
                   paisSeleccionado
                     ? "No hay departamentos disponibles"
@@ -227,7 +209,7 @@ export function RegistrarVentas2({
                     ? "Selecciona una provincia"
                     : "Selecciona un departamento primero")
                 }
-                color="#A78BFA"
+                color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={!provinciaSeleccionada}
                 width="100%"
               />
@@ -238,6 +220,7 @@ export function RegistrarVentas2({
                 setState={closeDropdown}
                 width="100%"
                 top="3.5rem"
+                placement="top"
                 emptyLabel={
                   departamentoSeleccionado
                     ? "No hay provincias disponibles"
@@ -263,7 +246,7 @@ export function RegistrarVentas2({
                     ? "Selecciona un distrito"
                     : "Selecciona una provincia primero")
                 }
-                color="#F59E0B"
+                color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={!distritoSeleccionado}
                 width="100%"
               />
@@ -274,11 +257,33 @@ export function RegistrarVentas2({
                 setState={closeDropdown}
                 width="100%"
                 top="3.5rem"
+                placement="top"
                 emptyLabel={
                   provinciaSeleccionada
                     ? "No hay distritos disponibles"
                     : "Selecciona una provincia primero"
                 }
+              />
+            </DropdownWrapper>
+            <DropdownWrapper>
+              <Selector
+                state={openDropdown === "pais"}
+                funcion={() => toggleDropdown("pais")}
+                texto1="País"
+                texto2={paisSeleccionado?.nombre ?? "Perú"}
+                color={SELECTOR_BORDER_COLOR}
+                isPlaceholder={false}
+                width="100%"
+              />
+              <ListaDesplegable
+                state={openDropdown === "pais"}
+                data={paises}
+                funcion={seleccionarpais}
+                setState={closeDropdown}
+                width="100%"
+                top="3.5rem"
+                placement="top"
+                emptyLabel="No hay países disponibles"
               />
             </DropdownWrapper>
           </LocationSelectorsGrid>
@@ -410,9 +415,10 @@ const DualGrid = styled.div`
 `;
 
 const LocationSelectorsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
+  justify-content: space-between;
 `;
 
 const DropdownWrapper = styled(ContainerSelector)`
@@ -420,6 +426,13 @@ const DropdownWrapper = styled(ContainerSelector)`
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
+  flex: 1 1 180px;
+  max-width: 220px;
+
+  @media (max-width: 768px) {
+    max-width: 100%;
+    flex-basis: 100%;
+  }
 `;
 
 const Footer = styled.footer`

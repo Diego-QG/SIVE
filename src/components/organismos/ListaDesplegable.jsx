@@ -12,6 +12,8 @@ export function ListaDesplegable({
   clearLabel = "Limpiar selección",
   emptyLabel = "Sin opciones disponibles",
   width,
+  placement = "bottom",
+  offset,
 }) {
   if (!state) return null;
 
@@ -28,7 +30,13 @@ export function ListaDesplegable({
   const hasItems = data?.length > 0;
 
   return (
-    <Container scroll={scroll} $top={top} $width={width}>
+    <Container
+      scroll={scroll}
+      $top={top}
+      $width={width}
+      $placement={placement}
+      $offset={offset}
+    >
       <section className="panel-actions">
         <button
           type="button"
@@ -73,7 +81,10 @@ const Container = styled.div`
   background: ${({ theme }) => theme.body};
   color: ${({ theme }) => theme.text};
   position: absolute;
-  top: ${(props) => props.$top};
+  top: ${({ $placement, $top, $offset }) =>
+    $placement === "bottom" ? $top ?? $offset ?? "calc(100% + 12px)" : "auto"};
+  bottom: ${({ $placement, $offset }) =>
+    $placement === "top" ? $offset ?? "calc(100% + 12px)" : "auto"};
   width: ${({ $width }) => $width ?? "min(100%, 340px)"};
   padding: 12px;
   border-radius: 14px;
