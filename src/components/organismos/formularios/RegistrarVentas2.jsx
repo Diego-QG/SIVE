@@ -153,10 +153,31 @@ export function RegistrarVentas2({
               <label>Nombre de IE</label>
               <input type="text" placeholder="" disabled />
             </InputGroup>
+            <CountrySelectorWrapper>
+              <Selector
+                state={openDropdown === "pais"}
+                funcion={() => toggleDropdown("pais")}
+                texto1="País"
+                texto2={paisSeleccionado?.nombre ?? "Perú"}
+                color={SELECTOR_BORDER_COLOR}
+                isPlaceholder={false}
+                width="100%"
+              />
+              <ListaDesplegable
+                state={openDropdown === "pais"}
+                data={paises}
+                funcion={seleccionarpais}
+                setState={closeDropdown}
+                width="100%"
+                top="3.5rem"
+                placement="top"
+                emptyLabel="No hay países disponibles"
+              />
+            </CountrySelectorWrapper>
           </DualGrid>
 
           <LocationSelectorsGrid>
-            <DropdownWrapper>
+            <LocationDropdownWrapper>
               <Selector
                 state={openDropdown === "departamento"}
                 funcion={() =>
@@ -190,8 +211,8 @@ export function RegistrarVentas2({
                     : "Selecciona un país primero"
                 }
               />
-            </DropdownWrapper>
-            <DropdownWrapper>
+            </LocationDropdownWrapper>
+            <LocationDropdownWrapper>
               <Selector
                 state={openDropdown === "provincia"}
                 funcion={() =>
@@ -227,8 +248,8 @@ export function RegistrarVentas2({
                     : "Selecciona un departamento primero"
                 }
               />
-            </DropdownWrapper>
-            <DropdownWrapper>
+            </LocationDropdownWrapper>
+            <LocationDropdownWrapper>
               <Selector
                 state={openDropdown === "distrito"}
                 funcion={() =>
@@ -264,28 +285,7 @@ export function RegistrarVentas2({
                     : "Selecciona una provincia primero"
                 }
               />
-            </DropdownWrapper>
-            <DropdownWrapper>
-              <Selector
-                state={openDropdown === "pais"}
-                funcion={() => toggleDropdown("pais")}
-                texto1="País"
-                texto2={paisSeleccionado?.nombre ?? "Perú"}
-                color={SELECTOR_BORDER_COLOR}
-                isPlaceholder={false}
-                width="100%"
-              />
-              <ListaDesplegable
-                state={openDropdown === "pais"}
-                data={paises}
-                funcion={seleccionarpais}
-                setState={closeDropdown}
-                width="100%"
-                top="3.5rem"
-                placement="top"
-                emptyLabel="No hay países disponibles"
-              />
-            </DropdownWrapper>
+            </LocationDropdownWrapper>
           </LocationSelectorsGrid>
         </Body>
 
@@ -412,13 +412,18 @@ const DualGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 18px;
+  align-items: flex-end;
 `;
 
 const LocationSelectorsGrid = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  justify-content: space-between;
+  gap: 14px;
+  justify-content: flex-start;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+  }
 `;
 
 const DropdownWrapper = styled(ContainerSelector)`
@@ -426,12 +431,25 @@ const DropdownWrapper = styled(ContainerSelector)`
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
-  flex: 1 1 180px;
-  max-width: 220px;
+`;
+
+const CountrySelectorWrapper = styled(DropdownWrapper)`
+  width: min(220px, 100%);
+  justify-self: end;
+  align-self: center;
 
   @media (max-width: 768px) {
+    width: 100%;
+    justify-self: stretch;
+  }
+`;
+
+const LocationDropdownWrapper = styled(DropdownWrapper)`
+  flex: 1 1 150px;
+  max-width: 210px;
+
+  @media (max-width: 600px) {
     max-width: 100%;
-    flex-basis: 100%;
   }
 `;
 
