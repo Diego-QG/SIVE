@@ -1,24 +1,6 @@
 import { create } from "zustand";
 import { eliminarVoucherRecibido, insertarVoucherRecibido } from "../index";
 
-const revokePreview = (voucher) => {
-  if (voucher?.preview && typeof URL !== "undefined") {
-    try {
-      URL.revokeObjectURL(voucher.preview);
-    } catch (_error) {
-      /* noop */
-    }
-  }
-};
-
-const generateVoucherId = () => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-};
-
 export const useEvidenciasStore = create((set, get) => ({
   ventaidactual: null,
   voucherspendientes: [],
@@ -33,18 +15,17 @@ export const useEvidenciasStore = create((set, get) => ({
     }));
   },
 
-  agregarvoucherspendientes: (vouchers) => {
+  agregarvoucherspendientes: (vouchers = []) => {
     if (!Array.isArray(vouchers) || vouchers.length === 0) {
       return;
     }
 
     const ventaId = get().ventaidactual;
-
     const nuevosVouchers = vouchers
       .filter((voucher) => voucher?.file)
-      .map((voucher) => ({
+      .map((voucher, index) => ({
         ...voucher,
-        id: voucher.id ?? generateVoucherId(),
+        id: voucher.id ?? `${Date.now()}-${index}`,
         ventaId: voucher.ventaId ?? ventaId ?? null,
       }));
 
@@ -62,21 +43,12 @@ export const useEvidenciasStore = create((set, get) => ({
       return;
     }
 
-    set((state) => {
-      const voucher = state.voucherspendientes.find((item) => item.id === voucherId);
-      if (voucher) {
-        revokePreview(voucher);
-      }
-
-      return {
-        voucherspendientes: state.voucherspendientes.filter((item) => item.id !== voucherId),
-      };
-    });
+    set((state) => ({
+      voucherspendientes: state.voucherspendientes.filter((item) => item.id !== voucherId),
+    }));
   },
 
   limpiarvoucherspendientes: () => {
-    const { voucherspendientes } = get();
-    voucherspendientes.forEach(revokePreview);
     set({ voucherspendientes: [] });
   },
 
@@ -90,10 +62,8 @@ export const useEvidenciasStore = create((set, get) => ({
     let algunVoucherSubido = false;
 
     for (const voucher of voucherspendientes) {
-      const file = voucher?.file;
       const ventaDestino = voucher?.ventaId ?? ventaFallback;
-
-      if (!file || !ventaDestino) {
+      if (!voucher?.file || !ventaDestino) {
         continue;
       }
 
@@ -103,14 +73,14 @@ export const useEvidenciasStore = create((set, get) => ({
           _id_usuario: idUsuario ?? null,
           _archivo: null,
         },
-        file
+        voucher.file
       );
 
       algunVoucherSubido = true;
     }
 
     if (algunVoucherSubido) {
-      get().limpiarvoucherspendientes();
+      set({ voucherspendientes: [] });
     }
 
     return algunVoucherSubido;

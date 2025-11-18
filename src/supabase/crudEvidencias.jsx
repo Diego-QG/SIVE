@@ -6,11 +6,7 @@ const storageBucket = "imagenes";
 const storageFolder = "vouchers_recibidos";
 
 export async function insertarVoucherRecibido(p, file) {
-    const { error, data: nuevo_id } = await supabase.rpc("fn_insertarvoucherrecibido", {
-        _id_venta: p?._id_venta ?? null,
-        _archivo: p?._archivo ?? null,
-        _id_usuario: p?._id_usuario ?? null,
-    });
+    const { error, data: nuevoId } = await supabase.rpc("fn_insertarvoucherrecibido", p);
     if (error) {
         Swal.fire({
             icon: "error",
@@ -20,19 +16,21 @@ export async function insertarVoucherRecibido(p, file) {
         return;
     }
 
-    if (!file?.size || !nuevo_id) {
+    if (!file?.size || !nuevoId) {
         return;
     }
 
-    const publicUrl = await subirImagen(nuevo_id, file);
+    const publicUrl = await subirImagen(nuevoId, file);
     if (!publicUrl) {
         return;
     }
 
-    await actualizarArchivoEvidencia({
-        id: nuevo_id,
+    const payload = {
         archivo: publicUrl,
-    });
+        id: nuevoId,
+    };
+
+    await editarVoucherEvidencia(payload);
 }
 
 async function subirImagen(idevidencia, file) {
@@ -53,35 +51,18 @@ async function subirImagen(idevidencia, file) {
         return;
     }
 
-    if (data) {
-        const { data: urlimagen, error: errorUrl } = await supabase.storage
-            .from(storageBucket)
-            .getPublicUrl(ruta);
-
-        if (errorUrl) {
-            Swal.fire({
-                icon: "error",
-                title: "Oops...",
-                text: errorUrl.message,
-            });
-            return null;
-        }
-
-        return urlimagen?.publicUrl ?? null;
+    if (!data) {
+        return null;
     }
 
-    return null;
+    const { data: urlimagen } = await supabase.storage
+        .from(storageBucket)
+        .getPublicUrl(ruta);
+    return urlimagen?.publicUrl ?? null;
 }
 
-async function actualizarArchivoEvidencia({ id, archivo }) {
-    if (!id || !archivo) {
-        return;
-    }
-
-    const { error } = await supabase
-        .from(tabla)
-        .update({ archivo })
-        .eq("id", id);
+async function editarVoucherEvidencia(p) {
+    const { error } = await supabase.from(tabla).update(p).eq("id", p.id);
     if (error) {
         Swal.fire({
             icon: "error",
@@ -102,8 +83,7 @@ export async function eliminarVoucherRecibido(p) {
         });
         return;
     }
-    if (p?.archivo && p.archivo !== "-") {
-        const ruta = `${storageFolder}/${p.id}`;
-        await supabase.storage.from(storageBucket).remove([ruta]);
-    }
+
+    const ruta = `${storageFolder}/${p.id}`;
+    await supabase.storage.from(storageBucket).remove([ruta]);
 }
