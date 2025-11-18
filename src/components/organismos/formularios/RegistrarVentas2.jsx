@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
+import { toast } from "sonner";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
-import { useUsuariosStore, useVentasStore } from "../../../index";
+import {
+  ContainerSelector,
+  ListaDesplegable,
+  Selector,
+  useUbicacionesStore,
+  useUsuariosStore,
+  useVentasStore,
+} from "../../../index";
+
+const DEFAULT_PAIS_ID = 1;
 
 export function RegistrarVentas2({
   state,
@@ -14,13 +24,50 @@ export function RegistrarVentas2({
 }) {
   const { datausuarios } = useUsuariosStore();
   const { eliminarborrador } = useVentasStore();
+  const {
+    paises,
+    departamentos,
+    provincias,
+    distritos,
+    paisSeleccionado,
+    departamentoSeleccionado,
+    provinciaSeleccionada,
+    distritoSeleccionado,
+    cargarpaises,
+    seleccionarpais,
+    seleccionardepartamento,
+    seleccionarprovincia,
+    seleccionardistrito,
+  } = useUbicacionesStore();
   const [isClosing, setIsClosing] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   useEffect(() => {
     if (state) {
       setIsClosing(false);
     }
   }, [state]);
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    cargarpaises();
+  }, [state, cargarpaises]);
+
+  useEffect(() => {
+    if (!state || paisSeleccionado || !paises.length) {
+      return;
+    }
+
+    const defaultPais =
+      paises.find((pais) => Number(pais.id) === DEFAULT_PAIS_ID) ?? null;
+
+    if (defaultPais) {
+      seleccionarpais(defaultPais);
+    }
+  }, [state, paisSeleccionado, paises, seleccionarpais]);
 
   if (!state) {
     return null;
@@ -43,6 +90,16 @@ export function RegistrarVentas2({
       console.error(error);
       setIsClosing(false);
     }
+  };
+
+  const closeDropdown = () => setOpenDropdown(null);
+  const toggleDropdown = (key, guardMessage) => {
+    if (guardMessage) {
+      toast.info(guardMessage);
+      return;
+    }
+
+    setOpenDropdown((prev) => (prev === key ? null : key));
   };
 
   return (
@@ -91,22 +148,140 @@ export function RegistrarVentas2({
               <label>Código de IE</label>
               <input type="text" placeholder="" disabled />
             </InputGroup>
+            <InputGroup>
+              <label>Nombre de IE</label>
+              <input type="text" placeholder="" disabled />
+            </InputGroup>
           </DualGrid>
 
-          <SelectorGrid>
-            <SelectorColumn>
-              <span>Departamento</span>
-              <SelectorButton type="button">Departamentos</SelectorButton>
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Provincia</span>
-              <SelectorButton type="button">Provincias</SelectorButton>
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Distrito</span>
-              <SelectorButton type="button">Distritos</SelectorButton>
-            </SelectorColumn>
-          </SelectorGrid>
+          <LocationSelectorsGrid>
+            <DropdownWrapper>
+              <Selector
+                state={openDropdown === "pais"}
+                funcion={() => toggleDropdown("pais")}
+                texto1="País"
+                texto2={paisSeleccionado?.nombre ?? "Selecciona un país"}
+                color="#F9D70B"
+                isPlaceholder={!paisSeleccionado}
+                width="100%"
+              />
+              <ListaDesplegable
+                state={openDropdown === "pais"}
+                data={paises}
+                funcion={seleccionarpais}
+                setState={closeDropdown}
+                width="100%"
+                top="3.5rem"
+                emptyLabel="No hay países disponibles"
+              />
+            </DropdownWrapper>
+            <DropdownWrapper>
+              <Selector
+                state={openDropdown === "departamento"}
+                funcion={() =>
+                  toggleDropdown(
+                    "departamento",
+                    paisSeleccionado ? null : "Selecciona un país antes",
+                  )
+                }
+                texto1="Departamento"
+                texto2={
+                  departamentoSeleccionado?.nombre ??
+                  (paisSeleccionado
+                    ? "Selecciona un departamento"
+                    : "Selecciona un país primero")
+                }
+                color="#5CE1E6"
+                isPlaceholder={!departamentoSeleccionado}
+                width="100%"
+              />
+              <ListaDesplegable
+                state={openDropdown === "departamento"}
+                data={departamentos}
+                funcion={seleccionardepartamento}
+                setState={closeDropdown}
+                width="100%"
+                top="3.5rem"
+                emptyLabel={
+                  paisSeleccionado
+                    ? "No hay departamentos disponibles"
+                    : "Selecciona un país primero"
+                }
+              />
+            </DropdownWrapper>
+            <DropdownWrapper>
+              <Selector
+                state={openDropdown === "provincia"}
+                funcion={() =>
+                  toggleDropdown(
+                    "provincia",
+                    departamentoSeleccionado
+                      ? null
+                      : "Selecciona un departamento antes",
+                  )
+                }
+                texto1="Provincia"
+                texto2={
+                  provinciaSeleccionada?.nombre ??
+                  (departamentoSeleccionado
+                    ? "Selecciona una provincia"
+                    : "Selecciona un departamento primero")
+                }
+                color="#A78BFA"
+                isPlaceholder={!provinciaSeleccionada}
+                width="100%"
+              />
+              <ListaDesplegable
+                state={openDropdown === "provincia"}
+                data={provincias}
+                funcion={seleccionarprovincia}
+                setState={closeDropdown}
+                width="100%"
+                top="3.5rem"
+                emptyLabel={
+                  departamentoSeleccionado
+                    ? "No hay provincias disponibles"
+                    : "Selecciona un departamento primero"
+                }
+              />
+            </DropdownWrapper>
+            <DropdownWrapper>
+              <Selector
+                state={openDropdown === "distrito"}
+                funcion={() =>
+                  toggleDropdown(
+                    "distrito",
+                    provinciaSeleccionada
+                      ? null
+                      : "Selecciona una provincia antes",
+                  )
+                }
+                texto1="Distrito"
+                texto2={
+                  distritoSeleccionado?.nombre ??
+                  (provinciaSeleccionada
+                    ? "Selecciona un distrito"
+                    : "Selecciona una provincia primero")
+                }
+                color="#F59E0B"
+                isPlaceholder={!distritoSeleccionado}
+                width="100%"
+              />
+              <ListaDesplegable
+                state={openDropdown === "distrito"}
+                data={distritos}
+                funcion={seleccionardistrito}
+                setState={closeDropdown}
+                width="100%"
+                top="3.5rem"
+                emptyLabel={
+                  provinciaSeleccionada
+                    ? "No hay distritos disponibles"
+                    : "Selecciona una provincia primero"
+                }
+              />
+            </DropdownWrapper>
+          </LocationSelectorsGrid>
         </Body>
 
         <Footer>
@@ -234,27 +409,17 @@ const DualGrid = styled.div`
   gap: 18px;
 `;
 
-const SelectorGrid = styled.div`
+const LocationSelectorsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 `;
 
-const SelectorColumn = styled.div`
-  display: flex;
+const DropdownWrapper = styled(ContainerSelector)`
+  width: 100%;
   flex-direction: column;
-  gap: 8px;
-  font-weight: 600;
-`;
-
-const SelectorButton = styled.button`
-  border-radius: 16px;
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.2);
-  padding: 12px 18px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.02);
-  color: ${({ theme }) => theme.text};
-  text-align: left;
-  cursor: pointer;
+  align-items: stretch;
+  gap: 10px;
 `;
 
 const Footer = styled.footer`
