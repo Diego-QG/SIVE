@@ -421,14 +421,13 @@ const DualGrid = styled.div`
 `;
 
 const LocationSelectorsRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 100%;
   gap: 15px;
-  justify-content: space-between;
 
   @media (max-width: 720px) {
-    justify-content: flex-start;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
 `;
 
@@ -437,24 +436,27 @@ const DropdownWrapper = styled(ContainerSelector)`
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
+  user-select: none;
 `;
 
 const CountrySelectorWrapper = styled(DropdownWrapper)`
   width: auto;
   justify-self: end;
-  align-self: center;
+  align-self: flex-end;
   margin-left: auto;
+  margin-top: 8px;
   min-width: 0;
 
   @media (max-width: 768px) {
     width: 100%;
     justify-self: stretch;
     margin-left: 0;
+    margin-top: 0;
   }
 `;
 
 const LocationDropdownWrapper = styled(DropdownWrapper)`
-  width: auto;
+  width: 100%;
   flex: 0 1 auto;
   min-width: 0;
 

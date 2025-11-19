@@ -304,7 +304,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
     },
     initialState: {
       pagination: {
-        pageSize: 20,
+        pageSize: 10,
       },
     },
     getCoreRowModel: getCoreRowModel(),
