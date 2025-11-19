@@ -291,10 +291,6 @@ export function RegistrarVentas2({
     state,
   ]);
 
-  if (!state) {
-    return null;
-  }
-
   const handleRequestClose = async () => {
     if (isClosing) {
       return;
@@ -446,9 +442,18 @@ export function RegistrarVentas2({
   ]);
 
   useEffect(() => {
+    if (!state) {
+      onBeforeCloseChange?.("step2", null);
+      return;
+    }
+
     onBeforeCloseChange?.("step2", handleBeforeClose);
     return () => onBeforeCloseChange?.("step2", null);
-  }, [handleBeforeClose, onBeforeCloseChange]);
+  }, [handleBeforeClose, onBeforeCloseChange, state]);
+
+  if (!state) {
+    return null;
+  }
 
   return (
     <Overlay>
