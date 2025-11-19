@@ -161,7 +161,8 @@ export function RegistrarVentas2({
                 texto2={paisSeleccionado?.nombre ?? "Perú"}
                 color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={false}
-                width="100%"
+                width="auto"
+                minWidth="120px"
               />
               <ListaDesplegable
                 state={openDropdown === "pais"}
@@ -176,7 +177,7 @@ export function RegistrarVentas2({
             </CountrySelectorWrapper>
           </DualGrid>
 
-          <LocationSelectorsGrid>
+          <LocationSelectorsRow>
             <LocationDropdownWrapper>
               <Selector
                 state={openDropdown === "departamento"}
@@ -195,7 +196,8 @@ export function RegistrarVentas2({
                 }
                 color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={!departamentoSeleccionado}
-                width="100%"
+                width="auto"
+                minWidth="200px"
               />
               <ListaDesplegable
                 state={openDropdown === "departamento"}
@@ -232,7 +234,8 @@ export function RegistrarVentas2({
                 }
                 color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={!provinciaSeleccionada}
-                width="100%"
+                width="auto"
+                minWidth="200px"
               />
               <ListaDesplegable
                 state={openDropdown === "provincia"}
@@ -269,7 +272,8 @@ export function RegistrarVentas2({
                 }
                 color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={!distritoSeleccionado}
-                width="100%"
+                width="auto"
+                minWidth="200px"
               />
               <ListaDesplegable
                 state={openDropdown === "distrito"}
@@ -286,7 +290,7 @@ export function RegistrarVentas2({
                 }
               />
             </LocationDropdownWrapper>
-          </LocationSelectorsGrid>
+          </LocationSelectorsRow>
         </Body>
 
         <Footer>
@@ -413,16 +417,18 @@ const DualGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 18px;
   align-items: flex-end;
+  justify-items: stretch;
 `;
 
-const LocationSelectorsGrid = styled.div`
+const LocationSelectorsRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  justify-content: flex-start;
+  width: 100%;
+  gap: 15px;
+  justify-content: space-between;
 
-  @media (max-width: 600px) {
-    flex-direction: column;
+  @media (max-width: 720px) {
+    justify-content: flex-start;
   }
 `;
 
@@ -434,22 +440,27 @@ const DropdownWrapper = styled(ContainerSelector)`
 `;
 
 const CountrySelectorWrapper = styled(DropdownWrapper)`
-  width: min(220px, 100%);
+  width: auto;
   justify-self: end;
   align-self: center;
+  margin-left: auto;
+  min-width: 0;
 
   @media (max-width: 768px) {
     width: 100%;
     justify-self: stretch;
+    margin-left: 0;
   }
 `;
 
 const LocationDropdownWrapper = styled(DropdownWrapper)`
-  flex: 1 1 150px;
-  max-width: 210px;
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 0;
 
-  @media (max-width: 600px) {
-    max-width: 100%;
+  @media (max-width: 720px) {
+    width: 100%;
+    flex: 1 1 100%;
   }
 `;
 

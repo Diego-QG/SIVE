@@ -11,6 +11,7 @@ import {
 import { v } from "../../styles/variables";
 import ConfettiExplosion from "react-confetti-explosion";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { Toaster } from "sonner";
 
 export function POSTemplate() {
   const { dataventas, buscador, setBuscador } = useVentasStore();
@@ -82,6 +83,7 @@ export function POSTemplate() {
 
   return (
     <Container>
+      <Toaster />
       <RegistrarVentas1
         onClose={handleCloseRegistro}
         state={openRegistro && registroStep === 1}
