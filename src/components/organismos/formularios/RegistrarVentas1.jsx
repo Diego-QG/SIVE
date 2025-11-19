@@ -17,6 +17,7 @@ import {
 
 export function RegistrarVentas1({
   state,
+  isOpen,
   onClose,
   onNext,
   ventaDraftId,
@@ -279,7 +280,7 @@ export function RegistrarVentas1({
     onVentaTieneDatosChange?.("vouchers", (displayedVouchers ?? []).length > 0);
   }, [displayedVouchers, onVentaTieneDatosChange, state]);
 
-  if (!state) {
+  if (!isOpen) {
     return null;
   }
 
@@ -300,8 +301,8 @@ export function RegistrarVentas1({
   };
 
   return (
-    <Overlay>
-      <Modal aria-busy={isClosing}>
+    <Overlay $visible={state} inert={!state}>
+      <Modal aria-busy={isClosing} $visible={state}>
         <Header>
           <div>
             <p>Registrar nueva venta</p>
@@ -401,6 +402,9 @@ const Overlay = styled.div`
   justify-content: center;
   z-index: 1200;
   padding: 16px;
+  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  pointer-events: ${({ $visible }) => ($visible ? "auto" : "none")};
+  visibility: ${({ $visible }) => ($visible ? "visible" : "hidden")};
 `;
 
 const Modal = styled.div`

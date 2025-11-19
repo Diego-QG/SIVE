@@ -18,6 +18,7 @@ const SELECTOR_BORDER_COLOR = "#CBD5E1";
 
 export function RegistrarVentas2({
   state,
+  isOpen,
   onClose,
   onNext,
   onPrevious,
@@ -451,13 +452,13 @@ export function RegistrarVentas2({
     return () => onBeforeCloseChange?.("step2", null);
   }, [handleBeforeClose, onBeforeCloseChange, state]);
 
-  if (!state) {
+  if (!isOpen) {
     return null;
   }
 
   return (
-    <Overlay>
-      <Modal aria-busy={isClosing}>
+    <Overlay $visible={state} inert={!state}>
+      <Modal aria-busy={isClosing} $visible={state}>
         <Header>
           <div>
             <p>Registrar nueva venta</p>
@@ -745,6 +746,9 @@ const Overlay = styled.div`
   justify-content: center;
   z-index: 1200;
   padding: 16px;
+  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  pointer-events: ${({ $visible }) => ($visible ? "auto" : "none")};
+  visibility: ${({ $visible }) => ($visible ? "visible" : "hidden")};
 `;
 
 const Modal = styled.div`

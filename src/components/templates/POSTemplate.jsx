@@ -165,6 +165,7 @@ export function POSTemplate({ datausuarios } = {}) {
       <RegistrarVentas1
         onClose={handleCloseRegistro}
         state={openRegistro && registroStep === 1}
+        isOpen={openRegistro}
         onNext={() => setRegistroStep(2)}
         ventaDraftId={ventaDraftId}
         onDraftCreated={setVentaDraftId}
@@ -176,6 +177,7 @@ export function POSTemplate({ datausuarios } = {}) {
       <RegistrarVentas2
         onClose={handleCloseRegistro}
         state={openRegistro && registroStep === 2}
+        isOpen={openRegistro}
         onNext={() => setRegistroStep(3)}
         onPrevious={() => setRegistroStep(1)}
         ventaDraftId={ventaDraftId}
@@ -185,6 +187,7 @@ export function POSTemplate({ datausuarios } = {}) {
       <RegistrarVentas3
         onClose={handleCloseRegistro}
         state={openRegistro && registroStep === 3}
+        isOpen={openRegistro}
         onPrevious={() => setRegistroStep(2)}
         onFinish={handleFinishRegistro}
         ventaDraftId={ventaDraftId}
