@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import styled, { keyframes } from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
@@ -11,6 +11,8 @@ import {
   useUsuariosStore,
   useVentasStore,
   VoucherMultiUploadSection,
+  obtenerVentaBorradorPorId,
+  obtenerVouchersRecibidosPorVenta,
 } from "../../../index";
 
 export function RegistrarVentas1({
@@ -23,6 +25,7 @@ export function RegistrarVentas1({
   onVentaTieneDatosChange,
   onDraftCreationStateChange,
   onBeforeCloseChange,
+  isEditing = false,
 }) {
 
   const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
@@ -33,6 +36,7 @@ export function RegistrarVentas1({
     setventaactual,
     limpiarvoucherspendientes,
     subirvoucherspendientes,
+    eliminarvoucherrecibido,
   } = useEvidenciasStore();
   const [focusedVoucher, setFocusedVoucher] = useState(null);
   const { dataeditoriales, editorialesitemselect, selecteditorial } =
@@ -41,10 +45,16 @@ export function RegistrarVentas1({
   const { insertarborrador, eliminarborrador, insertareditorialenventa } = useVentasStore();
   const [isSavingEditorial, setIsSavingEditorial] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [persistedVouchers, setPersistedVouchers] = useState([]);
+  const [draftEditorialId, setDraftEditorialId] = useState(null);
+  const [isLoadingDraftData, setIsLoadingDraftData] = useState(false);
   const hasEditoriales = (dataeditoriales ?? []).length > 0;
   const hasSelectedEditorial = Boolean(editorialesitemselect?.nombre?.trim());
+  const isLoadingInitialData = isEditing && isLoadingDraftData;
 
-  const selectorText = hasSelectedEditorial
+  const selectorText = isLoadingInitialData
+    ? "Cargando datos..."
+    : hasSelectedEditorial
     ? editorialesitemselect?.nombre
     : hasEditoriales
     ? "Editoriales disponibles"
@@ -53,9 +63,14 @@ export function RegistrarVentas1({
   const clearEditorialSelection = () => {
     selecteditorial(null);
     onVentaTieneDatosChange?.(false);
+    setDraftEditorialId(null);
   };
 
   const handleEditorialSelection = async (editorial) => {
+    if (isLoadingInitialData) {
+      return;
+    }
+    
     if (!editorial?.id || !ventaDraftId) {
       clearEditorialSelection();
       return;
@@ -75,7 +90,7 @@ export function RegistrarVentas1({
   };
 
   const toggleEditoriales = () => {
-    if (!hasEditoriales) return;
+    if (!hasEditoriales || isLoadingInitialData) return;
     setStateEditorialesLista((prev) => !prev);
   };
 
@@ -105,7 +120,17 @@ export function RegistrarVentas1({
     event.preventDefault();
   };
   
-  const handleRemoveVoucher = (id) => {
+  const handleRemoveVoucher = async (id) => {
+    const persisted = persistedVouchers.find((voucher) => voucher.id === id);
+    if (persisted) {
+      await eliminarvoucherrecibido({ id });
+      setPersistedVouchers((prev) => prev.filter((voucher) => voucher.id !== id));
+      if (focusedVoucher?.id === id) {
+        setFocusedVoucher(null);
+      }
+      return;
+    }
+
     removervoucherpendiente(id);
     if (focusedVoucher?.id === id) {
       setFocusedVoucher(null);
@@ -142,6 +167,70 @@ export function RegistrarVentas1({
   }, [state]);
 
   useEffect(() => {
+    if (!state || !ventaDraftId || !isEditing) {
+      setPersistedVouchers([]);
+      setDraftEditorialId(null);
+      setIsLoadingDraftData(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingDraftData(true);
+
+    const cargarDatos = async () => {
+      const [ventaData, vouchersGuardados] = await Promise.all([
+        obtenerVentaBorradorPorId({ id_venta: ventaDraftId }),
+        obtenerVouchersRecibidosPorVenta({ id_venta: ventaDraftId }),
+      ]);
+
+      if (isCancelled) {
+        return;
+      }
+
+      setDraftEditorialId(ventaData?.id_editorial ?? null);
+      setPersistedVouchers(
+        (vouchersGuardados ?? [])
+          .filter((item) => item?.archivo)
+          .map((item) => ({
+            id: item.id,
+            preview: item.archivo,
+            isPersisted: true,
+          }))
+      );
+
+      if (ventaData?.id_editorial) {
+        onVentaTieneDatosChange?.(true);
+      }
+
+      setIsLoadingDraftData(false);
+    };
+
+    cargarDatos().catch(() => {
+      if (!isCancelled) {
+        setIsLoadingDraftData(false);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [state, ventaDraftId, isEditing, onVentaTieneDatosChange]);
+
+  useEffect(() => {
+    if (!draftEditorialId || !Array.isArray(dataeditoriales)) {
+      return;
+    }
+
+    const editorialActual = dataeditoriales.find(
+      (item) => `${item?.id ?? ""}` === `${draftEditorialId}`
+    );
+
+    if (editorialActual) {
+      selecteditorial(editorialActual);
+    }
+  }, [draftEditorialId, dataeditoriales, selecteditorial]);
+
+  useEffect(() => {
     if (!state || !ventaDraftId) {
       return;
     }
@@ -176,6 +265,11 @@ export function RegistrarVentas1({
       isCancelled = true;
     };
   }, [state, ventaDraftId, datausuarios?.id, insertarborrador, onDraftCreated, onDraftCreationStateChange, onVentaTieneDatosChange, selecteditorial]);
+
+  const displayedVouchers = useMemo(
+    () => [...persistedVouchers, ...vouchers],
+    [persistedVouchers, vouchers]
+  );
 
   if (!state) {
     return null;
@@ -246,13 +340,17 @@ export function RegistrarVentas1({
           </section>
 
           <VoucherMultiUploadSection
-            vouchers={vouchers}
+            vouchers={displayedVouchers}
             onFilesSelected={addVouchers}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onVoucherClick={handleFocusVoucher}
             onRemoveVoucher={handleRemoveVoucher}
-            emptyMessage="Aún no se han cargado vouchers"
+            emptyMessage={
+              isLoadingInitialData
+                ? "Cargando vouchers guardados..."
+                : "Aún no se han cargado vouchers"
+            }
           />
         </Body>
 

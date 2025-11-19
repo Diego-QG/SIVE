@@ -62,6 +62,25 @@ export function POSTemplate() {
     setVentaTieneDatos(false);
   };
 
+  const handleEditarVenta = useCallback(
+    (venta) => {
+      const ventaId = venta?.id ?? venta?.id_venta ?? venta?.venta_id ?? null;
+      if (!ventaId) {
+        return;
+      }
+
+      setOpenRegistro(true);
+      setRegistroStep(1);
+      setAccion("Editar");
+      setDataSelect(venta ?? null);
+      setIsExploding(false);
+      setVentaDraftId(ventaId);
+      setVentaTieneDatos(true);
+      setIsCreatingDraft(false);
+    },
+    []
+  );
+
   const handleCloseRegistro = async (options = {}) => {
     try {
       if (!options?.skipBeforeClose && typeof beforeCloseRegistroRef.current === "function") {
@@ -73,6 +92,8 @@ export function POSTemplate() {
       setVentaDraftId(null);
       setVentaTieneDatos(false);
       setIsCreatingDraft(false);
+      setAccion("Nuevo");
+      setDataSelect(null);
     }
   };
 
@@ -94,6 +115,7 @@ export function POSTemplate() {
         onVentaTieneDatosChange={setVentaTieneDatos}
         onDraftCreationStateChange={setIsCreatingDraft}
         onBeforeCloseChange={handleBeforeCloseChange}
+        isEditing={accion === "Editar"}
       />
       <RegistrarVentas2
         onClose={handleCloseRegistro}
@@ -130,7 +152,7 @@ export function POSTemplate() {
       </section>
       <section className="main">
         {isExploding && <ConfettiExplosion />}
-        <TablaPOS data={filteredVentas} />
+        <TablaPOS data={filteredVentas} onEditarBorrador={handleEditarVenta} />
       </section>
     </Container>
   );

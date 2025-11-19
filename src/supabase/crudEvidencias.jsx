@@ -2,6 +2,7 @@ import Swal from "sweetalert2";
 import { supabase } from "../index";
 const STORAGE_BUCKET_IMAGENES = "imagenes";
 const STORAGE_FOLDER_VOUCHERS = "vouchers_recibidos";
+const TIPO_VOUCHER_RECIBIDO = "voucher_recibido";
 
 const obtenerRutaVoucher = (evidenciaId) =>
     evidenciaId ? `${STORAGE_FOLDER_VOUCHERS}/${evidenciaId}` : null;
@@ -94,4 +95,29 @@ export async function eliminarVoucherRecibido(p) {
     if (ruta) {
         await supabase.storage.from(STORAGE_BUCKET_IMAGENES).remove([ruta]);
     }
+}
+
+export async function obtenerVouchersRecibidosPorVenta(p = {}) {
+    const idVenta = p?._id_venta ?? p?.id_venta ?? p?.id ?? p?.idVenta ?? null;
+
+    if (!idVenta) {
+        return [];
+    }
+
+    const { data, error } = await supabase
+        .from(tabla)
+        .select("id, archivo")
+        .eq("id_venta", idVenta)
+        .eq("tipo", TIPO_VOUCHER_RECIBIDO);
+
+    if (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: error.message,
+        });
+        return [];
+    }
+
+    return data ?? [];
 }

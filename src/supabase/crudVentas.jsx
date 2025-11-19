@@ -3,6 +3,7 @@ import { supabase } from "../index";
 const STORAGE_BUCKET_IMAGENES = "imagenes";
 const STORAGE_FOLDER_VOUCHERS = "vouchers_recibidos";
 const TABLA_EVIDENCIAS = "evidencias";
+const TABLA_VENTAS = "ventas";
 
 export async function insertarBorrador(p) {
   const { error, data } = await supabase.rpc("fn_insertarborrador", p);
@@ -95,4 +96,29 @@ export async function insertarEditorialEnVenta(p) {
   }
 
   return true;
+}
+
+export async function obtenerVentaBorradorPorId(p = {}) {
+  const idVenta = p?._id_venta ?? p?.id_venta ?? p?.id ?? p?.idVenta ?? null;
+
+  if (!idVenta) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from(TABLA_VENTAS)
+    .select("id, id_editorial")
+    .eq("id", idVenta)
+    .maybeSingle();
+
+  if (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: error.message,
+    });
+    return null;
+  }
+
+  return data ?? null;
 }
