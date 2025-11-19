@@ -230,11 +230,6 @@ export function RegistrarVentas2({
   }, [state, cargarpaises]);
 
   useEffect(() => {
-    onBeforeCloseChange?.("step2", handleBeforeClose);
-    return () => onBeforeCloseChange?.("step2", null);
-  }, [handleBeforeClose, onBeforeCloseChange]);
-
-  useEffect(() => {
     if (!state) {
       return;
     }
@@ -449,6 +444,11 @@ export function RegistrarVentas2({
     phoneNumber,
     ventaDraftId,
   ]);
+
+  useEffect(() => {
+    onBeforeCloseChange?.("step2", handleBeforeClose);
+    return () => onBeforeCloseChange?.("step2", null);
+  }, [handleBeforeClose, onBeforeCloseChange]);
 
   return (
     <Overlay>
