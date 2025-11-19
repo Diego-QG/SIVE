@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import styled, { keyframes } from "styled-components";
 import { toast } from "sonner";
 import { v } from "../../../styles/variables";
@@ -7,9 +7,10 @@ import {
   ContainerSelector,
   ListaDesplegable,
   Selector,
+  useDocentesStore,
+  useEmpresaStore,
   useUbicacionesStore,
   useUsuariosStore,
-  useVentasStore,
 } from "../../../index";
 
 const DEFAULT_PAIS_ID = 1;
@@ -21,10 +22,17 @@ export function RegistrarVentas2({
   onNext,
   onPrevious,
   ventaDraftId,
-  ventaTieneDatos,
+  onVentaTieneDatosChange,
+  onBeforeCloseChange,
 }) {
   const { datausuarios } = useUsuariosStore();
-  const { eliminarborrador } = useVentasStore();
+  const { dataempresa } = useEmpresaStore();
+  const {
+    docentedraft,
+    guardardocenteborrador,
+    cargardocenteporventa,
+    limpiardocentedraft,
+  } = useDocentesStore();
   const {
     paises,
     departamentos,
@@ -42,12 +50,176 @@ export function RegistrarVentas2({
   } = useUbicacionesStore();
   const [isClosing, setIsClosing] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [dniValue, setDniValue] = useState("");
+  const [nombres, setNombres] = useState("");
+  const [apellidoPaterno, setApellidoPaterno] = useState("");
+  const [apellidoMaterno, setApellidoMaterno] = useState("");
+  const [isPhoneReady, setIsPhoneReady] = useState(false);
+  const [isDniReady, setIsDniReady] = useState(false);
+  const [hasHydratedDocente, setHasHydratedDocente] = useState(false);
+
+  const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? null;
+  const dniDigitsRequired = paisSeleccionado?.digitos_documento ?? null;
+  const phoneCodeLabel = paisSeleccionado?.cod_llamada ?? "+51";
+
+  const phoneStatusMessage = useMemo(() => {
+    if (isPhoneReady) {
+      return "Número listo para guardarse.";
+    }
+
+    if (!phoneNumber) {
+      return phoneDigitsRequired
+        ? `Se requieren ${phoneDigitsRequired} dígitos.`
+        : "Ingresa un número de teléfono.";
+    }
+
+    if (!phoneDigitsRequired) {
+      return `${phoneNumber.length} dígitos ingresados.`;
+    }
+
+    return `${phoneNumber.length}/${phoneDigitsRequired} dígitos.`;
+  }, [isPhoneReady, phoneDigitsRequired, phoneNumber]);
+
+  const dniStatusMessage = useMemo(() => {
+    if (isDniReady) {
+      return "DNI listo para consultar.";
+    }
+
+    if (!dniValue) {
+      return dniDigitsRequired
+        ? `Se requieren ${dniDigitsRequired} dígitos.`
+        : "Ingresa el documento del docente.";
+    }
+
+    if (!dniDigitsRequired) {
+      return `${dniValue.length} dígitos ingresados.`;
+    }
+
+    return `${dniValue.length}/${dniDigitsRequired} dígitos.`;
+  }, [dniDigitsRequired, dniValue, isDniReady]);
+
+  useEffect(() => {
+    if (!state || hasHydratedDocente) {
+      return;
+    }
+
+    if (
+      docentedraft?.id_pais &&
+      (!paisSeleccionado ||
+        Number(paisSeleccionado.id) !== Number(docentedraft.id_pais))
+    ) {
+      return;
+    }
+
+    const telefonoGuardado = `${docentedraft?.telefono ?? ""}`;
+    const documentoGuardado = docentedraft?.nro_doc
+      ? `${docentedraft.nro_doc}`
+      : "";
+
+    setPhoneNumber(telefonoGuardado);
+    setIsPhoneReady(
+      Boolean(telefonoGuardado) &&
+        (!phoneDigitsRequired || telefonoGuardado.length === phoneDigitsRequired)
+    );
+
+    setDniValue(documentoGuardado);
+    setIsDniReady(
+      Boolean(documentoGuardado) &&
+        (!dniDigitsRequired || documentoGuardado.length === dniDigitsRequired)
+    );
+
+    setNombres(docentedraft?.nombres ?? "");
+    setApellidoPaterno(docentedraft?.apellido_p ?? "");
+    setApellidoMaterno(docentedraft?.apellido_m ?? "");
+    setHasHydratedDocente(true);
+  }, [
+    docentedraft,
+    dniDigitsRequired,
+    hasHydratedDocente,
+    paisSeleccionado,
+    phoneDigitsRequired,
+    state,
+  ]);
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    const persistedHasInfo = Boolean(
+      docentedraft?.telefono ||
+        docentedraft?.nro_doc ||
+        docentedraft?.nombres ||
+        docentedraft?.apellido_p ||
+        docentedraft?.apellido_m
+    );
+
+    onVentaTieneDatosChange?.("docente", persistedHasInfo);
+  }, [docentedraft, onVentaTieneDatosChange, state]);
 
   useEffect(() => {
     if (state) {
       setIsClosing(false);
+      return;
     }
+
+    setHasHydratedDocente(false);
   }, [state]);
+
+  useEffect(() => {
+    if (state) {
+      return;
+    }
+
+    setOpenDropdown(null);
+    setPhoneNumber("");
+    setDniValue("");
+    setNombres("");
+    setApellidoPaterno("");
+    setApellidoMaterno("");
+    setIsPhoneReady(false);
+    setIsDniReady(false);
+    setHasHydratedDocente(false);
+  }, [state]);
+
+  useEffect(() => {
+    if (!phoneNumber) {
+      setIsPhoneReady(false);
+      return;
+    }
+
+    if (phoneDigitsRequired && phoneNumber.length !== phoneDigitsRequired) {
+      setIsPhoneReady(false);
+    }
+  }, [phoneDigitsRequired, phoneNumber]);
+
+  useEffect(() => {
+    if (!phoneDigitsRequired || phoneNumber.length <= phoneDigitsRequired) {
+      return;
+    }
+
+    setPhoneNumber((prev) => prev.slice(0, phoneDigitsRequired));
+  }, [phoneDigitsRequired, phoneNumber.length]);
+
+  useEffect(() => {
+    if (!dniValue) {
+      setIsDniReady(false);
+      return;
+    }
+
+    if (dniDigitsRequired && dniValue.length !== dniDigitsRequired) {
+      setIsDniReady(false);
+    }
+  }, [dniDigitsRequired, dniValue]);
+
+  useEffect(() => {
+    if (!dniDigitsRequired || dniValue.length <= dniDigitsRequired) {
+      return;
+    }
+
+    setDniValue((prev) => prev.slice(0, dniDigitsRequired));
+  }, [dniDigitsRequired, dniValue.length]);
 
   useEffect(() => {
     if (!state) {
@@ -56,6 +228,26 @@ export function RegistrarVentas2({
 
     cargarpaises();
   }, [state, cargarpaises]);
+
+  useEffect(() => {
+    onBeforeCloseChange?.("step2", handleBeforeClose);
+    return () => onBeforeCloseChange?.("step2", null);
+  }, [handleBeforeClose, onBeforeCloseChange]);
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    if (!ventaDraftId) {
+      limpiardocentedraft();
+      setHasHydratedDocente(false);
+      return;
+    }
+
+    setHasHydratedDocente(false);
+    cargardocenteporventa({ _id_venta: ventaDraftId });
+  }, [state, ventaDraftId, cargardocenteporventa, limpiardocentedraft]);
 
   useEffect(() => {
     if (!state || paisSeleccionado || !paises.length) {
@@ -70,6 +262,40 @@ export function RegistrarVentas2({
     }
   }, [state, paisSeleccionado, paises, seleccionarpais]);
 
+  useEffect(() => {
+    if (
+      !state ||
+      hasHydratedDocente ||
+      !docentedraft?.id_pais ||
+      !Array.isArray(paises) ||
+      !paises.length
+    ) {
+      return;
+    }
+
+    if (
+      paisSeleccionado &&
+      Number(paisSeleccionado.id) === Number(docentedraft.id_pais)
+    ) {
+      return;
+    }
+
+    const matchedPais = paises.find(
+      (pais) => Number(pais.id) === Number(docentedraft.id_pais)
+    );
+
+    if (matchedPais) {
+      seleccionarpais(matchedPais);
+    }
+  }, [
+    docentedraft?.id_pais,
+    hasHydratedDocente,
+    paisSeleccionado,
+    paises,
+    seleccionarpais,
+    state,
+  ]);
+
   if (!state) {
     return null;
   }
@@ -82,11 +308,7 @@ export function RegistrarVentas2({
     setIsClosing(true);
 
     try {
-      if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
-        await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
-      }
-
-      onClose?.();
+      await onClose?.();
     } catch (error) {
       console.error(error);
       setIsClosing(false);
@@ -102,6 +324,131 @@ export function RegistrarVentas2({
 
     setOpenDropdown((prev) => (prev === key ? null : key));
   };
+
+  const handlePhoneChange = (event) => {
+    const rawValue = event.target.value ?? "";
+    const digitsOnly = rawValue.replace(/\D/g, "");
+    const maxDigits = phoneDigitsRequired ?? 15;
+    setPhoneNumber(digitsOnly.slice(0, maxDigits));
+    setIsPhoneReady(false);
+  };
+
+  const handlePhoneBlur = () => {
+    if (!phoneNumber) {
+      setIsPhoneReady(false);
+      return;
+    }
+
+    if (phoneDigitsRequired && phoneNumber.length !== phoneDigitsRequired) {
+      toast.warning(
+        `La cantidad de dígitos del teléfono es inválida. Se requieren ${phoneDigitsRequired}.`
+      );
+      setIsPhoneReady(false);
+      return;
+    }
+
+    setIsPhoneReady(true);
+  };
+
+  const handleDniChange = (event) => {
+    const rawValue = event.target.value ?? "";
+    const digitsOnly = rawValue.replace(/\D/g, "");
+    const maxDigits = dniDigitsRequired ?? 12;
+    setDniValue(digitsOnly.slice(0, maxDigits));
+    setIsDniReady(false);
+  };
+
+  const handleDniBlur = () => {
+    if (!dniValue) {
+      setIsDniReady(false);
+      return;
+    }
+
+    if (dniDigitsRequired && dniValue.length !== dniDigitsRequired) {
+      toast.warning(
+        `La cantidad de dígitos del documento es inválida. Se requieren ${dniDigitsRequired}.`
+      );
+      setIsDniReady(false);
+      return;
+    }
+
+    setIsDniReady(true);
+    setNombres("");
+    setApellidoPaterno("");
+    setApellidoMaterno("");
+  };
+
+  const handleBeforeClose = useCallback(async () => {
+    if (!ventaDraftId) {
+      limpiardocentedraft();
+      return;
+    }
+
+    const telefonoGuardable = isPhoneReady && phoneNumber ? phoneNumber : null;
+    const dniGuardable = isDniReady && dniValue ? dniValue : null;
+    const nombresTrim = nombres.trim();
+    const apellidoPTrim = apellidoPaterno.trim();
+    const apellidoMTrim = apellidoMaterno.trim();
+
+    const shouldPersist =
+      Boolean(telefonoGuardable) ||
+      Boolean(dniGuardable) ||
+      Boolean(nombresTrim) ||
+      Boolean(apellidoPTrim) ||
+      Boolean(apellidoMTrim);
+
+    if (!shouldPersist) {
+      await guardardocenteborrador({
+        _id_venta: ventaDraftId,
+        _id_docente: docentedraft?.id ?? null,
+        shouldPersist: false,
+      });
+      onVentaTieneDatosChange?.("docente", false);
+      limpiardocentedraft();
+      return;
+    }
+
+    const empresaId = dataempresa?.id ?? datausuarios?.id_empresa ?? null;
+
+    if (!empresaId) {
+      toast.error("No se pudo determinar la empresa del docente.");
+      return;
+    }
+
+    const savedDocente = await guardardocenteborrador({
+      _id_venta: ventaDraftId,
+      _id_docente: docentedraft?.id ?? null,
+      _id_empresa: empresaId,
+      _id_pais: paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
+      telefono: telefonoGuardable,
+      nro_doc: dniGuardable,
+      nombres: nombresTrim || null,
+      apellido_p: apellidoPTrim || null,
+      apellido_m: apellidoMTrim || null,
+      shouldPersist: true,
+    });
+
+    if (savedDocente) {
+      onVentaTieneDatosChange?.("docente", true);
+    }
+  }, [
+    apellidoMaterno,
+    apellidoPaterno,
+    dataempresa?.id,
+    datausuarios?.id_empresa,
+    docentedraft?.id,
+    docentedraft?.id_pais,
+    dniValue,
+    guardardocenteborrador,
+    isDniReady,
+    isPhoneReady,
+    limpiardocentedraft,
+    nombres,
+    onVentaTieneDatosChange,
+    paisSeleccionado?.id,
+    phoneNumber,
+    ventaDraftId,
+  ]);
 
   return (
     <Overlay>
@@ -121,29 +468,100 @@ export function RegistrarVentas2({
         <Body>
           <InputGroup>
             <label>Número de teléfono</label>
-            <input type="text" placeholder="Sin información" disabled />
+            <PhoneInputRow>
+              <PhoneCodeSelectorSlot>
+                <Selector
+                  state={openDropdown === "phoneCode"}
+                  funcion={() => toggleDropdown("phoneCode")}
+                  texto1=""
+                  texto2={phoneCodeLabel}
+                  color={SELECTOR_BORDER_COLOR}
+                  isPlaceholder={false}
+                  width="auto"
+                  minWidth="88px"
+                />
+                <ListaDesplegable
+                  state={openDropdown === "phoneCode"}
+                  data={paises}
+                  funcion={seleccionarpais}
+                  setState={closeDropdown}
+                  width="260px"
+                  top="3.3rem"
+                  placement="bottom"
+                  emptyLabel="No hay códigos disponibles"
+                />
+              </PhoneCodeSelectorSlot>
+              <PhoneNumberField
+                type="tel"
+                placeholder="Número sin código"
+                value={phoneNumber}
+                onChange={handlePhoneChange}
+                onBlur={handlePhoneBlur}
+                maxLength={phoneDigitsRequired ?? 15}
+                inputMode="numeric"
+                autoComplete="tel"
+              />
+            </PhoneInputRow>
+            <FieldStatus $status={isPhoneReady ? "success" : "idle"}>
+              {phoneStatusMessage}
+            </FieldStatus>
           </InputGroup>
 
           <InputRow>
             <InputGroup>
               <label>DNI</label>
-              <input type="text" placeholder="Sin información" disabled />
+              <InputField
+                type="text"
+                placeholder="Número de documento"
+                value={dniValue}
+                onChange={handleDniChange}
+                onBlur={handleDniBlur}
+                maxLength={dniDigitsRequired ?? 12}
+                inputMode="numeric"
+                autoComplete="off"
+              />
+              <FieldStatus $status={isDniReady ? "success" : "idle"}>
+                {dniStatusMessage}
+              </FieldStatus>
             </InputGroup>
-            <GhostButton type="button">Consultar</GhostButton>
+            <GhostButton type="button" disabled={!isDniReady}>
+              Consultar
+            </GhostButton>
           </InputRow>
 
           <DualGrid>
             <InputGroup>
               <label>Nombres</label>
-              <input type="text" placeholder="" disabled />
+              <InputField
+                type="text"
+                placeholder="Nombres completos"
+                value={nombres}
+                onChange={(event) => setNombres(event.target.value)}
+                disabled={isDniReady}
+                autoComplete="off"
+              />
             </InputGroup>
             <InputGroup>
               <label>Apellido paterno</label>
-              <input type="text" placeholder="" disabled />
+              <InputField
+                type="text"
+                placeholder="Apellido paterno"
+                value={apellidoPaterno}
+                onChange={(event) => setApellidoPaterno(event.target.value)}
+                disabled={isDniReady}
+                autoComplete="off"
+              />
             </InputGroup>
             <InputGroup>
               <label>Apellido materno</label>
-              <input type="text" placeholder="" disabled />
+              <InputField
+                type="text"
+                placeholder="Apellido materno"
+                value={apellidoMaterno}
+                onChange={(event) => setApellidoMaterno(event.target.value)}
+                disabled={isDniReady}
+                autoComplete="off"
+              />
             </InputGroup>
             <InputGroup>
               <label>Código de IE</label>
@@ -383,13 +801,25 @@ const InputGroup = styled.label`
   flex-direction: column;
   gap: 6px;
   font-weight: 600;
+  flex: 1 1 0;
+  min-width: 0;
 
   input {
     border-radius: 14px;
     border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
     padding: 12px 16px;
     background: rgba(${({ theme }) => theme.textRgba}, 0.04);
-    color: rgba(${({ theme }) => theme.textRgba}, 0.7);
+    color: ${({ theme }) => theme.text};
+    font-weight: 500;
+  }
+
+  input::placeholder {
+    color: rgba(${({ theme }) => theme.textRgba}, 0.55);
+  }
+
+  input:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
   }
 `;
 
@@ -410,6 +840,12 @@ const GhostButton = styled.button`
   color: #0c554a;
   font-weight: 700;
   cursor: pointer;
+  min-height: 44px;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const DualGrid = styled.div`
@@ -464,6 +900,36 @@ const LocationDropdownWrapper = styled(DropdownWrapper)`
     width: 100%;
     flex: 1 1 100%;
   }
+`;
+
+const PhoneInputRow = styled.div`
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  flex-wrap: wrap;
+`;
+
+const PhoneCodeSelectorSlot = styled(ContainerSelector)`
+  width: auto;
+  min-width: 88px;
+  flex: 0 0 auto;
+`;
+
+const PhoneNumberField = styled.input`
+  flex: 1 1 200px;
+  max-width: 280px;
+`;
+
+const InputField = styled.input`
+  width: 100%;
+`;
+
+const FieldStatus = styled.small`
+  font-size: 0.78rem;
+  color: ${({ theme, $status }) =>
+    $status === "success" ? "#0c554a" : `rgba(${theme.textRgba}, 0.65)`};
+  opacity: ${({ $status }) => ($status === "success" ? 1 : 0.85)};
+  font-weight: ${({ $status }) => ($status === "success" ? 600 : 500)};
 `;
 
 const Footer = styled.footer`

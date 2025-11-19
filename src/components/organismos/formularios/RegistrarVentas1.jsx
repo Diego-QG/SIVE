@@ -21,7 +21,6 @@ export function RegistrarVentas1({
   onNext,
   ventaDraftId,
   onDraftCreated,
-  ventaTieneDatos,
   onVentaTieneDatosChange,
   onDraftCreationStateChange,
   onBeforeCloseChange,
@@ -42,7 +41,7 @@ export function RegistrarVentas1({
   const { dataeditoriales, editorialesitemselect, selecteditorial } =
     useEditorialesStore();
   const { datausuarios } = useUsuariosStore();
-  const { insertarborrador, eliminarborrador, insertareditorialenventa } = useVentasStore();
+  const { insertarborrador, insertareditorialenventa } = useVentasStore();
   const [isSavingEditorial, setIsSavingEditorial] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [persistedVouchers, setPersistedVouchers] = useState([]);
@@ -62,7 +61,7 @@ export function RegistrarVentas1({
 
   const clearEditorialSelection = () => {
     selecteditorial(null);
-    onVentaTieneDatosChange?.(false);
+    onVentaTieneDatosChange?.("editorial", false);
     setDraftEditorialId(null);
   };
 
@@ -85,7 +84,7 @@ export function RegistrarVentas1({
 
     if (isSaved) {
       selecteditorial(editorial);
-      onVentaTieneDatosChange?.(true);
+      onVentaTieneDatosChange?.("editorial", true);
     }
   };
 
@@ -156,8 +155,8 @@ export function RegistrarVentas1({
   }, [ventaDraftId, datausuarios?.id, subirvoucherspendientes, limpiarvoucherspendientes]);
 
   useEffect(() => {
-    onBeforeCloseChange?.(handleBeforeClose);
-    return () => onBeforeCloseChange?.(null);
+    onBeforeCloseChange?.("step1", handleBeforeClose);
+    return () => onBeforeCloseChange?.("step1", null);
   }, [handleBeforeClose, onBeforeCloseChange]);
 
   useEffect(() => {
@@ -199,7 +198,7 @@ export function RegistrarVentas1({
       );
 
       if (ventaData?.id_editorial) {
-        onVentaTieneDatosChange?.(true);
+        onVentaTieneDatosChange?.("editorial", true);
       }
 
       setIsLoadingDraftData(false);
@@ -255,7 +254,8 @@ export function RegistrarVentas1({
       }
 
       onDraftCreated?.(nuevoId);
-      onVentaTieneDatosChange?.(false);
+      onVentaTieneDatosChange?.("editorial", false);
+      onVentaTieneDatosChange?.("vouchers", false);
       selecteditorial(null);
     };
 
@@ -271,6 +271,14 @@ export function RegistrarVentas1({
     [persistedVouchers, vouchers]
   );
 
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    onVentaTieneDatosChange?.("vouchers", (displayedVouchers ?? []).length > 0);
+  }, [displayedVouchers, onVentaTieneDatosChange, state]);
+
   if (!state) {
     return null;
   }
@@ -283,14 +291,8 @@ export function RegistrarVentas1({
     setIsClosing(true);
 
     try {
-      await handleBeforeClose();
-
-      if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
-        await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
-      }
-
       clearEditorialSelection();
-      onClose?.({ skipBeforeClose: true });
+      await onClose?.();
     } catch (error) {
       console.error(error);
       setIsClosing(false);

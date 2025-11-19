@@ -13,20 +13,68 @@ import ConfettiExplosion from "react-confetti-explosion";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Toaster } from "sonner";
 
-export function POSTemplate() {
-  const { dataventas, buscador, setBuscador } = useVentasStore();
+export function POSTemplate({ datausuarios } = {}) {
+  const { dataventas, buscador, setBuscador, eliminarborrador } = useVentasStore();
   const [openRegistro, setOpenRegistro] = useState(false);
   const [registroStep, setRegistroStep] = useState(1);
   const [accion, setAccion] = useState("Nuevo");
   const [dataSelect, setDataSelect] = useState(null);
   const [isExploding, setIsExploding] = useState(false);
   const [ventaDraftId, setVentaDraftId] = useState(null);
-  const [ventaTieneDatos, setVentaTieneDatos] = useState(false);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
-  const beforeCloseRegistroRef = useRef(null);
+  const beforeCloseHandlersRef = useRef(new Map());
+  const [ventaDraftFlags, setVentaDraftFlags] = useState({
+    editorial: false,
+    vouchers: false,
+    docente: false,
+  });
+  const ventaDraftFlagsRef = useRef(ventaDraftFlags);
 
-  const handleBeforeCloseChange = useCallback((handler) => {
-    beforeCloseRegistroRef.current = handler;
+  const handleVentaTieneDatosChange = useCallback((flag, value) => {
+    if (!flag) {
+      return;
+    }
+
+    setVentaDraftFlags((prev) => {
+      const nextValue = Boolean(value);
+
+      if (prev[flag] === nextValue) {
+        return prev;
+      }
+
+      const next = { ...prev, [flag]: nextValue };
+      ventaDraftFlagsRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const resetVentaDraftFlags = useCallback(() => {
+    const emptyFlags = { editorial: false, vouchers: false, docente: false };
+    ventaDraftFlagsRef.current = emptyFlags;
+    setVentaDraftFlags(emptyFlags);
+  }, []);
+
+  const handleBeforeCloseChange = useCallback((key, handler) => {
+    if (!key) {
+      return;
+    }
+
+    if (typeof handler === "function") {
+      beforeCloseHandlersRef.current.set(key, handler);
+      return;
+    }
+
+    beforeCloseHandlersRef.current.delete(key);
+  }, []);
+
+  const runBeforeCloseHandlers = useCallback(async () => {
+    const handlers = Array.from(beforeCloseHandlersRef.current.values());
+
+    for (const handler of handlers) {
+      if (typeof handler === "function") {
+        await handler();
+      }
+    }
   }, []);
 
   const filteredVentas = useMemo(() => {
@@ -59,7 +107,7 @@ export function POSTemplate() {
     setDataSelect(null);
     setIsExploding(false);
     setVentaDraftId(null);
-    setVentaTieneDatos(false);
+    resetVentaDraftFlags();
   };
 
   const handleEditarVenta = useCallback(
@@ -75,7 +123,6 @@ export function POSTemplate() {
       setDataSelect(venta ?? null);
       setIsExploding(false);
       setVentaDraftId(ventaId);
-      setVentaTieneDatos(true);
       setIsCreatingDraft(false);
     },
     []
@@ -83,17 +130,27 @@ export function POSTemplate() {
 
   const handleCloseRegistro = async (options = {}) => {
     try {
-      if (!options?.skipBeforeClose && typeof beforeCloseRegistroRef.current === "function") {
-        await beforeCloseRegistroRef.current();
+      if (!options?.skipBeforeClose) {
+        await runBeforeCloseHandlers();
+      }
+
+      const shouldKeepDraft = Object.values(ventaDraftFlagsRef.current).some(Boolean);
+
+      if (ventaDraftId && !shouldKeepDraft && datausuarios?.id) {
+        await eliminarborrador({
+          _id_venta: ventaDraftId,
+          _id_usuario: datausuarios.id,
+        });
       }
     } finally {
       setOpenRegistro(false);
       setRegistroStep(1);
       setVentaDraftId(null);
-      setVentaTieneDatos(false);
       setIsCreatingDraft(false);
       setAccion("Nuevo");
       setDataSelect(null);
+      resetVentaDraftFlags();
+      beforeCloseHandlersRef.current.clear();
     }
   };
 
@@ -111,8 +168,7 @@ export function POSTemplate() {
         onNext={() => setRegistroStep(2)}
         ventaDraftId={ventaDraftId}
         onDraftCreated={setVentaDraftId}
-        ventaTieneDatos={ventaTieneDatos}
-        onVentaTieneDatosChange={setVentaTieneDatos}
+        onVentaTieneDatosChange={handleVentaTieneDatosChange}
         onDraftCreationStateChange={setIsCreatingDraft}
         onBeforeCloseChange={handleBeforeCloseChange}
         isEditing={accion === "Editar"}
@@ -123,7 +179,8 @@ export function POSTemplate() {
         onNext={() => setRegistroStep(3)}
         onPrevious={() => setRegistroStep(1)}
         ventaDraftId={ventaDraftId}
-        ventaTieneDatos={ventaTieneDatos}
+        onVentaTieneDatosChange={handleVentaTieneDatosChange}
+        onBeforeCloseChange={handleBeforeCloseChange}
       />
       <RegistrarVentas3
         onClose={handleCloseRegistro}
@@ -131,7 +188,6 @@ export function POSTemplate() {
         onPrevious={() => setRegistroStep(2)}
         onFinish={handleFinishRegistro}
         ventaDraftId={ventaDraftId}
-        ventaTieneDatos={ventaTieneDatos}
       />
       <section className="area1">
         <div className="hero-text">
@@ -157,6 +213,7 @@ export function POSTemplate() {
     </Container>
   );
 }
+
 const Container = styled.div`
   min-height: calc(100vh - 30px);
   padding: 24px 18px 32px;

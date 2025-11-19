@@ -63,7 +63,7 @@ export function ListaDesplegable({
               key={item?.id ?? index}
               onClick={() => handleSelect(item)}
             >
-              <span className="badge">🌫️</span>
+              <span className="badge">{item?.cod_llamada ?? "🌫️"}</span>
               <span className="text">{item?.nombre}</span>
             </ItemContainer>
           ))
@@ -153,7 +153,10 @@ const ItemContainer = styled.button`
   font-size: 0.95rem;
 
   .badge {
-    font-size: 1rem;
+    font-size: 0.9rem;
+    min-width: 44px;
+    text-align: center;
+    font-weight: 600;
   }
 
   .text {

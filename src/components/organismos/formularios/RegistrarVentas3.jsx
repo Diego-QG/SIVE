@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
-import { useUsuariosStore, useVentasStore } from "../../../index";
 
 export function RegistrarVentas3({
   state,
@@ -10,10 +9,7 @@ export function RegistrarVentas3({
   onPrevious,
   onFinish,
   ventaDraftId,
-  ventaTieneDatos,
 }) {
-  const { datausuarios } = useUsuariosStore();
-  const { eliminarborrador } = useVentasStore();
   const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
@@ -34,11 +30,7 @@ export function RegistrarVentas3({
     setIsClosing(true);
 
     try {
-      if (ventaDraftId && !ventaTieneDatos && datausuarios?.id) {
-        await eliminarborrador({ _id_venta: ventaDraftId, _id_usuario: datausuarios.id });
-      }
-
-      onClose?.();
+      await onClose?.();
     } catch (error) {
       console.error(error);
       setIsClosing(false);

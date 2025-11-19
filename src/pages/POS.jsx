@@ -38,5 +38,5 @@ export function POS() {
         return <span>error...</span>;
     }
 
-    return <POSTemplate />;
+    return <POSTemplate datausuarios={datausuarios} />;
 }
