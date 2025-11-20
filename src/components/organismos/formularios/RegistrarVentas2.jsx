@@ -9,8 +9,10 @@ import {
   Selector,
   useDocentesStore,
   useEmpresaStore,
+  useInstitucionesStore,
   useUbicacionesStore,
   useUsuariosStore,
+  VentaInput,
 } from "../../../index";
 
 const DEFAULT_PAIS_ID = 1;
@@ -35,6 +37,12 @@ export function RegistrarVentas2({
     limpiardocentedraft,
   } = useDocentesStore();
   const {
+    institucionDraft,
+    guardarinstitucionborrador,
+    cargarinstitucionporventa,
+    limpiarinstituciondraft,
+  } = useInstitucionesStore();
+  const {
     paises,
     departamentos,
     provincias,
@@ -56,9 +64,12 @@ export function RegistrarVentas2({
   const [nombres, setNombres] = useState("");
   const [apellidoPaterno, setApellidoPaterno] = useState("");
   const [apellidoMaterno, setApellidoMaterno] = useState("");
+  const [codigoIe, setCodigoIe] = useState("");
+  const [nombreIe, setNombreIe] = useState("");
   const [isPhoneReady, setIsPhoneReady] = useState(false);
   const [isDniReady, setIsDniReady] = useState(false);
   const [hasHydratedDocente, setHasHydratedDocente] = useState(false);
+  const [hasHydratedInstitucion, setHasHydratedInstitucion] = useState(false);
 
   const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? null;
   const dniDigitsRequired = paisSeleccionado?.digitos_documento ?? null;
@@ -148,6 +159,43 @@ export function RegistrarVentas2({
       return;
     }
 
+    if (!ventaDraftId) {
+      limpiarinstituciondraft();
+      setCodigoIe("");
+      setNombreIe("");
+      setHasHydratedInstitucion(false);
+      return;
+    }
+
+    cargarinstitucionporventa({ _id_venta: ventaDraftId });
+  }, [
+    cargarinstitucionporventa,
+    limpiarinstituciondraft,
+    state,
+    ventaDraftId,
+  ]);
+
+  useEffect(() => {
+    if (!state || hasHydratedInstitucion) {
+      return;
+    }
+
+    const codigoGuardado = institucionDraft?.cod_institucion ?? "";
+    const nombreGuardado = institucionDraft?.nombre ?? "";
+
+    setCodigoIe(codigoGuardado ? `${codigoGuardado}` : "");
+    setNombreIe(nombreGuardado);
+
+    if (institucionDraft) {
+      setHasHydratedInstitucion(true);
+    }
+  }, [hasHydratedInstitucion, institucionDraft, state]);
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
     const persistedHasInfo = Boolean(
       docentedraft?.telefono ||
         docentedraft?.nro_doc ||
@@ -167,6 +215,7 @@ export function RegistrarVentas2({
 
     if (!isOpen) {
       setHasHydratedDocente(false);
+      setHasHydratedInstitucion(false);
     }
   }, [isOpen, state]);
 
@@ -181,9 +230,12 @@ export function RegistrarVentas2({
     setNombres("");
     setApellidoPaterno("");
     setApellidoMaterno("");
+    setCodigoIe("");
+    setNombreIe("");
     setIsPhoneReady(false);
     setIsDniReady(false);
     setHasHydratedDocente(false);
+    setHasHydratedInstitucion(false);
   }, [isOpen, state]);
 
   useEffect(() => {
@@ -231,6 +283,45 @@ export function RegistrarVentas2({
 
     cargarpaises();
   }, [state, cargarpaises]);
+
+  useEffect(() => {
+    if (!state || !institucionDraft) {
+      return;
+    }
+
+    const sincronizarUbicaciones = async () => {
+      const paisId = institucionDraft.id_pais ?? DEFAULT_PAIS_ID;
+
+      if (
+        paisId &&
+        (!paisSeleccionado || Number(paisSeleccionado.id) !== Number(paisId))
+      ) {
+        await seleccionarpais(paisId);
+      }
+
+      if (institucionDraft.id_geo_nivel1) {
+        await seleccionardepartamento(institucionDraft.id_geo_nivel1);
+      }
+
+      if (institucionDraft.id_geo_nivel2) {
+        await seleccionarprovincia(institucionDraft.id_geo_nivel2);
+      }
+
+      if (institucionDraft.id_geo_nivel3) {
+        seleccionardistrito(institucionDraft.id_geo_nivel3);
+      }
+    };
+
+    sincronizarUbicaciones();
+  }, [
+    institucionDraft,
+    paisSeleccionado,
+    seleccionarpais,
+    seleccionardepartamento,
+    seleccionarprovincia,
+    seleccionardistrito,
+    state,
+  ]);
 
   useEffect(() => {
     if (!state) {
@@ -375,6 +466,7 @@ export function RegistrarVentas2({
   const handleBeforeClose = useCallback(async () => {
     if (!ventaDraftId) {
       limpiardocentedraft();
+      limpiarinstituciondraft();
       return;
     }
 
@@ -383,18 +475,58 @@ export function RegistrarVentas2({
     const nombresTrim = nombres.trim();
     const apellidoPTrim = apellidoPaterno.trim();
     const apellidoMTrim = apellidoMaterno.trim();
+    const codigoIeTrim = codigoIe.trim();
+    const nombreIeTrim = nombreIe.trim();
 
-    const shouldPersist =
+    const geoNivel1Id = departamentoSeleccionado?.id ?? null;
+    const geoNivel2Id = provinciaSeleccionada?.id ?? null;
+    const geoNivel3Id = distritoSeleccionado?.id ?? null;
+    const codigoGuardable =
+      codigoIeTrim && /^\d+$/.test(codigoIeTrim)
+        ? Number(codigoIeTrim)
+        : null;
+
+    const shouldPersistInstitucion =
+      Boolean(codigoGuardable) ||
+      Boolean(nombreIeTrim) ||
+      Boolean(geoNivel1Id) ||
+      Boolean(geoNivel2Id) ||
+      Boolean(geoNivel3Id);
+
+    let institucionGuardada = institucionDraft ?? null;
+
+    if (!shouldPersistInstitucion && institucionDraft?.id) {
+      await guardarinstitucionborrador({
+        _id_institucion: institucionDraft.id,
+        shouldPersist: false,
+      });
+      institucionGuardada = null;
+    } else if (shouldPersistInstitucion) {
+      institucionGuardada = await guardarinstitucionborrador({
+        _id_institucion: institucionDraft?.id ?? null,
+        cod_institucion: codigoGuardable,
+        nombre: nombreIeTrim || null,
+        id_pais: paisSeleccionado?.id ?? institucionDraft?.id_pais ?? null,
+        id_geo_nivel1: geoNivel1Id,
+        id_geo_nivel2: geoNivel2Id,
+        id_geo_nivel3: geoNivel3Id,
+        shouldPersist: true,
+      });
+    }
+
+    const shouldPersistDocente =
       Boolean(telefonoGuardable) ||
       Boolean(dniGuardable) ||
       Boolean(nombresTrim) ||
       Boolean(apellidoPTrim) ||
-      Boolean(apellidoMTrim);
+      Boolean(apellidoMTrim) ||
+      Boolean(institucionGuardada?.id);
 
-    if (!shouldPersist) {
+    if (!shouldPersistDocente) {
       await guardardocenteborrador({
         _id_venta: ventaDraftId,
         _id_docente: docentedraft?.id ?? null,
+        _id_institucion: institucionDraft?.id ?? null,
         shouldPersist: false,
       });
       onVentaTieneDatosChange?.("docente", false);
@@ -413,7 +545,9 @@ export function RegistrarVentas2({
       _id_venta: ventaDraftId,
       _id_docente: docentedraft?.id ?? null,
       _id_empresa: empresaId,
-      _id_pais: paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
+      _id_pais:
+        paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
+      _id_institucion: institucionGuardada?.id ?? institucionDraft?.id ?? null,
       telefono: telefonoGuardable,
       nro_doc: dniGuardable,
       nombres: nombresTrim || null,
@@ -422,25 +556,34 @@ export function RegistrarVentas2({
       shouldPersist: true,
     });
 
-    if (savedDocente) {
+    if (savedDocente || institucionGuardada) {
       onVentaTieneDatosChange?.("docente", true);
     }
   }, [
     apellidoMaterno,
     apellidoPaterno,
+    codigoIe,
     dataempresa?.id,
     datausuarios?.id_empresa,
+    departamentoSeleccionado?.id,
+    distritoSeleccionado?.id,
     docentedraft?.id,
     docentedraft?.id_pais,
     dniValue,
+    guardarinstitucionborrador,
     guardardocenteborrador,
+    institucionDraft?.id,
+    institucionDraft?.id_pais,
     isDniReady,
     isPhoneReady,
     limpiardocentedraft,
+    limpiarinstituciondraft,
     nombres,
+    nombreIe,
     onVentaTieneDatosChange,
     paisSeleccionado?.id,
     phoneNumber,
+    provinciaSeleccionada?.id,
     ventaDraftId,
   ]);
 
@@ -554,50 +697,46 @@ export function RegistrarVentas2({
           </InputRow>
 
           <NameFieldsRow>
-            <InputGroup>
-              <label>Nombres</label>
-              <InputField
-                type="text"
-                placeholder="Nombres completos"
-                value={nombres}
-                onChange={(event) => setNombres(event.target.value)}
-                disabled={isDniReady}
-                autoComplete="off"
-              />
-            </InputGroup>
-            <InputGroup>
-              <label>Apellido paterno</label>
-              <InputField
-                type="text"
-                placeholder="Apellido paterno"
-                value={apellidoPaterno}
-                onChange={(event) => setApellidoPaterno(event.target.value)}
-                disabled={isDniReady}
-                autoComplete="off"
-              />
-            </InputGroup>
-            <InputGroup>
-              <label>Apellido materno</label>
-              <InputField
-                type="text"
-                placeholder="Apellido materno"
-                value={apellidoMaterno}
-                onChange={(event) => setApellidoMaterno(event.target.value)}
-                disabled={isDniReady}
-                autoComplete="off"
-              />
-            </InputGroup>
+            <VentaInput
+              label="Nombres"
+              placeholder="Nombres completos"
+              value={nombres}
+              onChange={(event) => setNombres(event.target.value)}
+              disabled={isDniReady}
+            />
+            <VentaInput
+              label="Apellido paterno"
+              placeholder="Apellido paterno"
+              value={apellidoPaterno}
+              onChange={(event) => setApellidoPaterno(event.target.value)}
+              disabled={isDniReady}
+            />
+            <VentaInput
+              label="Apellido materno"
+              placeholder="Apellido materno"
+              value={apellidoMaterno}
+              onChange={(event) => setApellidoMaterno(event.target.value)}
+              disabled={isDniReady}
+            />
           </NameFieldsRow>
 
           <DualGrid>
-            <InputGroup>
-              <label>Código de IE</label>
-              <input type="text" placeholder="" disabled />
-            </InputGroup>
-            <InputGroup>
-              <label>Nombre de IE</label>
-              <input type="text" placeholder="" disabled />
-            </InputGroup>
+            <VentaInput
+              label="Código de IE"
+              placeholder="Código de institución"
+              value={codigoIe}
+              onChange={(event) => setCodigoIe(event.target.value)}
+              type="text"
+              variant="solid"
+            />
+            <VentaInput
+              label="Nombre de IE"
+              placeholder="Nombre de institución"
+              value={nombreIe}
+              onChange={(event) => setNombreIe(event.target.value)}
+              type="text"
+              variant="solid"
+            />
             <CountrySelectorWrapper>
               <Selector
                 state={openDropdown === "pais"}

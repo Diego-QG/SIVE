@@ -5,6 +5,7 @@ const STORAGE_FOLDER_VOUCHERS = "vouchers_recibidos";
 const TABLA_EVIDENCIAS = "evidencias";
 const TABLA_VENTAS = "ventas";
 const TABLA_DOCENTES = "docentes";
+const TABLA_INSTITUCIONES = "instituciones";
 
 export async function insertarBorrador(p) {
   const { error, data } = await supabase.rpc("fn_insertarborrador", p);
@@ -73,6 +74,27 @@ export async function eliminarBorrador(p) {
         return false;
     }
 
+    let institucionId = null;
+
+    if (venta?.id_docente) {
+        const { data: docenteData, error: docenteError } = await supabase
+            .from(TABLA_DOCENTES)
+            .select("id_institucion")
+            .eq("id", venta.id_docente)
+            .maybeSingle();
+
+        if (docenteError) {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: docenteError.message,
+            });
+            return false;
+        }
+
+        institucionId = docenteData?.id_institucion ?? null;
+    }
+
     const { error } = await supabase.rpc("fn_eliminarborrador", p);
     if (error) {
         Swal.fire({
@@ -115,8 +137,24 @@ export async function eliminarBorrador(p) {
             });
             return false;
         }
+
+        if (institucionId) {
+            const { error: institucionError } = await supabase
+                .from(TABLA_INSTITUCIONES)
+                .delete()
+                .eq("id", institucionId);
+
+            if (institucionError) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Oops...",
+                    text: institucionError.message,
+                });
+                return false;
+            }
+        }
     }
-    
+
     return true;
 }
 

@@ -1,10 +1,11 @@
 import Swal from "sweetalert2";
-import { supabase } from "../index";
+import { supabase } from "./supabase.config";
+import { crearInstitucionVacia, eliminarInstitucion } from "./crudInstituciones";
 
 const tabla = "docentes";
 const TABLA_VENTAS = "ventas";
 const SELECT_COLUMNS =
-  "id, id_empresa, id_pais, nro_doc, telefono, nombres, apellido_p, apellido_m";
+  "id, id_empresa, id_pais, id_institucion, nro_doc, telefono, nombres, apellido_p, apellido_m";
 
 const handleError = (error) => {
   if (error) {
@@ -75,14 +76,38 @@ export async function guardarDocenteBorrador(p = {}) {
       return null;
     }
 
+    let docenteData = null;
+
     if (docenteId) {
-      const { error: docenteError } = await supabase
+      const { data: docente, error: docenteError } = await supabase
+        .from(tabla)
+        .select("id, id_institucion")
+        .eq("id", docenteId)
+        .maybeSingle();
+
+      if (handleError(docenteError)) {
+        return null;
+      }
+
+      docenteData = docente ?? null;
+
+      const { error: docenteDeleteError } = await supabase
         .from(tabla)
         .delete()
         .eq("id", docenteId);
 
-      if (handleError(docenteError)) {
+      if (handleError(docenteDeleteError)) {
         return null;
+      }
+
+      const institucionId =
+        p?._id_institucion ??
+        p?.id_institucion ??
+        docenteData?.id_institucion ??
+        null;
+
+      if (institucionId) {
+        await eliminarInstitucion({ id: institucionId });
       }
     }
 
@@ -102,6 +127,7 @@ export async function guardarDocenteBorrador(p = {}) {
 
   const docentePayload = {
     id_empresa: empresaId,
+    id_institucion: p?._id_institucion ?? p?.id_institucion ?? null,
     id_pais: p?._id_pais ?? null,
     nro_doc: p?.nro_doc ? Number(p.nro_doc) : null,
     telefono: p?.telefono ? `${p.telefono}` : null,
@@ -153,4 +179,63 @@ export async function guardarDocenteBorrador(p = {}) {
   }
 
   return savedDocente;
+}
+
+export async function crearDocenteConInstitucionBorrador(p = {}) {
+  const ventaId = p?._id_venta ?? p?.id_venta ?? null;
+  const empresaId = p?._id_empresa ?? null;
+  const paisId = p?._id_pais ?? null;
+
+  if (!ventaId || !empresaId) {
+    return null;
+  }
+
+  const institucion = await crearInstitucionVacia({ id_pais: paisId });
+  const institucionId = institucion?.id ?? null;
+
+  const docentePayload = {
+    id_empresa: empresaId,
+    id_institucion: institucionId,
+    id_pais: paisId,
+    nro_doc: null,
+    telefono: null,
+    nombres: null,
+    apellido_p: null,
+    apellido_m: null,
+  };
+
+  const { data: docente, error } = await supabase
+    .from(tabla)
+    .insert(docentePayload)
+    .select(SELECT_COLUMNS)
+    .maybeSingle();
+
+  if (handleError(error)) {
+    if (institucionId) {
+      await eliminarInstitucion({ id: institucionId });
+    }
+    return null;
+  }
+
+  if (!docente?.id) {
+    if (institucionId) {
+      await eliminarInstitucion({ id: institucionId });
+    }
+    return null;
+  }
+
+  const { error: ventaError } = await supabase
+    .from(TABLA_VENTAS)
+    .update({ id_docente: docente.id })
+    .eq("id", ventaId);
+
+  if (handleError(ventaError)) {
+    await supabase.from(tabla).delete().eq("id", docente.id);
+    if (institucionId) {
+      await eliminarInstitucion({ id: institucionId });
+    }
+    return null;
+  }
+
+  return { docente, institucion };
 }

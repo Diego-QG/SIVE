@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { guardarDocenteBorrador, obtenerDocentePorVenta } from "../index";
+import {
+  crearDocenteConInstitucionBorrador,
+  guardarDocenteBorrador,
+  obtenerDocentePorVenta,
+} from "../index";
 import { useVentasStore } from "./VentasStore";
 
 const refreshVentasSilently = async () => {
@@ -32,8 +36,17 @@ export const useDocentesStore = create((set) => ({
     if (p?._id_venta ?? p?.id_venta ?? p?.id) {
       await refreshVentasSilently();
     }
-    
+
     return response ?? null;
+  },
+  creardocenteborrador: async (p) => {
+    const response = await crearDocenteConInstitucionBorrador(p);
+
+    if (response?.docente) {
+      set({ docentedraft: response.docente });
+    }
+
+    return response;
   },
   limpiardocentedraft: () => set({ docentedraft: null }),
 }));

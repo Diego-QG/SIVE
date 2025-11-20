@@ -6,6 +6,8 @@ import {
   ContainerSelector,
   ListaDesplegable,
   Selector,
+  useDocentesStore,
+  useEmpresaStore,
   useEditorialesStore,
   useEvidenciasStore,
   useUsuariosStore,
@@ -27,7 +29,8 @@ export function RegistrarVentas1({
   onBeforeCloseChange,
   isEditing = false,
 }) {
-
+  const { dataempresa } = useEmpresaStore();
+  const { creardocenteborrador } = useDocentesStore();
   const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
   const {
     voucherspendientes: vouchers,
@@ -298,6 +301,16 @@ export function RegistrarVentas1({
       onVentaTieneDatosChange?.("editorial", false);
       onVentaTieneDatosChange?.("vouchers", false);
       selecteditorial(null);
+
+      const empresaId = dataempresa?.id ?? datausuarios?.id_empresa ?? null;
+
+      if (empresaId) {
+        await creardocenteborrador({
+          _id_venta: nuevoId,
+          _id_empresa: empresaId,
+          _id_pais: 1,
+        });
+      }
     };
 
     crearBorrador();
@@ -305,7 +318,19 @@ export function RegistrarVentas1({
     return () => {
       isCancelled = true;
     };
-  }, [state, ventaDraftId, datausuarios?.id, insertarborrador, onDraftCreated, onDraftCreationStateChange, onVentaTieneDatosChange, selecteditorial]);
+  }, [
+    state,
+    ventaDraftId,
+    datausuarios?.id,
+    dataempresa?.id,
+    datausuarios?.id_empresa,
+    insertarborrador,
+    onDraftCreated,
+    onDraftCreationStateChange,
+    onVentaTieneDatosChange,
+    selecteditorial,
+    creardocenteborrador,
+  ]);
 
   const displayedVouchers = useMemo(
     () => [...persistedVouchers, ...vouchers],
