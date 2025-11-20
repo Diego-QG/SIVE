@@ -4,6 +4,7 @@ const STORAGE_BUCKET_IMAGENES = "imagenes";
 const STORAGE_FOLDER_VOUCHERS = "vouchers_recibidos";
 const TABLA_EVIDENCIAS = "evidencias";
 const TABLA_VENTAS = "ventas";
+const TABLA_DOCENTES = "docentes";
 
 export async function insertarBorrador(p) {
   const { error, data } = await supabase.rpc("fn_insertarborrador", p);
@@ -39,6 +40,10 @@ export async function mostrarVentasPorUsuario(p) {
 export async function eliminarBorrador(p) {
     const ventaId = p?._id_venta ?? null;
 
+    if (!ventaId) {
+        return false;
+    }
+
     const { data: evidencias, error: evidenciasError } = await supabase
         .from(TABLA_EVIDENCIAS)
         .select("id")
@@ -49,6 +54,21 @@ export async function eliminarBorrador(p) {
             icon: "error",
             title: "Oops...",
             text: evidenciasError.message,
+        });
+        return false;
+    }
+    
+    const { data: venta, error: ventaError } = await supabase
+        .from(TABLA_VENTAS)
+        .select("id_docente")
+        .eq("id", ventaId)
+        .maybeSingle();
+
+    if (ventaError) {
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: ventaError.message,
         });
         return false;
     }
@@ -81,6 +101,22 @@ export async function eliminarBorrador(p) {
         }
     }
 
+    if (venta?.id_docente) {
+        const { error: docenteError } = await supabase
+            .from(TABLA_DOCENTES)
+            .delete()
+            .eq("id", venta.id_docente);
+
+        if (docenteError) {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: docenteError.message,
+            });
+            return false;
+        }
+    }
+    
     return true;
 }
 

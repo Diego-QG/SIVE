@@ -514,7 +514,7 @@ export function RegistrarVentas2({
           </InputGroup>
 
           <InputRow>
-            <InputGroup>
+            <DniInputGroup>
               <label>DNI</label>
               <InputField
                 type="text"
@@ -529,13 +529,13 @@ export function RegistrarVentas2({
               <FieldStatus $status={isDniReady ? "success" : "idle"}>
                 {dniStatusMessage}
               </FieldStatus>
-            </InputGroup>
+            </DniInputGroup>
             <GhostButton type="button" disabled={!isDniReady}>
               Consultar
             </GhostButton>
           </InputRow>
 
-          <DualGrid>
+          <NameFieldsRow>
             <InputGroup>
               <label>Nombres</label>
               <InputField
@@ -569,6 +569,9 @@ export function RegistrarVentas2({
                 autoComplete="off"
               />
             </InputGroup>
+          </NameFieldsRow>
+
+          <DualGrid>
             <InputGroup>
               <label>Código de IE</label>
               <input type="text" placeholder="" disabled />
@@ -835,21 +838,37 @@ const InputGroup = styled.label`
 const InputRow = styled.div`
   display: flex;
   gap: 16px;
+  align-items: center;
 
   @media (max-width: 560px) {
     flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const DniInputGroup = styled(InputGroup)`
+  flex: 0 0 45%;
+  max-width: 360px;
+
+  @media (max-width: 560px) {
+    flex: 1 1 auto;
+    max-width: none;
   }
 `;
 
 const GhostButton = styled.button`
   border: none;
   border-radius: 14px;
-  padding: 0 26px;
+  padding: 0 22px;
   background: rgba(23, 224, 192, 0.15);
   color: #0c554a;
   font-weight: 700;
   cursor: pointer;
-  min-height: 44px;
+  height: 26px;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   &:disabled {
     opacity: 0.5;
@@ -874,6 +893,10 @@ const LocationSelectorsRow = styled.div`
   @media (max-width: 720px) {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
+`;
+
+const NameFieldsRow = styled(LocationSelectorsRow)`
+  align-items: flex-end;
 `;
 
 const DropdownWrapper = styled(ContainerSelector)`
@@ -931,6 +954,8 @@ const PhoneNumberField = styled.input`
 
 const InputField = styled.input`
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 `;
 
 const FieldStatus = styled.small`

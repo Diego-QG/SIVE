@@ -63,7 +63,7 @@ export function ListaDesplegable({
               key={item?.id ?? index}
               onClick={() => handleSelect(item)}
             >
-              <span className="badge">{item?.cod_llamada ?? "🌫️"}</span>
+              <span className="badge" aria-hidden="true" />
               <span className="text">{item?.nombre}</span>
             </ItemContainer>
           ))
@@ -153,10 +153,11 @@ const ItemContainer = styled.button`
   font-size: 0.95rem;
 
   .badge {
-    font-size: 0.9rem;
-    min-width: 44px;
-    text-align: center;
-    font-weight: 600;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: rgba(${({ theme }) => theme.textRgba}, 0.55);
+    flex-shrink: 0;
   }
 
   .text {

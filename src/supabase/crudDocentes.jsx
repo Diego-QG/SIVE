@@ -63,6 +63,7 @@ export async function guardarDocenteBorrador(p = {}) {
   }
 
   const shouldPersist = p?.shouldPersist !== false;
+  const docenteId = p?._id_docente ?? p?.id_docente ?? null;
 
   if (!shouldPersist) {
     const { error } = await supabase
@@ -72,6 +73,17 @@ export async function guardarDocenteBorrador(p = {}) {
 
     if (handleError(error)) {
       return null;
+    }
+
+    if (docenteId) {
+      const { error: docenteError } = await supabase
+        .from(tabla)
+        .delete()
+        .eq("id", docenteId);
+
+      if (handleError(docenteError)) {
+        return null;
+      }
     }
 
     return null;
@@ -98,7 +110,6 @@ export async function guardarDocenteBorrador(p = {}) {
     apellido_m: p?.apellido_m ?? null,
   };
 
-  const docenteId = p?._id_docente ?? null;
   let savedDocente = null;
 
   if (docenteId) {
