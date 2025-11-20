@@ -144,22 +144,62 @@ export function RegistrarVentas1({
   const closeFocusedVoucher = () => setFocusedVoucher(null);
 
   const handleBeforeClose = useCallback(async () => {
-    if (ventaDraftId) {
-      await subirvoucherspendientes({
-        idVenta: ventaDraftId,
-        idUsuario: datausuarios?.id ?? null,
-      });
+    const shouldCreateDraft = !ventaDraftId && vouchers.length > 0;
+    const currentDraftId =
+      ventaDraftId ||
+      (shouldCreateDraft && datausuarios?.id
+        ? await insertarborrador({ _id_usuario: datausuarios.id })
+        : null);
+
+    if (!currentDraftId) {
+      limpiarvoucherspendientes();
       return;
     }
 
-    limpiarvoucherspendientes();
-  }, [ventaDraftId, datausuarios?.id, subirvoucherspendientes, limpiarvoucherspendientes]);
+    if (!ventaDraftId && shouldCreateDraft) {
+      onDraftCreated?.(currentDraftId);
+      onVentaTieneDatosChange?.("editorial", false);
+      onVentaTieneDatosChange?.("vouchers", false);
+      setventaactual(currentDraftId);
+    }
+
+    const seSubioAlguno = await subirvoucherspendientes({
+      idVenta: currentDraftId,
+      idUsuario: datausuarios?.id ?? null,
+    });
+
+    if (seSubioAlguno) {
+      const vouchersGuardados = await obtenerVouchersRecibidosPorVenta({
+        id_venta: currentDraftId,
+      });
+
+      const vouchersPersistidos = (vouchersGuardados ?? [])
+        .filter((item) => item?.archivo)
+        .map((item) => ({
+          id: item.id,
+          preview: item.archivo,
+          isPersisted: true,
+        }));
+
+      setPersistedVouchers(vouchersPersistidos);
+      onVentaTieneDatosChange?.("vouchers", vouchersPersistidos.length > 0);
+    }
+  }, [
+    ventaDraftId,
+    vouchers.length,
+    insertarborrador,
+    datausuarios?.id,
+    subirvoucherspendientes,
+    limpiarvoucherspendientes,
+    onVentaTieneDatosChange,
+    onDraftCreated,
+    setventaactual,
+  ]);
 
   useEffect(() => {
     onBeforeCloseChange?.("step1", handleBeforeClose);
     return () => onBeforeCloseChange?.("step1", null);
   }, [handleBeforeClose, onBeforeCloseChange]);
-
   useEffect(() => {
     if (state) {
       setIsClosing(false);

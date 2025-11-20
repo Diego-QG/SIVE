@@ -31,7 +31,7 @@ export function ListaDesplegable({
 
   return (
     <Container
-      scroll={scroll}
+      $scroll={scroll}
       $top={top}
       $width={width}
       $placement={placement}
@@ -130,7 +130,7 @@ const Container = styled.div`
   }
 
   .contentItems {
-    overflow-y: ${(props) => props.scroll};
+    overflow-y: ${({ $scroll }) => $scroll};
     max-height: 210px;
     display: flex;
     flex-direction: column;

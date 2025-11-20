@@ -165,11 +165,13 @@ export function RegistrarVentas2({
       return;
     }
 
-    setHasHydratedDocente(false);
-  }, [state]);
+    if (!isOpen) {
+      setHasHydratedDocente(false);
+    }
+  }, [isOpen, state]);
 
   useEffect(() => {
-    if (state) {
+    if (state || isOpen) {
       return;
     }
 
@@ -182,7 +184,7 @@ export function RegistrarVentas2({
     setIsPhoneReady(false);
     setIsDniReady(false);
     setHasHydratedDocente(false);
-  }, [state]);
+  }, [isOpen, state]);
 
   useEffect(() => {
     if (!phoneNumber) {
@@ -451,6 +453,22 @@ export function RegistrarVentas2({
     onBeforeCloseChange?.("step2", handleBeforeClose);
     return () => onBeforeCloseChange?.("step2", null);
   }, [handleBeforeClose, onBeforeCloseChange, state]);
+
+  const handleNavigate = useCallback(
+    async (direction) => {
+      await handleBeforeClose();
+
+      if (direction === "next") {
+        onNext?.();
+        return;
+      }
+
+      if (direction === "previous") {
+        onPrevious?.();
+      }
+    },
+    [handleBeforeClose, onNext, onPrevious]
+  );
 
   if (!isOpen) {
     return null;
@@ -721,10 +739,18 @@ export function RegistrarVentas2({
         </Body>
 
         <Footer>
-          <OutlineButton type="button" onClick={onPrevious} disabled={isClosing}>
+          <OutlineButton
+            type="button"
+            onClick={() => handleNavigate("previous")}
+            disabled={isClosing}
+          >
             <v.iconoflechaizquierda /> Regresar
           </OutlineButton>
-          <PrimaryButton type="button" onClick={onNext} disabled={isClosing}>
+          <PrimaryButton
+            type="button"
+            onClick={() => handleNavigate("next")}
+            disabled={isClosing}
+          >
             Siguiente <v.icononext />
           </PrimaryButton>
         </Footer>
@@ -950,6 +976,9 @@ const PhoneCodeSelectorSlot = styled(ContainerSelector)`
 const PhoneNumberField = styled.input`
   flex: 1 1 200px;
   max-width: 280px;
+  font-size: 1rem;
+  padding: 12px 14px;
+  line-height: 1.4;
 `;
 
 const InputField = styled.input`
