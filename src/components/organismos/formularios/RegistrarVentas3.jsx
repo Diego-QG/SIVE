@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
+import { toast } from "sonner";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
 import {
@@ -11,7 +12,11 @@ import {
   OutlineButton,
   PrimaryButton,
   Spinner,
-} from "./RegistroVentaModalLayout";
+  ListaDesplegable,
+  useEditorialesStore,
+  useRegistrarVentasStore,
+  useVentasStore,
+} from "../../../index";
 
 export function RegistrarVentas3({
   state,
@@ -22,12 +27,91 @@ export function RegistrarVentas3({
   ventaDraftId,
 }) {
   const [isClosing, setIsClosing] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const { refrescarVentas } = useVentasStore();
+  const { editorialesitemselect } = useEditorialesStore();
+  const editorialId = editorialesitemselect?.id ?? null;
+
+  const {
+    niveles,
+    subniveles,
+    contenidos,
+    materiales,
+    resumenVenta,
+    totalResumen,
+    selectedNivel,
+    selectedSubnivel,
+    selectedContenido,
+    selectedItems,
+    isLoadingNiveles,
+    isLoadingSubniveles,
+    isLoadingContenidos,
+    isLoadingMateriales,
+    isLoadingResumen,
+    isSavingItems,
+    isConfirming,
+    limpiarSeleccion,
+    cargarNiveles,
+    cargarSubniveles,
+    cargarContenidos,
+    cargarMateriales,
+    seleccionarNivel,
+    seleccionarSubnivel,
+    seleccionarContenido,
+    toggleItem,
+    cargarResumenVenta,
+    agregarItemsAVenta,
+    eliminarItemDeVenta,
+    confirmarVenta,
+  } = useRegistrarVentasStore();
+
+  const isBusy = isClosing || isConfirming;
 
   useEffect(() => {
-    if (state) {
-      setIsClosing(false);
+    if (!state) {
+      return;
     }
-  }, [state]);
+
+    setIsClosing(false);
+    cargarNiveles();
+    if (ventaDraftId) {
+      cargarResumenVenta(ventaDraftId);
+    }
+  }, [cargarNiveles, cargarResumenVenta, state, ventaDraftId]);
+
+  useEffect(() => {
+    if (state || isOpen) return;
+    limpiarSeleccion();
+    setOpenDropdown(null);
+  }, [isOpen, limpiarSeleccion, state]);
+
+  const nivelLabel = useMemo(() => {
+    if (selectedNivel?.nombre) return selectedNivel.nombre;
+    if (isLoadingNiveles) return "Cargando niveles...";
+    return "Niveles disponibles";
+  }, [isLoadingNiveles, selectedNivel]);
+
+  const subnivelLabel = useMemo(() => {
+    if (selectedSubnivel?.nombre) return selectedSubnivel.nombre;
+    if (isLoadingSubniveles) return "Cargando subniveles...";
+    return "Subniveles disponibles";
+  }, [isLoadingSubniveles, selectedSubnivel]);
+
+  const contenidoLabel = useMemo(() => {
+    if (selectedContenido?.nombre) return selectedContenido.nombre;
+    if (isLoadingContenidos) return "Cargando contenidos...";
+    return "Cursos o paquetes";
+  }, [isLoadingContenidos, selectedContenido]);
+
+  const itemsLabel = useMemo(() => {
+    if (isLoadingMateriales) return "Buscando materiales...";
+    if (selectedItems.length === 1) {
+      const material = materiales.find((item) => item.id === selectedItems[0]);
+      return material?.label ?? "1 material";
+    }
+    if (selectedItems.length > 1) return `${selectedItems.length} materiales`;
+    return "Items disponibles";
+  }, [isLoadingMateriales, materiales, selectedItems]);
 
   if (!isOpen) {
     return null;
@@ -48,18 +132,124 @@ export function RegistrarVentas3({
     }
   };
 
-  const resumen = [];
-  const total = resumen.reduce((sum, item) => sum + item.precio, 0);
+  const toggleDropdown = async (name) => {
+    if (name === "subnivel" && !selectedNivel) {
+      toast.warning("No puedes seleccionar subnivel sin antes nivel.");
+      return;
+    }
+
+    if (name === "contenido") {
+      if (!selectedNivel) {
+        toast.warning("Selecciona un nivel antes de continuar.");
+        return;
+      }
+      if (!selectedSubnivel) {
+        toast.warning("No puedes seleccionar contenido sin un subnivel.");
+        return;
+      }
+      if (!contenidos.length) {
+        await cargarContenidos({
+          idNivel: selectedNivel?.id,
+          idSubnivel: selectedSubnivel?.id,
+        });
+      }
+    }
+
+    if (name === "items") {
+      if (!editorialId) {
+        toast.warning("Selecciona primero una editorial en el paso 1.");
+        return;
+      }
+      if (!selectedNivel || !selectedSubnivel || !selectedContenido) {
+        toast.warning("Selecciona nivel, subnivel y curso/paquete antes de ver items.");
+        return;
+      }
+
+      await cargarMateriales({ editorialId });
+    }
+
+    setOpenDropdown((prev) => (prev === name ? null : name));
+  };
+
+  const handleSelectNivel = async (nivel) => {
+    seleccionarNivel(nivel);
+    await cargarSubniveles(nivel?.id);
+    setOpenDropdown(null);
+  };
+
+  const handleSelectSubnivel = async (subnivel) => {
+    seleccionarSubnivel(subnivel);
+    if (selectedNivel?.id && subnivel?.id) {
+      await cargarContenidos({ idNivel: selectedNivel.id, idSubnivel: subnivel.id });
+    }
+    setOpenDropdown(null);
+  };
+
+  const handleSelectContenido = async (contenido) => {
+    seleccionarContenido(contenido);
+    await cargarMateriales({ editorialId });
+    setOpenDropdown(null);
+    setOpenDropdown("items");
+  };
+
+  const handleAgregarItems = async () => {
+    if (!ventaDraftId) {
+      toast.error("Primero crea un borrador de venta en los pasos anteriores.");
+      return;
+    }
+
+    if (!selectedItems.length) {
+      toast.warning("Selecciona al menos un material para agregar.");
+      return;
+    }
+
+    const agregado = await agregarItemsAVenta({ idVenta: ventaDraftId });
+    if (agregado) {
+      toast.success("Materiales agregados correctamente.");
+      setOpenDropdown(null);
+    } else {
+      toast.error("No se pudieron agregar los materiales.");
+    }
+  };
+
+  const handleEliminarItem = async (itemId) => {
+    if (!itemId) return;
+    const eliminado = await eliminarItemDeVenta({ idVenta: ventaDraftId, idItem: itemId });
+    if (eliminado) {
+      toast.success("Item eliminado del resumen.");
+    }
+  };
+
+  const handleFinish = async () => {
+    if (!ventaDraftId) {
+      toast.error("No se encontró el borrador de la venta.");
+      return;
+    }
+
+    if (resumenVenta.length === 0) {
+      toast.warning("Agrega al menos un item antes de registrar la venta.");
+      return;
+    }
+
+    const confirmado = await confirmarVenta({ idVenta: ventaDraftId });
+    if (confirmado) {
+      await refrescarVentas();
+      onFinish?.();
+      return;
+    }
+
+    toast.error("No se pudo registrar la venta. Intenta nuevamente.");
+  };
 
   return (
     <Overlay $visible={state}>
-      <Modal aria-busy={isClosing} $visible={state}>
+      <Modal aria-busy={isBusy} $visible={state}>
         <Header>
           <div>
             <p>Registrar nueva venta</p>
             <h2>Datos de venta</h2>
           </div>
-          <button type="button" onClick={handleRequestClose} aria-label="Cerrar" disabled={isClosing}>
+          <button type="button" onClick={handleRequestClose} aria-label="Cerrar" disabled={isBusy}>
             <v.iconocerrar />
           </button>
         </Header>
@@ -70,85 +260,154 @@ export function RegistrarVentas3({
           <SelectorGrid>
             <SelectorColumn>
               <span>Seleccionar nivel</span>
-              <SelectorButton type="button">Niveles disponibles</SelectorButton>
+              <SelectorButton type="button" onClick={() => toggleDropdown("nivel")} $disabled={isBusy}>
+                {nivelLabel}
+              </SelectorButton>
+              <ListaDesplegable
+                data={niveles}
+                state={openDropdown === "nivel"}
+                setState={() => setOpenDropdown(null)}
+                funcion={handleSelectNivel}
+                onClear={() => seleccionarNivel(null)}
+              />
             </SelectorColumn>
             <SelectorColumn>
               <span>Seleccionar subnivel</span>
-              <SelectorButton type="button">Subniveles disponibles</SelectorButton>
+              <SelectorButton type="button" onClick={() => toggleDropdown("subnivel")} $disabled={isBusy}>
+                {subnivelLabel}
+              </SelectorButton>
+              <ListaDesplegable
+                data={subniveles}
+                state={openDropdown === "subnivel"}
+                setState={() => setOpenDropdown(null)}
+                funcion={handleSelectSubnivel}
+                onClear={() => seleccionarSubnivel(null)}
+              />
             </SelectorColumn>
             <SelectorColumn>
-              <span>Seleccionar curso</span>
-              <SelectorButton type="button">Cursos disponibles</SelectorButton>
+              <span>Seleccionar curso o paquete</span>
+              <SelectorButton type="button" onClick={() => toggleDropdown("contenido")} $disabled={isBusy}>
+                {contenidoLabel}
+              </SelectorButton>
+              <ListaDesplegable
+                data={contenidos}
+                state={openDropdown === "contenido"}
+                setState={() => setOpenDropdown(null)}
+                funcion={handleSelectContenido}
+                onClear={() => seleccionarContenido(null)}
+                emptyLabel={selectedSubnivel ? "Sin cursos ni paquetes" : "Selecciona un subnivel"}
+              />
             </SelectorColumn>
             <SelectorColumn>
               <span>Seleccionar items</span>
-              <SelectorButton type="button">Items disponibles</SelectorButton>
+              <SelectorButton type="button" onClick={() => toggleDropdown("items")} $disabled={isBusy}>
+                {itemsLabel}
+              </SelectorButton>
+              {openDropdown === "items" && (
+                <ItemsDropdown>
+                  {isLoadingMateriales ? (
+                    <Spinner />
+                  ) : materiales.length === 0 ? (
+                    <EmptyState>Sin materiales para los filtros seleccionados.</EmptyState>
+                  ) : (
+                    <ul>
+                      {materiales.map((material) => {
+                        const isChecked = selectedItems.includes(material.id);
+                        return (
+                          <li key={material.id}>
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleItem(material.id)}
+                              />
+                              <div className="info">
+                                <span className="label">{material.label}</span>
+                                <small>S/{material.precio.toFixed(2)}</small>
+                              </div>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  <button
+                    type="button"
+                    className="add-btn"
+                    onClick={handleAgregarItems}
+                    disabled={isSavingItems || isBusy}
+                  >
+                    {isSavingItems ? <Spinner /> : <v.iconoagregar />}
+                    <span>Agregar</span>
+                  </button>
+                </ItemsDropdown>
+              )}
             </SelectorColumn>
           </SelectorGrid>
-
-          <PromoRow>
-            <div>
-              <label>Código promocional</label>
-              <Input type="text" placeholder="--" disabled />
-            </div>
-            <GhostButton type="button">Usar</GhostButton>
-          </PromoRow>
 
           <ResumenCard>
             <header>
               <div>
                 <h4>Resumen de venta</h4>
-                <p>Los montos se actualizarán al agregar items.</p>
+                <p>Los montos se actualizan al agregar o quitar items.</p>
               </div>
-              <button type="button">
-                <v.iconoagregar /> Agregar
+              <button type="button" onClick={handleAgregarItems} disabled={isSavingItems || isBusy}>
+                {isSavingItems ? <Spinner /> : <v.iconoagregar />}
+                Agregar seleccionados
               </button>
             </header>
             <ul>
-              {resumen.length === 0 ? (
+              {isLoadingResumen ? (
+                <li className="empty">
+                  <Spinner />
+                </li>
+              ) : resumenVenta.length === 0 ? (
                 <li className="empty">
                   <span>No hay materiales agregados todavía.</span>
                 </li>
               ) : (
-                resumen.map((item, index) => (
-                  <li key={`resumen-${index}`}>
+                resumenVenta.map((item) => (
+                  <li key={item.id}>
                     <div>
-                      <strong>{item.nivel}</strong>
-                      <span>{item.material}</span>
+                      <strong>{item.nombre}</strong>
                     </div>
-                    <b>S/{item.precio.toFixed(2)}</b>
+                    <div className="price-area">
+                      <b>S/{item.precio.toFixed(2)}</b>
+                      <RemoveButton type="button" onClick={() => handleEliminarItem(item.id)} disabled={isBusy}>
+                        <v.iconocerrar aria-hidden />
+                      </RemoveButton>
+                    </div>
                   </li>
                 ))
               )}
             </ul>
             <footer>
               <div>
-                <span>Total</span>
-                <small>Sin descuentos aplicados</small>
+                <small>Total de la venta</small>
+                <h3>S/{totalResumen.toFixed(2)}</h3>
               </div>
-              <strong>S/{total.toFixed(2)}</strong>
+              <GhostButton type="button" disabled>
+                Aplicar cupón
+              </GhostButton>
             </footer>
           </ResumenCard>
         </Body>
 
         <Footer>
-          <OutlineButton type="button" onClick={onPrevious} disabled={isClosing}>
-            <v.iconoflechaizquierda /> Regresar
+          <OutlineButton type="button" onClick={onPrevious} disabled={isBusy}>
+            <v.iconoflechaizquierda /> Atrás
           </OutlineButton>
-          <SuccessButton
-            type="button"
-            onClick={() => {
-              onFinish?.();
-            }}
-            disabled={isClosing}
-          >
+          <OutlineButton type="button" onClick={handleRequestClose} disabled={isClosing}>
+            Cancelar
+          </OutlineButton>
+          <SuccessButton type="button" onClick={handleFinish} disabled={isBusy}>
             Registrar venta <v.iconocheck />
           </SuccessButton>
         </Footer>
-        {isClosing && (
+        {(isClosing || isConfirming) && (
           <ClosingOverlay>
             <Spinner />
-            <strong>Guardando cambios...</strong>
+            <strong>{isConfirming ? "Registrando venta..." : "Guardando cambios..."}</strong>
             <small>Por favor espera un momento.</small>
           </ClosingOverlay>
         )}
@@ -178,6 +437,7 @@ const SelectorColumn = styled.div`
   flex-direction: column;
   gap: 8px;
   font-weight: 600;
+  position: relative;
 `;
 
 const SelectorButton = styled.button`
@@ -188,40 +448,13 @@ const SelectorButton = styled.button`
   color: ${({ theme }) => theme.text};
   text-align: left;
   cursor: pointer;
-`;
+  position: relative;
 
-const PromoRow = styled.div`
-  display: flex;
-  gap: 16px;
-  align-items: flex-end;
-
-  label {
-    font-weight: 600;
-    margin-bottom: 6px;
+  &[disabled],
+  &[data-disabled="true"] {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
-
-  @media (max-width: 560px) {
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-
-const Input = styled.input`
-  border-radius: 14px;
-  border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
-  padding: 12px 16px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.04);
-  color: rgba(${({ theme }) => theme.textRgba}, 0.7);
-`;
-
-const GhostButton = styled.button`
-  border-radius: 14px;
-  border: none;
-  padding: 12px 26px;
-  background: rgba(249, 215, 11, 0.2);
-  color: #735b00;
-  font-weight: 700;
-  cursor: pointer;
 `;
 
 const ResumenCard = styled.section`
@@ -258,9 +491,9 @@ const ResumenCard = styled.section`
     }
 
     button:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
   }
 
   ul {
@@ -277,6 +510,12 @@ const ResumenCard = styled.section`
       align-items: center;
       padding-bottom: 12px;
       border-bottom: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.15);
+
+      .price-area {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
 
       strong {
         font-size: 1rem;
@@ -311,7 +550,6 @@ const ResumenCard = styled.section`
 `;
 
 const Footer = styled(ModalFooter)`
-
   @media (max-width: 520px) {
     flex-direction: column;
   }
@@ -320,4 +558,90 @@ const Footer = styled(ModalFooter)`
 const SuccessButton = styled(PrimaryButton)`
   background: linear-gradient(120deg, #17e0c0, #53b257);
   color: #031c17;
+`;
+
+const ItemsDropdown = styled.div`
+  position: absolute;
+  z-index: 3;
+  margin-top: 8px;
+  background: ${({ theme }) => theme.body};
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.12);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
+  min-width: min(360px, 96vw);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  li label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
+    background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .label {
+    font-weight: 600;
+  }
+
+  .add-btn {
+    border: none;
+    background: rgba(23, 224, 192, 0.15);
+    color: #06463b;
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .add-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const RemoveButton = styled.button`
+  border: none;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.08);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 16px;
+  color: rgba(${({ theme }) => theme.textRgba}, 0.65);
 `;
