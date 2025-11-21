@@ -560,6 +560,26 @@ const SuccessButton = styled(PrimaryButton)`
   color: #031c17;
 `;
 
+const GhostButton = styled.button`
+  border: none;
+  border-radius: 14px;
+  padding: 0 22px;
+  background: rgba(23, 224, 192, 0.15);
+  color: #0c554a;
+  font-weight: 700;
+  cursor: pointer;
+  height: 26px;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 const ItemsDropdown = styled.div`
   position: absolute;
   z-index: 3;
