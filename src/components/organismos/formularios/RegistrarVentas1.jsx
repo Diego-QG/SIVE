@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
 import {
   ContainerSelector,
   ListaDesplegable,
   Selector,
+  Spinner,
   useDocentesStore,
   useEmpresaStore,
   useEditorialesStore,
@@ -16,6 +17,14 @@ import {
   obtenerVentaBorradorPorId,
   obtenerVouchersRecibidosPorVenta,
 } from "../../../index";
+import {
+  ClosingOverlay,
+  ModalContainer,
+  ModalFooter,
+  ModalHeader,
+  Overlay,
+  PrimaryButton,
+} from "./RegistroVentaModalLayout";
 
 export function RegistrarVentas1({
   state,
@@ -366,7 +375,7 @@ export function RegistrarVentas1({
   };
 
   return (
-    <Overlay $visible={state} inert={!state}>
+    <Overlay $visible={state}>
       <Modal aria-busy={isClosing} $visible={state}>
         <Header>
           <div>
@@ -458,71 +467,14 @@ export function RegistrarVentas1({
   );
 }
 
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(7, 20, 36, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1200;
-  padding: 16px;
-  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
-  pointer-events: ${({ $visible }) => ($visible ? "auto" : "none")};
-  visibility: ${({ $visible }) => ($visible ? "visible" : "hidden")};
-`;
-
-const Modal = styled.div`
+const Modal = styled(ModalContainer)`
   width: min(680px, 100%);
-  background: ${({ theme }) => theme.bgtotal};
-  border-radius: 28px;
-  padding: 28px 32px 32px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  color: ${({ theme }) => theme.text};
   height: min(720px, calc(100vh - 100px));
   max-height: min(720px, calc(100vh - 100px));
   overflow: hidden;
-  position: relative;
 `;
 
-const Header = styled.header`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-
-  p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: rgba(${({ theme }) => theme.textRgba}, 0.65);
-  }
-
-  h2 {
-    margin: 6px 0 0;
-    font-size: 1.4rem;
-  }
-
-  button {
-    border: none;
-    background: rgba(${({ theme }) => theme.textRgba}, 0.08);
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    display: grid;
-    place-items: center;
-    color: ${({ theme }) => theme.text};
-    cursor: pointer;
-  }
-
-  button:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-`;
+const Header = styled(ModalHeader)``;
 
 const Body = styled.div`
   display: flex;
@@ -618,78 +570,4 @@ const VoucherLightboxContent = styled.div`
 `;
 
 
-const Footer = styled.footer`
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-
-  @media (max-width: 520px) {
-    flex-direction: column;
-  }
-`;
-
-const OutlineButton = styled.button`
-  border-radius: 999px;
-  padding: 12px 24px;
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.35);
-  background: transparent;
-  color: ${({ theme }) => theme.text};
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const PrimaryButton = styled.button`
-  border-radius: 999px;
-  padding: 12px 28px;
-  border: none;
-  background: linear-gradient(120deg, #ffee58, #17e0c0);
-  color: #04121d;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-
-  &:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-  }
-`;
-
-const spin = keyframes`
-  to {
-    transform: rotate(360deg);
-  }
-`;
-
-const ClosingOverlay = styled.div`
-  position: absolute;
-  inset: 0;
-  background: rgba(4, 18, 29, 0.78);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: inherit;
-  color: #fff;
-  text-align: center;
-  z-index: 10;
-  padding: 24px;
-`;
-
-const Spinner = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
-  animation: ${spin} 0.8s linear infinite;
-`;
+const Footer = styled(ModalFooter)``;

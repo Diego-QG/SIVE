@@ -28,6 +28,7 @@ export * from './components/organismos/formularios/RegistrarTipoContenidos';
 export * from './components/organismos/formularios/RegistrarVentas1';
 export * from './components/organismos/formularios/RegistrarVentas2';
 export * from './components/organismos/formularios/RegistrarVentas3';
+export * from './components/organismos/formularios/RegistroVentaModalLayout';
 export * from './components/organismos/sidebar/Sidebar';
 export * from './components/organismos/tablas/AccionesTabla';
 export * from './components/organismos/tablas/ContentAccionesTabla';
