@@ -28,26 +28,35 @@ export async function obtenerSubnivelesPorNivel({ idNivel }) {
   return data ?? [];
 }
 
-export async function obtenerContenidosPorNivel({ idNivel, idSubnivel }) {
+export async function obtenerContenidosPorNivel({ idNivel, idSubnivel, editorialId }) {
   if (!idNivel || !idSubnivel) return { contenidos: [], packs: [] };
 
-  const [{ data: contenidos, error: contenidoError }, { data: packs, error: packError }] =
-    await Promise.all([
-      supabase
-        .from("contenidobase")
-        .select(
-          `id, nombre, espaquete, id_curso, id_subnivel,
-          cursos(id, nombre, id_nivel),
-          subniveles(id, nombre, id_nivel)`
-        )
-        .eq("id_subnivel", idSubnivel)
-        .order("nombre", { ascending: true }),
-      supabase
+  const contenidoQuery = supabase
+    .from("contenidobase")
+    .select(
+      `id, nombre, espaquete, id_curso, id_subnivel,
+      cursos(id, nombre, id_nivel),
+      subniveles(id, nombre, id_nivel)`
+    )
+    .eq("id_subnivel", idSubnivel)
+    .not("id_curso", "is", null)
+    .order("nombre", { ascending: true });
+
+  const packQuery = editorialId
+    ? supabase
         .from("pack")
-        .select("id, nombre, id_nivel, descripcion")
+        .select("id, nombre, id_nivel, descripcion, id_editorial")
         .eq("id_nivel", idNivel)
-        .order("nombre", { ascending: true }),
-    ]);
+        .eq("id_editorial", editorialId)
+        .order("nombre", { ascending: true })
+    : supabase
+        .from("pack")
+        .select("id, nombre, id_nivel, descripcion, id_editorial")
+        .eq("id_nivel", idNivel)
+        .order("nombre", { ascending: true });
+
+  const [{ data: contenidos, error: contenidoError }, { data: packs, error: packError }] =
+    await Promise.all([contenidoQuery, packQuery]);
 
   if (handleError(contenidoError) || handleError(packError)) {
     return { contenidos: [], packs: [] };
@@ -58,52 +67,114 @@ export async function obtenerContenidosPorNivel({ idNivel, idSubnivel }) {
 
 export async function obtenerMaterialesParaVenta({
   editorialId,
-  nivelId,
+  nivelId,      // no lo usamos directamente en la query, pero lo dejamos por si acaso
   subnivelId,
   contenidoSeleccionado,
 }) {
-  if (!editorialId) return [];
+  if (!editorialId || !contenidoSeleccionado) return [];
 
-  const { data, error } = await supabase
+  const esPack =
+    contenidoSeleccionado?.tipo === "pack" ||
+    contenidoSeleccionado?.espaquete === true;
+
+  // ------------------------
+  // 1. Determinar id_contenidobase a usar
+  // ------------------------
+
+  let idContenidoBase = null;
+
+  if (!esPack) {
+    // Caso CURSO: el combo viene de contenidobase, así que su id es el id_contenidobase
+    idContenidoBase = Number(contenidoSeleccionado.id);
+  } else {
+    // Caso PACK: debemos buscar el contenidobase "maestro" del pack para ese subnivel
+    if (!subnivelId) {
+      console.warn("⚠ No hay subnivelId para buscar contenidobase del pack");
+      return [];
+    }
+
+    const { data: cbRow, error: cbError } = await supabase
+      .from("contenidobase")
+      .select("id")
+      .eq("id_subnivel", subnivelId)
+      .eq("espaquete", true)
+      .limit(1)
+      .maybeSingle(); // usa single() o maybeSingle() según versión
+
+    if (cbError) {
+      handleError(cbError);
+      return [];
+    }
+
+    if (!cbRow) {
+      console.warn(
+        "⚠ No se encontró contenidobase con espaquete=true para ese subnivel"
+      );
+      return [];
+    }
+
+    idContenidoBase = Number(cbRow.id);
+  }
+
+  if (!idContenidoBase) {
+    console.warn("⚠ No se pudo determinar idContenidoBase");
+    return [];
+  }
+
+  // ------------------------
+  // 2. Armar query a materiales_editorial
+  // ------------------------
+
+  let query = supabase
     .from("materiales_editorial")
     .select(
-      `id, nombre, precio, anio, id_mes, id_tipocontenido, id_contenidobase, id_pack,
-      tipocontenidos:tipocontenidos(nombre, codigo),
-      meses:meses(nombre, codigo),
-      contenidobase:contenidobase(
-        id, nombre, id_subnivel, espaquete,
-        cursos:cursos(id, nombre, id_nivel),
-        subniveles:subniveles(id, nombre, id_nivel)
-      ),
-      pack:pack(id, nombre, id_nivel)`
+      `id, nombre, precio, anio, id_mes, id_tipocontenido,
+       id_contenidobase, id_pack,
+       tipocontenidos:tipocontenidos(nombre, codigo),
+       meses:meses(nombre, codigo),
+       contenidobase:contenidobase(
+         id, nombre, id_subnivel, espaquete,
+         cursos:cursos(id, nombre, id_nivel),
+         subniveles:subniveles(id, nombre, id_nivel)
+       ),
+       pack:pack(id, nombre, id_nivel)`
     )
     .eq("id_editorial", editorialId)
+    .eq("id_contenidobase", idContenidoBase);
+
+  if (esPack) {
+    const idPack = Number(contenidoSeleccionado.id);
+    query = query.eq("id_pack", idPack);
+  }
+
+  // Orden: año DESC, mes ASC, tipo contenido ASC
+  query = query
     .order("anio", { ascending: false })
-    .order("id_mes", { ascending: false })
+    .order("id_mes", { ascending: true })
     .order("id_tipocontenido", { ascending: true });
+
+  const { data, error } = await query;
 
   if (handleError(error)) return [];
 
-  const isPackSelection = contenidoSeleccionado?.tipo === "pack";
-  const contenidoId = contenidoSeleccionado?.id ? Number(contenidoSeleccionado.id) : null;
+  // Si por cualquier cosa se duplicara, mantenemos la lógica de único por periodo
+  const uniqueByPeriod = new Map();
 
-  return (data ?? []).filter((material) => {
-    const materialNivel = material?.contenidobase?.subniveles?.id_nivel ?? material?.pack?.id_nivel;
-    const materialSubnivel = material?.contenidobase?.id_subnivel ?? null;
+  (data ?? []).forEach((material) => {
+    const key = [
+      material?.id_pack || `cb-${material?.id_contenidobase || ""}`,
+      material?.id_tipocontenido || "",
+      material?.anio || "",
+      material?.id_mes || "",
+      material?.nombre || "",
+    ].join("|");
 
-    if (nivelId && materialNivel && Number(materialNivel) !== Number(nivelId)) return false;
-    if (!isPackSelection && subnivelId && materialSubnivel && Number(materialSubnivel) !== Number(subnivelId)) {
-      return false;
+    if (!uniqueByPeriod.has(key)) {
+      uniqueByPeriod.set(key, material);
     }
-
-    if (isPackSelection) {
-      return contenidoId ? Number(material?.id_pack) === contenidoId : Boolean(material?.id_pack);
-    }
-
-    return contenidoId
-      ? Number(material?.id_contenidobase) === contenidoId
-      : Boolean(material?.id_contenidobase);
   });
+
+  return Array.from(uniqueByPeriod.values());
 }
 
 export async function insertarItemsEnVenta({ idVenta, items }) {

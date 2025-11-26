@@ -121,6 +121,12 @@ export function RegistrarVentas2({
     return `${dniValue.length}/${dniDigitsRequired} dígitos.`;
   }, [dniDigitsRequired, dniValue, isDniReady]);
 
+  const normalizeTextInput = (value) => (value ?? "").toUpperCase().trimStart();
+  const handleUppercaseChange = (setter) => (event) => {
+    const rawValue = event?.target?.value ?? "";
+    setter(normalizeTextInput(rawValue));
+  };
+
   useEffect(() => {
     if (!state || hasHydratedDocente) {
       return;
@@ -151,9 +157,9 @@ export function RegistrarVentas2({
         (!dniDigitsRequired || documentoGuardado.length === dniDigitsRequired)
     );
 
-    setNombres(docentedraft?.nombres ?? "");
-    setApellidoPaterno(docentedraft?.apellido_p ?? "");
-    setApellidoMaterno(docentedraft?.apellido_m ?? "");
+    setNombres(normalizeTextInput(docentedraft?.nombres));
+    setApellidoPaterno(normalizeTextInput(docentedraft?.apellido_p));
+    setApellidoMaterno(normalizeTextInput(docentedraft?.apellido_m));
     setHasHydratedDocente(true);
   }, [
     docentedraft,
@@ -193,8 +199,8 @@ export function RegistrarVentas2({
     const codigoGuardado = institucionDraft?.cod_institucion ?? "";
     const nombreGuardado = institucionDraft?.nombre ?? "";
 
-    setCodigoIe(codigoGuardado ? `${codigoGuardado}` : "");
-    setNombreIe(nombreGuardado);
+    setCodigoIe(codigoGuardado ? normalizeTextInput(`${codigoGuardado}`) : "");
+    setNombreIe(normalizeTextInput(nombreGuardado));
 
     if (institucionDraft) {
       setHasHydratedInstitucion(true);
@@ -711,21 +717,21 @@ export function RegistrarVentas2({
               label="Nombres"
               placeholder="Nombres completos"
               value={nombres}
-              onChange={(event) => setNombres(event.target.value)}
+              onChange={handleUppercaseChange(setNombres)}
               disabled={isDniReady}
             />
             <VentaInput
               label="Apellido paterno"
               placeholder="Apellido paterno"
               value={apellidoPaterno}
-              onChange={(event) => setApellidoPaterno(event.target.value)}
+              onChange={handleUppercaseChange(setApellidoPaterno)}
               disabled={isDniReady}
             />
             <VentaInput
               label="Apellido materno"
               placeholder="Apellido materno"
               value={apellidoMaterno}
-              onChange={(event) => setApellidoMaterno(event.target.value)}
+              onChange={handleUppercaseChange(setApellidoMaterno)}
               disabled={isDniReady}
             />
           </NameFieldsRow>
@@ -735,7 +741,7 @@ export function RegistrarVentas2({
               label="Código de IE"
               placeholder="Código de institución"
               value={codigoIe}
-              onChange={(event) => setCodigoIe(event.target.value)}
+              onChange={handleUppercaseChange(setCodigoIe)}
               type="text"
               variant="solid"
             />
@@ -743,7 +749,7 @@ export function RegistrarVentas2({
               label="Nombre de IE"
               placeholder="Nombre de institución"
               value={nombreIe}
-              onChange={(event) => setNombreIe(event.target.value)}
+              onChange={handleUppercaseChange(setCodigoIe)}
               type="text"
               variant="solid"
             />

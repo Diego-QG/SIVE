@@ -139,6 +139,10 @@ export function RegistrarVentas3({
     }
 
     if (name === "contenido") {
+      if (!editorialId) {
+        toast.warning("Selecciona una editorial en el paso 1.");
+        return;
+      }
       if (!selectedNivel) {
         toast.warning("Selecciona un nivel antes de continuar.");
         return;
@@ -151,6 +155,7 @@ export function RegistrarVentas3({
         await cargarContenidos({
           idNivel: selectedNivel?.id,
           idSubnivel: selectedSubnivel?.id,
+          editorialId,
         });
       }
     }
@@ -179,8 +184,12 @@ export function RegistrarVentas3({
 
   const handleSelectSubnivel = async (subnivel) => {
     seleccionarSubnivel(subnivel);
-    if (selectedNivel?.id && subnivel?.id) {
-      await cargarContenidos({ idNivel: selectedNivel.id, idSubnivel: subnivel.id });
+    if (selectedNivel?.id && subnivel?.id && editorialId) {
+      await cargarContenidos({
+        idNivel: selectedNivel.id,
+        idSubnivel: subnivel.id,
+        editorialId,
+      });
     }
     setOpenDropdown(null);
   };
@@ -397,9 +406,6 @@ export function RegistrarVentas3({
           <OutlineButton type="button" onClick={onPrevious} disabled={isBusy}>
             <v.iconoflechaizquierda /> Atrás
           </OutlineButton>
-          <OutlineButton type="button" onClick={handleRequestClose} disabled={isClosing}>
-            Cancelar
-          </OutlineButton>
           <SuccessButton type="button" onClick={handleFinish} disabled={isBusy}>
             Registrar venta <v.iconocheck />
           </SuccessButton>
@@ -421,9 +427,14 @@ const Modal = styled(ModalContainer)``;
 const Header = styled(ModalHeader)``;
 
 const Body = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: 1fr 0.9fr;
+  gap: 18px;
+  align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const SelectorGrid = styled.div`
@@ -464,13 +475,13 @@ const ResumenCard = styled.section`
   padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 
   header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
 
     p {
       margin: 4px 0 0;
@@ -502,13 +513,16 @@ const ResumenCard = styled.section`
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 4px;
 
     li {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 12px;
+      padding-bottom: 10px;
       border-bottom: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.15);
 
       .price-area {
@@ -544,7 +558,8 @@ const ResumenCard = styled.section`
     }
 
     strong {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
+      line-height: 1.3;
     }
   }
 `;
@@ -589,7 +604,10 @@ const ItemsDropdown = styled.div`
   border-radius: 14px;
   padding: 12px;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
-  min-width: min(360px, 96vw);
+  min-width: min(320px, 92vw);
+  max-width: min(420px, 96vw);
+  max-height: 380px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -601,7 +619,7 @@ const ItemsDropdown = styled.div`
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 260px;
+    max-height: 240px;
     overflow-y: auto;
   }
 

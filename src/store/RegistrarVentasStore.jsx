@@ -16,7 +16,7 @@ const normalizeNombre = (value, fallback = "") => `${value ?? fallback}`.trim();
 const buildContenidoOption = (contenido) => ({
   id: contenido?.id ?? null,
   nombre: normalizeNombre(
-    contenido?.espaquete ? "Paquete" : contenido?.nombre,
+    contenido?.cursos?.nombre || contenido?.nombre,
     "Contenido"
   ),
   tipo: contenido?.espaquete ? "paquete" : "curso",
@@ -131,18 +131,19 @@ export const useRegistrarVentasStore = create((set, get) => ({
     });
   },
 
-  cargarContenidos: async ({ idNivel, idSubnivel }) => {
+  cargarContenidos: async ({ idNivel, idSubnivel, editorialId }) => {
     set({ isLoadingContenidos: true });
     const { contenidos, packs } = await obtenerContenidosPorNivel({
       idNivel,
       idSubnivel,
+      editorialId,
     });
 
     const opcionesContenido = (contenidos ?? []).map(buildContenidoOption);
     const opcionesPack = (packs ?? []).map(buildPackOption);
 
     set({
-      contenidos: [...opcionesContenido, ...opcionesPack],
+      contenidos: [...opcionesPack, ...opcionesContenido],
       isLoadingContenidos: false,
     });
     return opcionesContenido;
