@@ -7,17 +7,29 @@ const TABLA_DOCENTES = "docentes";
 const SELECT_COLUMNS =
   "id, nombre, cod_institucion, id_pais, id_geo_nivel1, id_geo_nivel2, id_geo_nivel3";
 
-const handleError = (error) => {
-  if (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: error.message,
-    });
-    return true;
-  }
+const handleError = (error, context = "crudInstituciones") => {
+  if (!error) return false;
 
-  return false;
+  const friendlyMessage =
+    error?.code === "23503"
+      ? "No se puede eliminar la institución porque está asociada a docentes u otros registros."
+      : error?.message;
+
+  console.error(`[${context}] Supabase error`, {
+    message: error?.message,
+    code: error?.code,
+    details: error?.details,
+    hint: error?.hint,
+    friendlyMessage,
+  });
+
+  Swal.fire({
+    icon: "error",
+    title: "Oops...",
+    text: friendlyMessage,
+  });
+
+  return true;
 };
 
 export async function crearInstitucionVacia(p = {}) {
@@ -29,6 +41,8 @@ export async function crearInstitucionVacia(p = {}) {
     id_geo_nivel2: p?.id_geo_nivel2 ?? null,
     id_geo_nivel3: p?.id_geo_nivel3 ?? null,
   };
+
+  console.info("[crudInstituciones] Creando institución vacía", payload);
 
   const { data, error } = await supabase
     .from(tabla)
@@ -47,6 +61,7 @@ export async function obtenerInstitucionPorVenta(p = {}) {
   const ventaId = p?._id_venta ?? p?.id_venta ?? p?.id ?? null;
 
   if (!ventaId) {
+    console.warn("[crudInstituciones] obtenerInstitucionPorVenta sin ventaId");
     return null;
   }
 
@@ -56,13 +71,17 @@ export async function obtenerInstitucionPorVenta(p = {}) {
     .eq("id", ventaId)
     .maybeSingle();
 
-  if (handleError(ventaError)) {
+  if (handleError(ventaError, "obtenerInstitucionPorVenta")) {
     return null;
   }
 
   const docenteId = venta?.id_docente ?? null;
 
   if (!docenteId) {
+    console.warn(
+      "[crudInstituciones] Venta sin docente asociado",
+      ventaId
+    );
     return null;
   }
 
@@ -72,13 +91,17 @@ export async function obtenerInstitucionPorVenta(p = {}) {
     .eq("id", docenteId)
     .maybeSingle();
 
-  if (handleError(docenteError)) {
+  if (handleError(docenteError, "obtenerInstitucionPorVenta")) {
     return null;
   }
 
   const institucionId = docente?.id_institucion ?? null;
 
   if (!institucionId) {
+    console.warn(
+      "[crudInstituciones] Docente sin institución asociada",
+      docenteId
+    );
     return null;
   }
 
@@ -88,7 +111,7 @@ export async function obtenerInstitucionPorVenta(p = {}) {
     .eq("id", institucionId)
     .maybeSingle();
 
-  if (handleError(error)) {
+  if (handleError(error, "obtenerInstitucionPorVenta")) {
     return null;
   }
 
@@ -101,9 +124,15 @@ export async function guardarInstitucionBorrador(p = {}) {
 
   if (!shouldPersist) {
     if (!institucionId) {
+      console.warn(
+        "[crudInstituciones] No hay institución para eliminar en borrador"
+      );
       return null;
     }
 
+    console.info("[crudInstituciones] Eliminando institución de borrador", {
+      institucionId,
+    });
     await eliminarInstitucion({ id: institucionId });
     return null;
   }
@@ -118,6 +147,11 @@ export async function guardarInstitucionBorrador(p = {}) {
   };
 
   if (institucionId) {
+    console.info("[crudInstituciones] Actualizando institución", {
+      institucionId,
+      payload,
+    });
+
     const { data, error } = await supabase
       .from(tabla)
       .update(payload)
@@ -125,12 +159,14 @@ export async function guardarInstitucionBorrador(p = {}) {
       .select(SELECT_COLUMNS)
       .maybeSingle();
 
-    if (handleError(error)) {
+    if (handleError(error, "guardarInstitucionBorrador-update")) {
       return null;
     }
 
     return data ?? null;
   }
+
+  console.info("[crudInstituciones] Insertando institución", payload);
 
   const { data, error } = await supabase
     .from(tabla)
@@ -138,7 +174,7 @@ export async function guardarInstitucionBorrador(p = {}) {
     .select(SELECT_COLUMNS)
     .maybeSingle();
 
-  if (handleError(error)) {
+  if (handleError(error, "guardarInstitucionBorrador-insert")) {
     return null;
   }
 
@@ -149,14 +185,18 @@ export async function eliminarInstitucion(p = {}) {
   const institucionId = p?.id ?? p?._id ?? null;
 
   if (!institucionId) {
+    console.warn("[crudInstituciones] eliminarInstitucion sin id");
     return false;
   }
+
+  console.info("[crudInstituciones] Eliminando institución", { institucionId });
 
   const { error } = await supabase.from(tabla).delete().eq("id", institucionId);
 
-  if (handleError(error)) {
+  if (handleError(error, "eliminarInstitucion")) {
     return false;
   }
 
+  console.info("[crudInstituciones] Institución eliminada", { institucionId });
   return true;
 }

@@ -1,13 +1,26 @@
 import Swal from "sweetalert2";
 import { supabase } from "../index";
 
-const handleError = (error) => {
+const handleError = (error, context = "crudVentaItems") => {
   if (!error) return false;
+
+  const friendlyMessage =
+    error?.code === "42501"
+      ? "No tienes permisos para completar esta acción. Verifica las políticas de seguridad o los triggers asociados."
+      : error?.message;
+
+  console.error(`[${context}] Supabase error`, {
+    message: error?.message,
+    code: error?.code,
+    details: error?.details,
+    hint: error?.hint,
+    friendlyMessage,
+  });
 
   Swal.fire({
     icon: "error",
     title: "Oops...",
-    text: error.message,
+    text: friendlyMessage,
   });
 
   return true;
@@ -188,6 +201,8 @@ export async function insertarItemsEnVenta({ idVenta, items }) {
     id_material_editorial: item?.id_material_editorial ?? null,
   }));
 
+  console.info("[crudVentaItems] Insertando items en venta", { idVenta, items });
+
   const { error } = await supabase.from("venta_items").insert(payload);
 
   if (handleError(error)) return false;
@@ -219,6 +234,8 @@ export async function obtenerVentaItemsDetalle({ idVenta }) {
 export async function eliminarVentaItem({ id }) {
   if (!id) return false;
 
+  console.info("[crudVentaItems] Eliminando venta_item", { id });
+
   const { error } = await supabase.from("venta_items").delete().eq("id", id);
 
   if (handleError(error)) return false;
@@ -226,44 +243,10 @@ export async function eliminarVentaItem({ id }) {
   return true;
 }
 
-export async function recalcularTotalesVenta({ idVenta }) {
-  if (!idVenta) return 0;
-
-  const { data, error } = await supabase
-    .from("venta_items")
-    .select("cantidad, precio_unitario, subtotal")
-    .eq("id_venta", idVenta);
-
-  if (handleError(error)) return 0;
-
-  const total = (data ?? []).reduce((sum, item) => {
-    const cantidad = Number(item?.cantidad ?? 1) || 1;
-    const precio = Number(item?.precio_unitario ?? 0) || 0;
-    const subtotal = item?.subtotal !== null && item?.subtotal !== undefined
-      ? Number(item.subtotal) || 0
-      : cantidad * precio;
-    return sum + subtotal;
-  }, 0);
-
-  const { error: updateError } = await supabase
-    .from("ventas")
-    .update({
-      total_bruto: total,
-      total_neto: total,
-      total_descuento: 0,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", idVenta);
-
-  handleError(updateError);
-
-  return total;
-}
-
 export async function confirmarVenta({ idVenta }) {
   if (!idVenta) return false;
 
-  const total = await recalcularTotalesVenta({ idVenta });
+  console.info("[crudVentaItems] Confirmando venta", { idVenta });
 
   const { error: ventaError } = await supabase
     .from("ventas")
@@ -274,7 +257,22 @@ export async function confirmarVenta({ idVenta }) {
     })
     .eq("id", idVenta);
 
-  if (handleError(ventaError)) return false;
+  if (handleError(ventaError, "confirmarVenta-update")) return false;
+
+  const { data: ventaTotales, error: totalesError } = await supabase
+    .from("ventas")
+    .select("total_neto")
+    .eq("id", idVenta)
+    .maybeSingle();
+
+  if (handleError(totalesError, "confirmarVenta-totales")) return false;
+
+  const total = Number(ventaTotales?.total_neto ?? 0) || 0;
+
+  console.debug("[crudVentaItems] Total neto confirmado para venta", {
+    idVenta,
+    total,
+  });
 
   const { data: existingCuotas, error: cuotasError } = await supabase
     .from("cuotas")
@@ -282,9 +280,11 @@ export async function confirmarVenta({ idVenta }) {
     .eq("id_venta", idVenta)
     .limit(1);
 
-  if (handleError(cuotasError)) return false;
+  if (handleError(cuotasError, "confirmarVenta-cuotas")) return false;
 
   if (!existingCuotas?.length) {
+    console.info("[crudVentaItems] Insertando cuota inicial", { idVenta, total });
+
     const { error: insertError } = await supabase.from("cuotas").insert({
       id_venta: idVenta,
       nro_cuota: 1,
@@ -292,7 +292,7 @@ export async function confirmarVenta({ idVenta }) {
       saldo: total,
     });
 
-    if (handleError(insertError)) return false;
+    if (handleError(insertError, "confirmarVenta-insertCuota")) return false;
   }
 
   return true;

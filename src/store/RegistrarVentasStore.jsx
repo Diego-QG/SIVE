@@ -7,7 +7,6 @@ import {
   obtenerMaterialesParaVenta,
   obtenerSubnivelesPorNivel,
   obtenerVentaItemsDetalle,
-  recalcularTotalesVenta,
   eliminarVentaItem,
 } from "../index";
 
@@ -213,7 +212,6 @@ export const useRegistrarVentasStore = create((set, get) => ({
 
     const inserted = await insertarItemsEnVenta({ idVenta, items: payload });
     if (inserted) {
-      await recalcularTotalesVenta({ idVenta });
       await get().cargarResumenVenta(idVenta);
       get().limpiarSeleccion();
     }
@@ -227,7 +225,6 @@ export const useRegistrarVentasStore = create((set, get) => ({
     set({ isLoadingResumen: true });
     const deleted = await eliminarVentaItem({ id: idItem });
     if (deleted && idVenta) {
-      await recalcularTotalesVenta({ idVenta });
       await get().cargarResumenVenta(idVenta);
     } else {
       set({ isLoadingResumen: false });
@@ -239,7 +236,6 @@ export const useRegistrarVentasStore = create((set, get) => ({
   confirmarVenta: async ({ idVenta }) => {
     if (!idVenta) return false;
     set({ isConfirming: true });
-    await recalcularTotalesVenta({ idVenta });
     const confirmado = await confirmarVentaSupabase({ idVenta });
     set({ isConfirming: false });
     return confirmado;
