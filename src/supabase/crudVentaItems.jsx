@@ -248,11 +248,29 @@ export async function confirmarVenta({ idVenta }) {
 
   console.info("[crudVentaItems] Confirmando venta", { idVenta });
 
+  const { data: ventaActual, error: fetchError } = await supabase
+    .from("ventas")
+    .select("estado_registro, fecha_venta")
+    .eq("id", idVenta)
+    .single();
+
+  if (handleError(fetchError)) return false;
+
+  const alreadyUploaded = ventaActual?.estado_registro === "subido";
+  const shouldStampFecha = !ventaActual?.fecha_venta;
+
+  if (alreadyUploaded && !shouldStampFecha) {
+    return true;
+  }
+
   // Solo actualizamos el estado de la venta; un trigger en la BD se encarga
   // de crear los registros relacionados (supervisión, contabilidad, entregas).
   const { error } = await supabase
     .from("ventas")
-    .update({ estado_registro: "subido" })
+    .update({
+      estado_registro: "subido",
+      ...(shouldStampFecha ? { fecha_venta: new Date().toISOString() } : {}),
+    })
     .eq("id", idVenta);
 
   if (handleError(error)) return false;

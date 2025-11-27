@@ -7,7 +7,6 @@ import {
   ListaDesplegable,
   Selector,
   Spinner,
-  useDocentesStore,
   useEmpresaStore,
   useEditorialesStore,
   useEvidenciasStore,
@@ -39,7 +38,6 @@ export function RegistrarVentas1({
   isEditing = false,
 }) {
   const { dataempresa } = useEmpresaStore();
-  const { creardocenteborrador } = useDocentesStore();
   const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
   const {
     voucherspendientes: vouchers,
@@ -310,16 +308,6 @@ export function RegistrarVentas1({
       onVentaTieneDatosChange?.("editorial", false);
       onVentaTieneDatosChange?.("vouchers", false);
       selecteditorial(null);
-
-      const empresaId = dataempresa?.id ?? datausuarios?.id_empresa ?? null;
-
-      if (empresaId) {
-        await creardocenteborrador({
-          _id_venta: nuevoId,
-          _id_empresa: empresaId,
-          _id_pais: 1,
-        });
-      }
     };
 
     crearBorrador();
@@ -338,7 +326,6 @@ export function RegistrarVentas1({
     onDraftCreationStateChange,
     onVentaTieneDatosChange,
     selecteditorial,
-    creardocenteborrador,
   ]);
 
   const displayedVouchers = useMemo(

@@ -22,7 +22,20 @@ export function POSTemplate({ datausuarios } = {}) {
   const [isExploding, setIsExploding] = useState(false);
   const [ventaDraftId, setVentaDraftId] = useState(null);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
+  // Estado compartido para que los datos del docente/IE sobrevivan al cambiar de paso.
+  const [docenteForm, setDocenteForm] = useState({
+    phoneNumber: "",
+    dniValue: "",
+    nombres: "",
+    apellidoPaterno: "",
+    apellidoMaterno: "",
+  });
+  const [institucionForm, setInstitucionForm] = useState({
+    codigoIe: "",
+    nombreIe: "",
+  });
   const beforeCloseHandlersRef = useRef(new Map());
+  const persistDocenteHandlerRef = useRef(null);
   const [ventaDraftFlags, setVentaDraftFlags] = useState({
     editorial: false,
     vouchers: false,
@@ -72,9 +85,13 @@ export function POSTemplate({ datausuarios } = {}) {
 
     for (const handler of handlers) {
       if (typeof handler === "function") {
-        await handler();
+        const result = await handler();
+        if (result === false) {
+          return false;
+        }
       }
     }
+    return true;
   }, []);
 
   const filteredVentas = useMemo(() => {
@@ -107,6 +124,14 @@ export function POSTemplate({ datausuarios } = {}) {
     setDataSelect(null);
     setIsExploding(false);
     setVentaDraftId(null);
+    setDocenteForm({
+      phoneNumber: "",
+      dniValue: "",
+      nombres: "",
+      apellidoPaterno: "",
+      apellidoMaterno: "",
+    });
+    setInstitucionForm({ codigoIe: "", nombreIe: "" });
     resetVentaDraftFlags();
   };
 
@@ -124,6 +149,14 @@ export function POSTemplate({ datausuarios } = {}) {
       setIsExploding(false);
       setVentaDraftId(ventaId);
       setIsCreatingDraft(false);
+      setDocenteForm({
+        phoneNumber: "",
+        dniValue: "",
+        nombres: "",
+        apellidoPaterno: "",
+        apellidoMaterno: "",
+      });
+      setInstitucionForm({ codigoIe: "", nombreIe: "" });
     },
     []
   );
@@ -131,7 +164,10 @@ export function POSTemplate({ datausuarios } = {}) {
   const handleCloseRegistro = async (options = {}) => {
     try {
       if (!options?.skipBeforeClose) {
-        await runBeforeCloseHandlers();
+        const canClose = await runBeforeCloseHandlers();
+        if (canClose === false) {
+          return;
+        }
       }
 
       const shouldKeepDraft = Object.values(ventaDraftFlagsRef.current).some(Boolean);
@@ -149,8 +185,17 @@ export function POSTemplate({ datausuarios } = {}) {
       setIsCreatingDraft(false);
       setAccion("Nuevo");
       setDataSelect(null);
+      setDocenteForm({
+        phoneNumber: "",
+        dniValue: "",
+        nombres: "",
+        apellidoPaterno: "",
+        apellidoMaterno: "",
+      });
+      setInstitucionForm({ codigoIe: "", nombreIe: "" });
       resetVentaDraftFlags();
       beforeCloseHandlersRef.current.clear();
+      persistDocenteHandlerRef.current = null;
     }
   };
 
@@ -183,6 +228,13 @@ export function POSTemplate({ datausuarios } = {}) {
         ventaDraftId={ventaDraftId}
         onVentaTieneDatosChange={handleVentaTieneDatosChange}
         onBeforeCloseChange={handleBeforeCloseChange}
+        onPersistChange={(handler) => {
+          persistDocenteHandlerRef.current = handler;
+        }}
+        docenteForm={docenteForm}
+        setDocenteForm={setDocenteForm}
+        institucionForm={institucionForm}
+        setInstitucionForm={setInstitucionForm}
       />
       <RegistrarVentas3
         onClose={handleCloseRegistro}
@@ -191,6 +243,12 @@ export function POSTemplate({ datausuarios } = {}) {
         onPrevious={() => setRegistroStep(2)}
         onFinish={handleFinishRegistro}
         ventaDraftId={ventaDraftId}
+        onPersistDocente={async () => {
+          if (typeof persistDocenteHandlerRef.current === "function") {
+            return persistDocenteHandlerRef.current();
+          }
+          return true;
+        }}
       />
       <section className="area1">
         <div className="hero-text">

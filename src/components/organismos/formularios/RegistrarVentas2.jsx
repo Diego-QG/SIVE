@@ -37,6 +37,11 @@ export function RegistrarVentas2({
   ventaDraftId,
   onVentaTieneDatosChange,
   onBeforeCloseChange,
+  onPersistChange,
+  docenteForm,
+  setDocenteForm,
+  institucionForm,
+  setInstitucionForm,
 }) {
   const { datausuarios } = useUsuariosStore();
   const { dataempresa } = useEmpresaStore();
@@ -69,21 +74,34 @@ export function RegistrarVentas2({
   } = useUbicacionesStore();
   const [isClosing, setIsClosing] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [dniValue, setDniValue] = useState("");
-  const [nombres, setNombres] = useState("");
-  const [apellidoPaterno, setApellidoPaterno] = useState("");
-  const [apellidoMaterno, setApellidoMaterno] = useState("");
-  const [codigoIe, setCodigoIe] = useState("");
-  const [nombreIe, setNombreIe] = useState("");
-  const [isPhoneReady, setIsPhoneReady] = useState(false);
-  const [isDniReady, setIsDniReady] = useState(false);
   const [hasHydratedDocente, setHasHydratedDocente] = useState(false);
   const [hasHydratedInstitucion, setHasHydratedInstitucion] = useState(false);
+  const [isPhoneReady, setIsPhoneReady] = useState(false);
+  const [isDniReady, setIsDniReady] = useState(false);
 
   const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? null;
   const dniDigitsRequired = paisSeleccionado?.digitos_documento ?? null;
   const phoneCodeLabel = paisSeleccionado?.cod_llamada ?? "+51";
+  const {
+    phoneNumber = "",
+    dniValue = "",
+    nombres = "",
+    apellidoPaterno = "",
+    apellidoMaterno = "",
+  } = docenteForm ?? {};
+  const { codigoIe = "", nombreIe = "" } = institucionForm ?? {};
+
+  const updateDocenteField = (field, value) => {
+    if (typeof setDocenteForm === "function") {
+      setDocenteForm((prev) => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const updateInstitucionField = (field, value) => {
+    if (typeof setInstitucionForm === "function") {
+      setInstitucionForm((prev) => ({ ...prev, [field]: value }));
+    }
+  };
 
   const phoneStatusMessage = useMemo(() => {
     if (isPhoneReady) {
@@ -145,21 +163,21 @@ export function RegistrarVentas2({
       ? `${docentedraft.nro_doc}`
       : "";
 
-    setPhoneNumber(telefonoGuardado);
+    updateDocenteField("phoneNumber", telefonoGuardado);
     setIsPhoneReady(
       Boolean(telefonoGuardado) &&
         (!phoneDigitsRequired || telefonoGuardado.length === phoneDigitsRequired)
     );
 
-    setDniValue(documentoGuardado);
+    updateDocenteField("dniValue", documentoGuardado);
     setIsDniReady(
       Boolean(documentoGuardado) &&
         (!dniDigitsRequired || documentoGuardado.length === dniDigitsRequired)
     );
 
-    setNombres(normalizeTextInput(docentedraft?.nombres));
-    setApellidoPaterno(normalizeTextInput(docentedraft?.apellido_p));
-    setApellidoMaterno(normalizeTextInput(docentedraft?.apellido_m));
+    updateDocenteField("nombres", normalizeTextInput(docentedraft?.nombres));
+    updateDocenteField("apellidoPaterno", normalizeTextInput(docentedraft?.apellido_p));
+    updateDocenteField("apellidoMaterno", normalizeTextInput(docentedraft?.apellido_m));
     setHasHydratedDocente(true);
   }, [
     docentedraft,
@@ -177,8 +195,8 @@ export function RegistrarVentas2({
 
     if (!ventaDraftId) {
       limpiarinstituciondraft();
-      setCodigoIe("");
-      setNombreIe("");
+      updateInstitucionField("codigoIe", "");
+      updateInstitucionField("nombreIe", "");
       setHasHydratedInstitucion(false);
       return;
     }
@@ -199,8 +217,11 @@ export function RegistrarVentas2({
     const codigoGuardado = institucionDraft?.cod_institucion ?? "";
     const nombreGuardado = institucionDraft?.nombre ?? "";
 
-    setCodigoIe(codigoGuardado ? normalizeTextInput(`${codigoGuardado}`) : "");
-    setNombreIe(normalizeTextInput(nombreGuardado));
+    updateInstitucionField(
+      "codigoIe",
+      codigoGuardado ? normalizeTextInput(`${codigoGuardado}`) : ""
+    );
+    updateInstitucionField("nombreIe", normalizeTextInput(nombreGuardado));
 
     if (institucionDraft) {
       setHasHydratedInstitucion(true);
@@ -241,13 +262,13 @@ export function RegistrarVentas2({
     }
 
     setOpenDropdown(null);
-    setPhoneNumber("");
-    setDniValue("");
-    setNombres("");
-    setApellidoPaterno("");
-    setApellidoMaterno("");
-    setCodigoIe("");
-    setNombreIe("");
+    updateDocenteField("phoneNumber", "");
+    updateDocenteField("dniValue", "");
+    updateDocenteField("nombres", "");
+    updateDocenteField("apellidoPaterno", "");
+    updateDocenteField("apellidoMaterno", "");
+    updateInstitucionField("codigoIe", "");
+    updateInstitucionField("nombreIe", "");
     setIsPhoneReady(false);
     setIsDniReady(false);
     setHasHydratedDocente(false);
@@ -270,7 +291,7 @@ export function RegistrarVentas2({
       return;
     }
 
-    setPhoneNumber((prev) => prev.slice(0, phoneDigitsRequired));
+    updateDocenteField("phoneNumber", phoneNumber.slice(0, phoneDigitsRequired));
   }, [phoneDigitsRequired, phoneNumber.length]);
 
   useEffect(() => {
@@ -289,7 +310,7 @@ export function RegistrarVentas2({
       return;
     }
 
-    setDniValue((prev) => prev.slice(0, dniDigitsRequired));
+    updateDocenteField("dniValue", dniValue.slice(0, dniDigitsRequired));
   }, [dniDigitsRequired, dniValue.length]);
 
   useEffect(() => {
@@ -430,7 +451,7 @@ export function RegistrarVentas2({
     const rawValue = event.target.value ?? "";
     const digitsOnly = rawValue.replace(/\D/g, "");
     const maxDigits = phoneDigitsRequired ?? 15;
-    setPhoneNumber(digitsOnly.slice(0, maxDigits));
+    updateDocenteField("phoneNumber", digitsOnly.slice(0, maxDigits));
     setIsPhoneReady(false);
   };
 
@@ -455,7 +476,7 @@ export function RegistrarVentas2({
     const rawValue = event.target.value ?? "";
     const digitsOnly = rawValue.replace(/\D/g, "");
     const maxDigits = dniDigitsRequired ?? 12;
-    setDniValue(digitsOnly.slice(0, maxDigits));
+    updateDocenteField("dniValue", digitsOnly.slice(0, maxDigits));
     setIsDniReady(false);
   };
 
@@ -474,16 +495,47 @@ export function RegistrarVentas2({
     }
 
     setIsDniReady(true);
-    setNombres("");
-    setApellidoPaterno("");
-    setApellidoMaterno("");
+    updateDocenteField("nombres", "");
+    updateDocenteField("apellidoPaterno", "");
+    updateDocenteField("apellidoMaterno", "");
   };
+  const geoNivel1Id = departamentoSeleccionado?.id ?? null;
+  const geoNivel2Id = provinciaSeleccionada?.id ?? null;
+  const geoNivel3Id = distritoSeleccionado?.id ?? null;
 
+  const hasInstitutionRequiredFields = useCallback(
+    () =>
+      Boolean(nombreIe.trim()) &&
+      Boolean(geoNivel1Id) &&
+      Boolean(geoNivel2Id) &&
+      Boolean(geoNivel3Id),
+    [geoNivel1Id, geoNivel2Id, geoNivel3Id, nombreIe]
+  );
+
+  const hasStartedInstitution = useCallback(
+    () =>
+      Boolean(codigoIe.trim()) ||
+      Boolean(nombreIe.trim()) ||
+      Boolean(geoNivel1Id) ||
+      Boolean(geoNivel2Id) ||
+      Boolean(geoNivel3Id),
+    [codigoIe, geoNivel1Id, geoNivel2Id, geoNivel3Id, nombreIe]
+  );
+
+  // Persistimos docente/IE solo al cerrar o finalizar el modal.
   const handleBeforeClose = useCallback(async () => {
     if (!ventaDraftId) {
       limpiardocentedraft();
       limpiarinstituciondraft();
-      return;
+      return true;
+    }
+
+    // Evitamos crear IEs incompletas; el toast se muestra en cada intento de avanzar/guardar.
+    if (hasStartedInstitution() && !hasInstitutionRequiredFields()) {
+      toast.info(
+        "No se puede registrar la institución porque faltan datos obligatorios (nombre, departamento, provincia y distrito)."
+      );
+      return false;
     }
 
     const telefonoGuardable = isPhoneReady && phoneNumber ? phoneNumber : null;
@@ -493,31 +545,14 @@ export function RegistrarVentas2({
     const apellidoMTrim = apellidoMaterno.trim();
     const codigoIeTrim = codigoIe.trim();
     const nombreIeTrim = nombreIe.trim();
-
-    const geoNivel1Id = departamentoSeleccionado?.id ?? null;
-    const geoNivel2Id = provinciaSeleccionada?.id ?? null;
-    const geoNivel3Id = distritoSeleccionado?.id ?? null;
     const codigoGuardable =
       codigoIeTrim && /^\d+$/.test(codigoIeTrim)
         ? Number(codigoIeTrim)
         : null;
 
-    const shouldPersistInstitucion =
-      Boolean(codigoGuardable) ||
-      Boolean(nombreIeTrim) ||
-      Boolean(geoNivel1Id) ||
-      Boolean(geoNivel2Id) ||
-      Boolean(geoNivel3Id);
-
     let institucionGuardada = institucionDraft ?? null;
 
-    if (!shouldPersistInstitucion && institucionDraft?.id) {
-      await guardarinstitucionborrador({
-        _id_institucion: institucionDraft.id,
-        shouldPersist: false,
-      });
-      institucionGuardada = null;
-    } else if (shouldPersistInstitucion) {
+    if (hasInstitutionRequiredFields()) {
       institucionGuardada = await guardarinstitucionborrador({
         _id_institucion: institucionDraft?.id ?? null,
         cod_institucion: codigoGuardable,
@@ -539,22 +574,16 @@ export function RegistrarVentas2({
       Boolean(institucionGuardada?.id);
 
     if (!shouldPersistDocente) {
-      await guardardocenteborrador({
-        _id_venta: ventaDraftId,
-        _id_docente: docentedraft?.id ?? null,
-        _id_institucion: institucionDraft?.id ?? null,
-        shouldPersist: false,
-      });
       onVentaTieneDatosChange?.("docente", false);
       limpiardocentedraft();
-      return;
+      return true;
     }
 
     const empresaId = dataempresa?.id ?? datausuarios?.id_empresa ?? null;
 
     if (!empresaId) {
       toast.error("No se pudo determinar la empresa del docente.");
-      return;
+      return false;
     }
 
     const savedDocente = await guardardocenteborrador({
@@ -575,19 +604,21 @@ export function RegistrarVentas2({
     if (savedDocente || institucionGuardada) {
       onVentaTieneDatosChange?.("docente", true);
     }
+
+    return true;
   }, [
     apellidoMaterno,
     apellidoPaterno,
     codigoIe,
     dataempresa?.id,
     datausuarios?.id_empresa,
-    departamentoSeleccionado?.id,
-    distritoSeleccionado?.id,
+    dniValue,
     docentedraft?.id,
     docentedraft?.id_pais,
-    dniValue,
     guardarinstitucionborrador,
     guardardocenteborrador,
+    hasInstitutionRequiredFields,
+    hasStartedInstitution,
     institucionDraft?.id,
     institucionDraft?.id_pais,
     isDniReady,
@@ -599,25 +630,27 @@ export function RegistrarVentas2({
     onVentaTieneDatosChange,
     paisSeleccionado?.id,
     phoneNumber,
-    provinciaSeleccionada?.id,
     ventaDraftId,
   ]);
 
   useEffect(() => {
-    if (!state) {
-      onBeforeCloseChange?.("step2", null);
-      return;
-    }
-
     onBeforeCloseChange?.("step2", handleBeforeClose);
-    return () => onBeforeCloseChange?.("step2", null);
-  }, [handleBeforeClose, onBeforeCloseChange, state]);
+    onPersistChange?.(handleBeforeClose);
+    return () => {
+      onBeforeCloseChange?.("step2", null);
+      onPersistChange?.(null);
+    };
+  }, [handleBeforeClose, onBeforeCloseChange, onPersistChange]);
 
   const handleNavigate = useCallback(
     async (direction) => {
-      await handleBeforeClose();
-
       if (direction === "next") {
+        if (hasStartedInstitution() && !hasInstitutionRequiredFields()) {
+          toast.info(
+            "No se puede registrar la institución porque faltan datos obligatorios (nombre, departamento, provincia y distrito)."
+          );
+          return;
+        }
         onNext?.();
         return;
       }
@@ -626,7 +659,7 @@ export function RegistrarVentas2({
         onPrevious?.();
       }
     },
-    [handleBeforeClose, onNext, onPrevious]
+    [hasInstitutionRequiredFields, hasStartedInstitution, onNext, onPrevious]
   );
 
   if (!isOpen) {
@@ -717,21 +750,27 @@ export function RegistrarVentas2({
               label="Nombres"
               placeholder="Nombres completos"
               value={nombres}
-              onChange={handleUppercaseChange(setNombres)}
+              onChange={handleUppercaseChange((value) =>
+                updateDocenteField("nombres", value)
+              )}
               disabled={isDniReady}
             />
             <VentaInput
               label="Apellido paterno"
               placeholder="Apellido paterno"
               value={apellidoPaterno}
-              onChange={handleUppercaseChange(setApellidoPaterno)}
+              onChange={handleUppercaseChange((value) =>
+                updateDocenteField("apellidoPaterno", value)
+              )}
               disabled={isDniReady}
             />
             <VentaInput
               label="Apellido materno"
               placeholder="Apellido materno"
               value={apellidoMaterno}
-              onChange={handleUppercaseChange(setApellidoMaterno)}
+              onChange={handleUppercaseChange((value) =>
+                updateDocenteField("apellidoMaterno", value)
+              )}
               disabled={isDniReady}
             />
           </NameFieldsRow>
@@ -741,7 +780,9 @@ export function RegistrarVentas2({
               label="Código de IE"
               placeholder="Código de institución"
               value={codigoIe}
-              onChange={handleUppercaseChange(setCodigoIe)}
+              onChange={handleUppercaseChange((value) =>
+                updateInstitucionField("codigoIe", value)
+              )}
               type="text"
               variant="solid"
             />
@@ -749,7 +790,9 @@ export function RegistrarVentas2({
               label="Nombre de IE"
               placeholder="Nombre de institución"
               value={nombreIe}
-              onChange={handleUppercaseChange(setCodigoIe)}
+              onChange={handleUppercaseChange((value) =>
+                updateInstitucionField("nombreIe", value)
+              )}
               type="text"
               variant="solid"
             />
@@ -797,7 +840,7 @@ export function RegistrarVentas2({
                 color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={!departamentoSeleccionado}
                 width="auto"
-                minWidth="200px"
+                minWidth="180px"
               />
               <ListaDesplegable
                 state={openDropdown === "departamento"}
@@ -835,7 +878,7 @@ export function RegistrarVentas2({
                 color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={!provinciaSeleccionada}
                 width="auto"
-                minWidth="200px"
+                minWidth="180px"
               />
               <ListaDesplegable
                 state={openDropdown === "provincia"}
@@ -873,7 +916,7 @@ export function RegistrarVentas2({
                 color={SELECTOR_BORDER_COLOR}
                 isPlaceholder={!distritoSeleccionado}
                 width="auto"
-                minWidth="200px"
+                minWidth="180px"
               />
               <ListaDesplegable
                 state={openDropdown === "distrito"}
@@ -932,6 +975,7 @@ const Body = styled.div`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
 
   &::-webkit-scrollbar {
@@ -1026,9 +1070,9 @@ const DualGrid = styled.div`
 
 const LocationSelectorsRow = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   width: 100%;
-  gap: 15px;
+  gap: 14px;
 
   @media (max-width: 720px) {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

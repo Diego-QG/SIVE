@@ -25,6 +25,7 @@ export function RegistrarVentas3({
   onPrevious,
   onFinish,
   ventaDraftId,
+  onPersistDocente,
 }) {
   const [isClosing, setIsClosing] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -286,6 +287,11 @@ export function RegistrarVentas3({
       return;
     }
 
+    const canPersistDocente = await onPersistDocente?.();
+    if (canPersistDocente === false) {
+      return;
+    }
+
     const confirmado = await confirmarVenta({ idVenta: ventaDraftId });
     if (confirmado) {
       await refrescarVentas();
@@ -429,10 +435,6 @@ export function RegistrarVentas3({
                 <h4>Resumen de venta</h4>
                 <p>Los montos se actualizan al agregar o quitar items.</p>
               </div>
-              <button type="button" onClick={handleAgregarItems} disabled={isSavingItems || isBusy}>
-                {isSavingItems ? <Spinner /> : <IconAgregar />}
-                Agregar seleccionados
-              </button>
             </header>
             <ul>
               {isLoadingResumen ? (
@@ -491,19 +493,26 @@ export function RegistrarVentas3({
   );
 }
 
-const Modal = styled(ModalContainer)``;
+// Modal más ancho en desktop para dar aire al selector y al resumen.
+const Modal = styled(ModalContainer)`
+  width: min(1100px, 88vw);
+  max-width: 1100px;
+  height: min(860px, 90vh);
+  max-height: min(860px, 90vh);
+`;
 
 const Header = styled(ModalHeader)``;
 
 const Body = styled.div`
   display: grid;
-  grid-template-columns: minmax(360px, 1.1fr) minmax(340px, 1fr);
-  gap: clamp(12px, 1.4vw, 18px);
+  grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
+  gap: clamp(14px, 1.6vw, 22px);
   align-items: start;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 4px;
+  overflow-x: hidden;
+  padding-right: 6px;
 
   @media (max-width: 1240px) {
     grid-template-columns: 1fr;
@@ -527,6 +536,7 @@ const SelectorGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px 14px;
+  justify-content: start;
 `;
 
 const SelectorColumn = styled.div`
@@ -535,6 +545,10 @@ const SelectorColumn = styled.div`
   gap: 8px;
   font-weight: 600;
   position: relative;
+
+  @media (min-width: 960px) {
+    max-width: 250px;
+  }
 `;
 
 const SelectorButton = styled.button`
@@ -546,6 +560,8 @@ const SelectorButton = styled.button`
   text-align: left;
   cursor: pointer;
   position: relative;
+  width: 100%;
+  max-width: 100%;
 
   &[disabled],
   &[data-disabled="true"] {
@@ -565,31 +581,14 @@ const ResumenCard = styled.section`
 
   header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 6px;
 
     p {
       margin: 4px 0 0;
       color: rgba(${({ theme }) => theme.textRgba}, 0.65);
-    }
-
-    button {
-      border-radius: 999px;
-      border: none;
-      padding: 9px 16px;
-      background: rgba(23, 224, 192, 0.2);
-      color: #06463b;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.5;
+      max-width: 100%;
     }
   }
 
@@ -600,7 +599,7 @@ const ResumenCard = styled.section`
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: 240px;
+    max-height: 320px;
     overflow-y: auto;
     padding-right: 4px;
 
