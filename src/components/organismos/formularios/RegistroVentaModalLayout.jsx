@@ -15,7 +15,9 @@ export const Overlay = styled.div`
 `;
 
 export const ModalContainer = styled.div`
-  width: min(720px, 100%);
+  width: min(680px, 100%);
+  height: min(720px, calc(100vh - 100px));
+  max-height: min(720px, calc(100vh - 100px));
   background: ${({ theme }) => theme.bgtotal};
   border-radius: 28px;
   padding: 28px 32px 32px;
@@ -25,6 +27,7 @@ export const ModalContainer = styled.div`
   gap: 22px;
   color: ${({ theme }) => theme.text};
   position: relative;
+  overflow: hidden;
 `;
 
 export const ModalHeader = styled.header`

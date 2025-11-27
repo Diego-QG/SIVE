@@ -248,52 +248,14 @@ export async function confirmarVenta({ idVenta }) {
 
   console.info("[crudVentaItems] Confirmando venta", { idVenta });
 
-  const { error: ventaError } = await supabase
+  // Solo actualizamos el estado de la venta; un trigger en la BD se encarga
+  // de crear los registros relacionados (supervisión, contabilidad, entregas).
+  const { error } = await supabase
     .from("ventas")
-    .update({
-      estado_registro: "subido",
-      fecha_venta: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    .update({ estado_registro: "subido" })
     .eq("id", idVenta);
 
-  if (handleError(ventaError, "confirmarVenta-update")) return false;
-
-  const { data: ventaTotales, error: totalesError } = await supabase
-    .from("ventas")
-    .select("total_neto")
-    .eq("id", idVenta)
-    .maybeSingle();
-
-  if (handleError(totalesError, "confirmarVenta-totales")) return false;
-
-  const total = Number(ventaTotales?.total_neto ?? 0) || 0;
-
-  console.debug("[crudVentaItems] Total neto confirmado para venta", {
-    idVenta,
-    total,
-  });
-
-  const { data: existingCuotas, error: cuotasError } = await supabase
-    .from("cuotas")
-    .select("id")
-    .eq("id_venta", idVenta)
-    .limit(1);
-
-  if (handleError(cuotasError, "confirmarVenta-cuotas")) return false;
-
-  if (!existingCuotas?.length) {
-    console.info("[crudVentaItems] Insertando cuota inicial", { idVenta, total });
-
-    const { error: insertError } = await supabase.from("cuotas").insert({
-      id_venta: idVenta,
-      nro_cuota: 1,
-      monto_programado: total,
-      saldo: total,
-    });
-
-    if (handleError(insertError, "confirmarVenta-insertCuota")) return false;
-  }
+  if (handleError(error)) return false;
 
   return true;
 }

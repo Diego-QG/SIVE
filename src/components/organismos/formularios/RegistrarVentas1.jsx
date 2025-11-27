@@ -467,12 +467,7 @@ export function RegistrarVentas1({
   );
 }
 
-const Modal = styled(ModalContainer)`
-  width: min(680px, 100%);
-  height: min(720px, calc(100vh - 100px));
-  max-height: min(720px, calc(100vh - 100px));
-  overflow: hidden;
-`;
+const Modal = styled(ModalContainer)``;
 
 const Header = styled(ModalHeader)``;
 

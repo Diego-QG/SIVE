@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { toast } from "sonner";
 import { v } from "../../../styles/variables";
@@ -28,9 +28,33 @@ export function RegistrarVentas3({
 }) {
   const [isClosing, setIsClosing] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [dropdownPlacement, setDropdownPlacement] = useState({
+    nivel: "bottom",
+    subnivel: "bottom",
+    contenido: "bottom",
+    items: "bottom",
+  });
+  const nivelTriggerRef = useRef(null);
+  const subnivelTriggerRef = useRef(null);
+  const contenidoTriggerRef = useRef(null);
+  const itemsTriggerRef = useRef(null);
   const { refrescarVentas } = useVentasStore();
   const { editorialesitemselect } = useEditorialesStore();
   const editorialId = editorialesitemselect?.id ?? null;
+  const IconCerrar = v.iconocerrar;
+  const IconAgregar = v.iconoagregar;
+  const IconFlechaIzquierda = v.iconoflechaizquierda;
+  const IconCheck = v.iconocheck;
+
+  const triggerRefs = useMemo(
+    () => ({
+      nivel: nivelTriggerRef,
+      subnivel: subnivelTriggerRef,
+      contenido: contenidoTriggerRef,
+      items: itemsTriggerRef,
+    }),
+    []
+  );
 
   const {
     niveles,
@@ -132,6 +156,23 @@ export function RegistrarVentas3({
     }
   };
 
+  const determinePlacement = (name) => {
+    const ref = triggerRefs[name];
+    if (!ref?.current) return "bottom";
+
+    const rect = ref.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const estimatedHeight = name === "items" ? 360 : 280;
+
+    if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
+      return "top";
+    }
+
+    return "bottom";
+  };
+
   const toggleDropdown = async (name) => {
     if (name === "subnivel" && !selectedNivel) {
       toast.warning("No puedes seleccionar subnivel sin antes nivel.");
@@ -172,6 +213,11 @@ export function RegistrarVentas3({
 
       await cargarMateriales({ editorialId });
     }
+
+    setDropdownPlacement((prev) => ({
+      ...prev,
+      [name]: determinePlacement(name),
+    }));
 
     setOpenDropdown((prev) => (prev === name ? null : name));
   };
@@ -258,9 +304,9 @@ export function RegistrarVentas3({
             <p>Registrar nueva venta</p>
             <h2>Datos de venta</h2>
           </div>
-          <button type="button" onClick={handleRequestClose} aria-label="Cerrar" disabled={isBusy}>
-            <v.iconocerrar />
-          </button>
+            <button type="button" onClick={handleRequestClose} aria-label="Cerrar" disabled={isBusy}>
+              <IconCerrar />
+            </button>
         </Header>
 
         <RegistroVentaStepper currentStep={3} />
@@ -269,7 +315,12 @@ export function RegistrarVentas3({
           <SelectorGrid>
             <SelectorColumn>
               <span>Seleccionar nivel</span>
-              <SelectorButton type="button" onClick={() => toggleDropdown("nivel")} $disabled={isBusy}>
+              <SelectorButton
+                type="button"
+                ref={triggerRefs.nivel}
+                onClick={() => toggleDropdown("nivel")}
+                $disabled={isBusy}
+              >
                 {nivelLabel}
               </SelectorButton>
               <ListaDesplegable
@@ -278,11 +329,17 @@ export function RegistrarVentas3({
                 setState={() => setOpenDropdown(null)}
                 funcion={handleSelectNivel}
                 onClear={() => seleccionarNivel(null)}
+                placement={dropdownPlacement.nivel}
               />
             </SelectorColumn>
             <SelectorColumn>
               <span>Seleccionar subnivel</span>
-              <SelectorButton type="button" onClick={() => toggleDropdown("subnivel")} $disabled={isBusy}>
+              <SelectorButton
+                type="button"
+                ref={triggerRefs.subnivel}
+                onClick={() => toggleDropdown("subnivel")}
+                $disabled={isBusy}
+              >
                 {subnivelLabel}
               </SelectorButton>
               <ListaDesplegable
@@ -291,11 +348,17 @@ export function RegistrarVentas3({
                 setState={() => setOpenDropdown(null)}
                 funcion={handleSelectSubnivel}
                 onClear={() => seleccionarSubnivel(null)}
+                placement={dropdownPlacement.subnivel}
               />
             </SelectorColumn>
             <SelectorColumn>
               <span>Seleccionar curso o paquete</span>
-              <SelectorButton type="button" onClick={() => toggleDropdown("contenido")} $disabled={isBusy}>
+              <SelectorButton
+                type="button"
+                ref={triggerRefs.contenido}
+                onClick={() => toggleDropdown("contenido")}
+                $disabled={isBusy}
+              >
                 {contenidoLabel}
               </SelectorButton>
               <ListaDesplegable
@@ -305,51 +368,57 @@ export function RegistrarVentas3({
                 funcion={handleSelectContenido}
                 onClear={() => seleccionarContenido(null)}
                 emptyLabel={selectedSubnivel ? "Sin cursos ni paquetes" : "Selecciona un subnivel"}
+                placement={dropdownPlacement.contenido}
               />
             </SelectorColumn>
             <SelectorColumn>
               <span>Seleccionar items</span>
-              <SelectorButton type="button" onClick={() => toggleDropdown("items")} $disabled={isBusy}>
+              <SelectorButton
+                type="button"
+                ref={triggerRefs.items}
+                onClick={() => toggleDropdown("items")}
+                $disabled={isBusy}
+              >
                 {itemsLabel}
               </SelectorButton>
               {openDropdown === "items" && (
-                <ItemsDropdown>
-                  {isLoadingMateriales ? (
-                    <Spinner />
-                  ) : materiales.length === 0 ? (
-                    <EmptyState>Sin materiales para los filtros seleccionados.</EmptyState>
-                  ) : (
-                    <ul>
-                      {materiales.map((material) => {
-                        const isChecked = selectedItems.includes(material.id);
-                        return (
-                          <li key={material.id}>
-                            <label>
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleItem(material.id)}
-                              />
-                              <div className="info">
-                                <span className="label">{material.label}</span>
-                                <small>S/{material.precio.toFixed(2)}</small>
-                              </div>
-                            </label>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  <button
-                    type="button"
-                    className="add-btn"
-                    onClick={handleAgregarItems}
-                    disabled={isSavingItems || isBusy}
-                  >
-                    {isSavingItems ? <Spinner /> : <v.iconoagregar />}
-                    <span>Agregar</span>
-                  </button>
-                </ItemsDropdown>
+                <ItemsDropdown $placement={dropdownPlacement.items}>
+              {isLoadingMateriales ? (
+                <Spinner />
+              ) : materiales.length === 0 ? (
+                <EmptyState>Sin materiales para los filtros seleccionados.</EmptyState>
+              ) : (
+                <ul>
+                  {materiales.map((material) => {
+                    const isChecked = selectedItems.includes(material.id);
+                    return (
+                      <li key={material.id}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleItem(material.id)}
+                          />
+                          <div className="info">
+                            <span className="label">{material.label}</span>
+                            <small>S/{material.precio.toFixed(2)}</small>
+                          </div>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <button
+                type="button"
+                className="add-btn"
+                onClick={handleAgregarItems}
+                disabled={isSavingItems || isBusy}
+              >
+                {isSavingItems ? <Spinner /> : <IconAgregar />}
+                <span>Agregar</span>
+              </button>
+            </ItemsDropdown>
               )}
             </SelectorColumn>
           </SelectorGrid>
@@ -361,7 +430,7 @@ export function RegistrarVentas3({
                 <p>Los montos se actualizan al agregar o quitar items.</p>
               </div>
               <button type="button" onClick={handleAgregarItems} disabled={isSavingItems || isBusy}>
-                {isSavingItems ? <Spinner /> : <v.iconoagregar />}
+                {isSavingItems ? <Spinner /> : <IconAgregar />}
                 Agregar seleccionados
               </button>
             </header>
@@ -382,10 +451,10 @@ export function RegistrarVentas3({
                     </div>
                     <div className="price-area">
                       <b>S/{item.precio.toFixed(2)}</b>
-                      <RemoveButton type="button" onClick={() => handleEliminarItem(item.id)} disabled={isBusy}>
-                        <v.iconocerrar aria-hidden />
-                      </RemoveButton>
-                    </div>
+                        <RemoveButton type="button" onClick={() => handleEliminarItem(item.id)} disabled={isBusy}>
+                          <IconCerrar aria-hidden />
+                        </RemoveButton>
+                      </div>
                   </li>
                 ))
               )}
@@ -403,13 +472,13 @@ export function RegistrarVentas3({
         </Body>
 
         <Footer>
-          <OutlineButton type="button" onClick={onPrevious} disabled={isBusy}>
-            <v.iconoflechaizquierda /> Atrás
-          </OutlineButton>
-          <SuccessButton type="button" onClick={handleFinish} disabled={isBusy}>
-            Registrar venta <v.iconocheck />
-          </SuccessButton>
-        </Footer>
+            <OutlineButton type="button" onClick={onPrevious} disabled={isBusy}>
+              <IconFlechaIzquierda /> Atrás
+            </OutlineButton>
+            <SuccessButton type="button" onClick={handleFinish} disabled={isBusy}>
+              Registrar venta <IconCheck />
+            </SuccessButton>
+          </Footer>
         {(isClosing || isConfirming) && (
           <ClosingOverlay>
             <Spinner />
@@ -428,19 +497,36 @@ const Header = styled(ModalHeader)``;
 
 const Body = styled.div`
   display: grid;
-  grid-template-columns: 1fr 0.9fr;
-  gap: 18px;
+  grid-template-columns: minmax(360px, 1.1fr) minmax(340px, 1fr);
+  gap: clamp(12px, 1.4vw, 18px);
   align-items: start;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1240px) {
     grid-template-columns: 1fr;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.2);
+    border-radius: 999px;
   }
 `;
 
 const SelectorGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  gap: 12px 14px;
 `;
 
 const SelectorColumn = styled.div`
@@ -472,7 +558,7 @@ const ResumenCard = styled.section`
   border-radius: 24px;
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   background: rgba(${({ theme }) => theme.textRgba}, 0.03);
-  padding: 22px;
+  padding: clamp(16px, 1.8vw, 22px);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -491,7 +577,7 @@ const ResumenCard = styled.section`
     button {
       border-radius: 999px;
       border: none;
-      padding: 10px 20px;
+      padding: 9px 16px;
       background: rgba(23, 224, 192, 0.2);
       color: #06463b;
       font-weight: 700;
@@ -514,7 +600,7 @@ const ResumenCard = styled.section`
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: 260px;
+    max-height: 240px;
     overflow-y: auto;
     padding-right: 4px;
 
@@ -598,15 +684,18 @@ const GhostButton = styled.button`
 const ItemsDropdown = styled.div`
   position: absolute;
   z-index: 3;
-  margin-top: 8px;
+  ${({ $placement }) =>
+    $placement === "top"
+      ? "bottom: calc(100% + 10px);"
+      : "top: calc(100% + 10px);"};
   background: ${({ theme }) => theme.body};
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.12);
   border-radius: 14px;
   padding: 12px;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
-  min-width: min(320px, 92vw);
-  max-width: min(420px, 96vw);
-  max-height: 380px;
+  min-width: min(360px, 92vw);
+  max-width: min(480px, 96vw);
+  max-height: 400px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -619,7 +708,7 @@ const ItemsDropdown = styled.div`
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 240px;
+    max-height: 220px;
     overflow-y: auto;
   }
 

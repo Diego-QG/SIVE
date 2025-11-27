@@ -929,6 +929,23 @@ const Body = styled.div`
   display: flex;
   flex-direction: column;
   gap: 18px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.2);
+    border-radius: 999px;
+  }
 `;
 
 const InputGroup = styled.label`
