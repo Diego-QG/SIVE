@@ -48,14 +48,31 @@ const buildMaterialOption = (material) => {
   };
 };
 
-const buildResumenItem = (item) => ({
-  id: item?.id ?? null,
-  nombre:
-    item?.material?.nombre ||
-    item?.material?.tipocontenidos?.nombre ||
-    "Material",
-  precio: Number(item?.subtotal ?? item?.precio_unitario ?? 0) || 0,
-});
+const buildResumenItem = (item) => {
+  const cantidad = Number(item?.cantidad ?? item?.cantidad_total ?? 1) || 1;
+  const precioUnitario =
+    Number(item?.precio_unitario ?? item?.precio ?? item?.subtotal ?? 0) || 0;
+  const subtotal = Number(item?.subtotal ?? cantidad * precioUnitario) || 0;
+
+  return {
+    id: item?.id ?? null,
+    nombre:
+      item?.material?.nombre ||
+      item?.material?.tipocontenidos?.nombre ||
+      "Material",
+    nivel: normalizeNombre(item?.nivel ?? item?.material?.niveles?.nombre, ""),
+    subnivel: normalizeNombre(
+      item?.subnivel ?? item?.material?.subniveles?.nombre,
+      ""
+    ),
+    curso: normalizeNombre(item?.curso ?? item?.material?.tipocontenidos?.nombre, ""),
+    cantidad,
+    precioUnitario,
+    precio: subtotal,
+    subtotal,
+    descuento: Number(item?.descuento ?? 0) || 0,
+  };
+};
 
 export const useRegistrarVentasStore = create((set, get) => ({
   niveles: [],

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { toast } from "sonner";
 import { v } from "../../../styles/variables";
@@ -78,6 +78,7 @@ export function RegistrarVentas2({
   const [hasHydratedInstitucion, setHasHydratedInstitucion] = useState(false);
   const [isPhoneReady, setIsPhoneReady] = useState(false);
   const [isDniReady, setIsDniReady] = useState(false);
+  const lastSavedSnapshotRef = useRef(null);
 
   const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? null;
   const dniDigitsRequired = paisSeleccionado?.digitos_documento ?? null;
@@ -102,6 +103,8 @@ export function RegistrarVentas2({
       setInstitucionForm((prev) => ({ ...prev, [field]: value }));
     }
   };
+
+  const snapshotsAreEqual = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
   const phoneStatusMessage = useMemo(() => {
     if (isPhoneReady) {
@@ -253,6 +256,7 @@ export function RegistrarVentas2({
     if (!isOpen) {
       setHasHydratedDocente(false);
       setHasHydratedInstitucion(false);
+      lastSavedSnapshotRef.current = null;
     }
   }, [isOpen, state]);
 
@@ -430,6 +434,7 @@ export function RegistrarVentas2({
     setIsClosing(true);
 
     try {
+      await autoSaveDocenteEInstitucion("modal-close");
       await onClose?.();
     } catch (error) {
       console.error(error);
@@ -522,24 +527,10 @@ export function RegistrarVentas2({
     [codigoIe, geoNivel1Id, geoNivel2Id, geoNivel3Id, nombreIe]
   );
 
-  // Persistimos docente/IE solo al cerrar o finalizar el modal.
-  const handleBeforeClose = useCallback(async () => {
-    if (!ventaDraftId) {
-      limpiardocentedraft();
-      limpiarinstituciondraft();
-      return true;
-    }
-
-    // Evitamos crear IEs incompletas; el toast se muestra en cada intento de avanzar/guardar.
-    if (hasStartedInstitution() && !hasInstitutionRequiredFields()) {
-      toast.info(
-        "No se puede registrar la institución porque faltan datos obligatorios (nombre, departamento, provincia y distrito)."
-      );
-      return false;
-    }
-
-    const telefonoGuardable = isPhoneReady && phoneNumber ? phoneNumber : null;
-    const dniGuardable = isDniReady && dniValue ? dniValue : null;
+  const buildSnapshot = useCallback(() => {
+    const telefonoGuardable =
+      isPhoneReady && phoneNumber ? `${phoneNumber}` : null;
+    const dniGuardable = isDniReady && dniValue ? `${dniValue}` : null;
     const nombresTrim = nombres.trim();
     const apellidoPTrim = apellidoPaterno.trim();
     const apellidoMTrim = apellidoMaterno.trim();
@@ -550,106 +541,228 @@ export function RegistrarVentas2({
         ? Number(codigoIeTrim)
         : null;
 
-    let institucionGuardada = institucionDraft ?? null;
+    const docenteSnapshot =
+      telefonoGuardable ||
+      dniGuardable ||
+      nombresTrim ||
+      apellidoPTrim ||
+      apellidoMTrim
+        ? {
+            id_docente: docentedraft?.id ?? null,
+            telefono: telefonoGuardable,
+            nro_doc: dniGuardable,
+            nombres: nombresTrim || null,
+            apellido_p: apellidoPTrim || null,
+            apellido_m: apellidoMTrim || null,
+            id_pais:
+              paisSeleccionado?.id ??
+              docentedraft?.id_pais ??
+              institucionDraft?.id_pais ??
+              DEFAULT_PAIS_ID,
+            id_institucion:
+              docentedraft?.id_institucion ?? institucionDraft?.id ?? null,
+          }
+        : null;
 
-    if (hasInstitutionRequiredFields()) {
-      institucionGuardada = await guardarinstitucionborrador({
-        _id_institucion: institucionDraft?.id ?? null,
-        cod_institucion: codigoGuardable,
-        nombre: nombreIeTrim || null,
-        id_pais: paisSeleccionado?.id ?? institucionDraft?.id_pais ?? null,
-        id_geo_nivel1: geoNivel1Id,
-        id_geo_nivel2: geoNivel2Id,
-        id_geo_nivel3: geoNivel3Id,
-        shouldPersist: true,
-      });
-    }
+    const institucionSnapshot = hasInstitutionRequiredFields()
+      ? {
+          id: institucionDraft?.id ?? null,
+          cod_institucion: codigoGuardable,
+          nombre: nombreIeTrim || null,
+          id_pais:
+            paisSeleccionado?.id ??
+            institucionDraft?.id_pais ??
+            docentedraft?.id_pais ??
+            DEFAULT_PAIS_ID,
+          id_geo_nivel1: geoNivel1Id,
+          id_geo_nivel2: geoNivel2Id,
+          id_geo_nivel3: geoNivel3Id,
+        }
+      : null;
 
-    const shouldPersistDocente =
-      Boolean(telefonoGuardable) ||
-      Boolean(dniGuardable) ||
-      Boolean(nombresTrim) ||
-      Boolean(apellidoPTrim) ||
-      Boolean(apellidoMTrim) ||
-      Boolean(institucionGuardada?.id);
-
-    if (!shouldPersistDocente) {
-      onVentaTieneDatosChange?.("docente", false);
-      limpiardocentedraft();
-      return true;
-    }
-
-    const empresaId = dataempresa?.id ?? datausuarios?.id_empresa ?? null;
-
-    if (!empresaId) {
-      toast.error("No se pudo determinar la empresa del docente.");
-      return false;
-    }
-
-    const savedDocente = await guardardocenteborrador({
-      _id_venta: ventaDraftId,
-      _id_docente: docentedraft?.id ?? null,
-      _id_empresa: empresaId,
-      _id_pais:
-        paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
-      _id_institucion: institucionGuardada?.id ?? institucionDraft?.id ?? null,
-      telefono: telefonoGuardable,
-      nro_doc: dniGuardable,
-      nombres: nombresTrim || null,
-      apellido_p: apellidoPTrim || null,
-      apellido_m: apellidoMTrim || null,
-      shouldPersist: true,
-    });
-
-    if (savedDocente || institucionGuardada) {
-      onVentaTieneDatosChange?.("docente", true);
-    }
-
-    return true;
+    return { docente: docenteSnapshot, institucion: institucionSnapshot };
   }, [
     apellidoMaterno,
     apellidoPaterno,
     codigoIe,
-    dataempresa?.id,
-    datausuarios?.id_empresa,
     dniValue,
     docentedraft?.id,
+    docentedraft?.id_institucion,
     docentedraft?.id_pais,
-    guardarinstitucionborrador,
-    guardardocenteborrador,
+    geoNivel1Id,
+    geoNivel2Id,
+    geoNivel3Id,
     hasInstitutionRequiredFields,
-    hasStartedInstitution,
     institucionDraft?.id,
     institucionDraft?.id_pais,
     isDniReady,
     isPhoneReady,
-    limpiardocentedraft,
-    limpiarinstituciondraft,
-    nombres,
     nombreIe,
-    onVentaTieneDatosChange,
+    nombres,
     paisSeleccionado?.id,
     phoneNumber,
-    ventaDraftId,
   ]);
 
   useEffect(() => {
-    onBeforeCloseChange?.("step2", handleBeforeClose);
-    onPersistChange?.(handleBeforeClose);
+    if (!state) {
+      return;
+    }
+
+    lastSavedSnapshotRef.current = buildSnapshot();
+  }, [buildSnapshot, docentedraft, institucionDraft, state]);
+
+  // Persistimos docente/IE automáticamente al cambiar de paso o cerrar el modal.
+  const autoSaveDocenteEInstitucion = useCallback(
+    async (reason = "auto") => {
+      if (!ventaDraftId) {
+        limpiardocentedraft();
+        limpiarinstituciondraft();
+        return true;
+      }
+
+      const snapshot = buildSnapshot();
+      const hasDocenteInfo =
+        Boolean(snapshot.docente?.nro_doc) ||
+        Boolean(snapshot.docente?.nombres) ||
+        Boolean(snapshot.docente?.apellido_p) ||
+        Boolean(snapshot.docente?.telefono);
+      const hasInstitutionData = hasStartedInstitution();
+
+      if (!hasDocenteInfo && !hasInstitutionData && !docentedraft?.id) {
+        onVentaTieneDatosChange?.("docente", false);
+        return true;
+      }
+
+      if (hasStartedInstitution() && !snapshot.institucion) {
+        toast.info(
+          "No se puede registrar la institución porque faltan datos obligatorios (nombre, departamento, provincia y distrito)."
+        );
+      }
+
+      if (snapshotsAreEqual(lastSavedSnapshotRef.current, snapshot)) {
+        return true;
+      }
+
+      const empresaId = dataempresa?.id ?? datausuarios?.id_empresa ?? null;
+
+      if (!empresaId) {
+        toast.error("No se pudo determinar la empresa del docente.");
+        return false;
+      }
+
+      try {
+        let savedDocente = null;
+        let savedInstitucion = null;
+
+        if (hasDocenteInfo || docentedraft?.id) {
+          savedDocente = await guardardocenteborrador({
+            _id_venta: ventaDraftId,
+            _id_docente: docentedraft?.id ?? null,
+            _id_empresa: empresaId,
+            _id_pais: snapshot.docente?.id_pais,
+            _id_institucion:
+              snapshot.docente?.id_institucion ?? institucionDraft?.id ?? null,
+            telefono: snapshot.docente?.telefono,
+            nro_doc: snapshot.docente?.nro_doc,
+            nombres: snapshot.docente?.nombres,
+            apellido_p: snapshot.docente?.apellido_p,
+            apellido_m: snapshot.docente?.apellido_m,
+            shouldPersist: true,
+          });
+        }
+
+        if (snapshot.institucion && (savedDocente?.id || docentedraft?.id)) {
+          savedInstitucion = await guardarinstitucionborrador({
+            _id_institucion: snapshot.institucion?.id ?? null,
+            cod_institucion: snapshot.institucion?.cod_institucion,
+            nombre: snapshot.institucion?.nombre,
+            id_pais: snapshot.institucion?.id_pais,
+            id_geo_nivel1: snapshot.institucion?.id_geo_nivel1,
+            id_geo_nivel2: snapshot.institucion?.id_geo_nivel2,
+            id_geo_nivel3: snapshot.institucion?.id_geo_nivel3,
+            shouldPersist: true,
+          });
+
+          if (savedInstitucion) {
+            savedDocente = await guardardocenteborrador({
+              _id_venta: ventaDraftId,
+              _id_docente: savedDocente?.id ?? docentedraft?.id ?? null,
+              _id_empresa: empresaId,
+              _id_pais: snapshot.docente?.id_pais,
+              _id_institucion: savedInstitucion.id,
+              telefono: snapshot.docente?.telefono,
+              nro_doc: snapshot.docente?.nro_doc,
+              nombres: snapshot.docente?.nombres,
+              apellido_p: snapshot.docente?.apellido_p,
+              apellido_m: snapshot.docente?.apellido_m,
+              shouldPersist: true,
+            });
+          }
+        }
+
+        if (savedDocente || savedInstitucion) {
+          onVentaTieneDatosChange?.("docente", Boolean(savedDocente));
+        }
+
+        lastSavedSnapshotRef.current = {
+          ...snapshot,
+          docente: {
+            ...snapshot.docente,
+            id_docente: savedDocente?.id ?? snapshot.docente?.id_docente ?? null,
+            id_institucion:
+              savedDocente?.id_institucion ??
+              snapshot.institucion?.id ??
+              snapshot.docente?.id_institucion ??
+              null,
+          },
+          institucion: snapshot.institucion
+            ? {
+                ...snapshot.institucion,
+                id: savedInstitucion?.id ?? snapshot.institucion?.id ?? null,
+              }
+            : null,
+        };
+
+        return true;
+      } catch (error) {
+        console.error("[RegistrarVentas2] Auto guardado falló", { reason, error });
+        toast.error("No se pudieron guardar los datos del docente automáticamente.");
+        return false;
+      }
+    }, [
+      buildSnapshot,
+      dataempresa?.id,
+      datausuarios?.id_empresa,
+      docentedraft?.id,
+      guardarinstitucionborrador,
+      guardardocenteborrador,
+      hasStartedInstitution,
+      institucionDraft?.id,
+      limpiardocentedraft,
+      limpiarinstituciondraft,
+      onVentaTieneDatosChange,
+      snapshotsAreEqual,
+      ventaDraftId,
+    ]);
+
+  useEffect(() => {
+    onBeforeCloseChange?.("step2", autoSaveDocenteEInstitucion);
+    onPersistChange?.(autoSaveDocenteEInstitucion);
     return () => {
       onBeforeCloseChange?.("step2", null);
       onPersistChange?.(null);
     };
-  }, [handleBeforeClose, onBeforeCloseChange, onPersistChange]);
+  }, [autoSaveDocenteEInstitucion, onBeforeCloseChange, onPersistChange]);
 
   const handleNavigate = useCallback(
     async (direction) => {
+      await autoSaveDocenteEInstitucion(direction);
+
       if (direction === "next") {
         if (hasStartedInstitution() && !hasInstitutionRequiredFields()) {
           toast.info(
             "No se puede registrar la institución porque faltan datos obligatorios (nombre, departamento, provincia y distrito)."
           );
-          return;
         }
         onNext?.();
         return;
@@ -659,7 +772,13 @@ export function RegistrarVentas2({
         onPrevious?.();
       }
     },
-    [hasInstitutionRequiredFields, hasStartedInstitution, onNext, onPrevious]
+    [
+      autoSaveDocenteEInstitucion,
+      hasInstitutionRequiredFields,
+      hasStartedInstitution,
+      onNext,
+      onPrevious,
+    ]
   );
 
   if (!isOpen) {

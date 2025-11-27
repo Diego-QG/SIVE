@@ -63,7 +63,6 @@ export function RegistrarVentas3({
     contenidos,
     materiales,
     resumenVenta,
-    totalResumen,
     selectedNivel,
     selectedSubnivel,
     selectedContenido,
@@ -91,6 +90,28 @@ export function RegistrarVentas3({
   } = useRegistrarVentasStore();
 
   const isBusy = isClosing || isConfirming;
+
+  const totalBruto = useMemo(
+    () =>
+      resumenVenta.reduce(
+        (sum, item) =>
+          sum +
+            (item?.subtotal ??
+              (item?.precioUnitario ?? item?.precio ?? 0) * (item?.cantidad ?? 1)),
+        0
+      ),
+    [resumenVenta]
+  );
+
+  const totalDescuento = useMemo(
+    () => resumenVenta.reduce((sum, item) => sum + (item?.descuento ?? 0), 0),
+    [resumenVenta]
+  );
+
+  const totalNeto = useMemo(
+    () => Math.max(totalBruto - totalDescuento, 0),
+    [totalBruto, totalDescuento]
+  );
 
   useEffect(() => {
     if (!state) {
@@ -318,7 +339,9 @@ export function RegistrarVentas3({
         <RegistroVentaStepper currentStep={3} />
 
         <Body>
-          <SelectorGrid>
+          <SelectorsPanel>
+            <SelectorsCard>
+              <SelectorGrid>
             <SelectorColumn>
               <span>Seleccionar nivel</span>
               <SelectorButton
@@ -388,54 +411,73 @@ export function RegistrarVentas3({
                 {itemsLabel}
               </SelectorButton>
               {openDropdown === "items" && (
-                <ItemsDropdown $placement={dropdownPlacement.items}>
-              {isLoadingMateriales ? (
-                <Spinner />
-              ) : materiales.length === 0 ? (
-                <EmptyState>Sin materiales para los filtros seleccionados.</EmptyState>
-              ) : (
-                <ul>
-                  {materiales.map((material) => {
-                    const isChecked = selectedItems.includes(material.id);
-                    return (
-                      <li key={material.id}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleItem(material.id)}
-                          />
-                          <div className="info">
-                            <span className="label">{material.label}</span>
-                            <small>S/{material.precio.toFixed(2)}</small>
-                          </div>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <button
-                type="button"
-                className="add-btn"
-                onClick={handleAgregarItems}
-                disabled={isSavingItems || isBusy}
-              >
-                {isSavingItems ? <Spinner /> : <IconAgregar />}
-                <span>Agregar</span>
-              </button>
-            </ItemsDropdown>
+                <ItemsDropdown
+                  ref={itemsTriggerRef}
+                  $placement={dropdownPlacement.items}
+                >
+                  {isLoadingMateriales ? (
+                    <div className="empty">
+                      <Spinner />
+                      <small>Cargando items...</small>
+                    </div>
+                  ) : materiales.length === 0 ? (
+                    <EmptyState>Sin materiales para los filtros seleccionados.</EmptyState>
+                  ) : (
+                    <ul>
+                      {materiales.map((material) => {
+                        const isChecked = selectedItems.includes(material.id);
+                        return (
+                          <li key={material.id}>
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleItem(material.id)}
+                              />
+                              <div className="info">
+                                <span className="label">{material.label}</span>
+                                <small>S/{material.precio.toFixed(2)}</small>
+                              </div>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  <button
+                    type="button"
+                    className="add-btn"
+                    onClick={handleAgregarItems}
+                    disabled={isSavingItems || isBusy}
+                  >
+                    {isSavingItems ? <Spinner /> : <IconAgregar />}
+                    <span>Agregar</span>
+                  </button>
+                </ItemsDropdown>
               )}
             </SelectorColumn>
-          </SelectorGrid>
+              </SelectorGrid>
+            </SelectorsCard>
+          </SelectorsPanel>
 
-          <ResumenCard>
+          <ResumenWrapper>
+            <ResumenCard>
             <header>
               <div>
                 <h4>Resumen de venta</h4>
                 <p>Los montos se actualizan al agregar o quitar items.</p>
               </div>
+              <GhostButton type="button" disabled>
+                Aplicar cupón
+              </GhostButton>
             </header>
+            <ResumenHeaderRow>
+              <span>Detalle</span>
+              <span className="center">Cantidad</span>
+              <span className="center">Precio unitario</span>
+              <span className="end">Subtotal</span>
+              <span className="actions" aria-hidden />
+            </ResumenHeaderRow>
             <ul>
               {isLoadingResumen ? (
                 <li className="empty">
@@ -448,29 +490,44 @@ export function RegistrarVentas3({
               ) : (
                 resumenVenta.map((item) => (
                   <li key={item.id}>
-                    <div>
+                    <div className="item-title">
                       <strong>{item.nombre}</strong>
-                    </div>
-                    <div className="price-area">
-                      <b>S/{item.precio.toFixed(2)}</b>
-                        <RemoveButton type="button" onClick={() => handleEliminarItem(item.id)} disabled={isBusy}>
-                          <IconCerrar aria-hidden />
-                        </RemoveButton>
+                      <div className="item-meta">
+                        {item.nivel && <small>{item.nivel}</small>}
+                        {item.subnivel && <small>{item.subnivel}</small>}
+                        {item.curso && <small>{item.curso}</small>}
                       </div>
+                    </div>
+                    <div className="center">x{item.cantidad ?? 1}</div>
+                    <div className="center">S/{(item.precioUnitario ?? item.precio).toFixed(2)}</div>
+                    <div className="end">S/{(item.subtotal ?? item.precio).toFixed(2)}</div>
+                    <RemoveButton
+                      type="button"
+                      onClick={() => handleEliminarItem(item.id)}
+                      disabled={isBusy}
+                    >
+                      <IconCerrar aria-hidden />
+                    </RemoveButton>
                   </li>
                 ))
               )}
             </ul>
-            <footer>
+            <Totals>
               <div>
-                <small>Total de la venta</small>
-                <h3>S/{totalResumen.toFixed(2)}</h3>
+                <span>Total bruto</span>
+                <b>S/{totalBruto.toFixed(2)}</b>
               </div>
-              <GhostButton type="button" disabled>
-                Aplicar cupón
-              </GhostButton>
-            </footer>
-          </ResumenCard>
+              <div>
+                <span>Total descuento</span>
+                <b>S/{totalDescuento.toFixed(2)}</b>
+              </div>
+              <div className="neto">
+                <span>Total neto</span>
+                <strong>S/{totalNeto.toFixed(2)}</strong>
+              </div>
+            </Totals>
+            </ResumenCard>
+          </ResumenWrapper>
         </Body>
 
         <Footer>
@@ -505,8 +562,8 @@ const Header = styled(ModalHeader)``;
 
 const Body = styled.div`
   display: grid;
-  grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
-  gap: clamp(14px, 1.6vw, 22px);
+  grid-template-columns: minmax(260px, 0.36fr) minmax(460px, 0.64fr);
+  gap: clamp(16px, 2vw, 26px);
   align-items: start;
   flex: 1;
   min-height: 0;
@@ -514,7 +571,7 @@ const Body = styled.div`
   overflow-x: hidden;
   padding-right: 6px;
 
-  @media (max-width: 1240px) {
+  @media (max-width: 1080px) {
     grid-template-columns: 1fr;
   }
 
@@ -529,6 +586,26 @@ const Body = styled.div`
   &::-webkit-scrollbar-thumb {
     background: rgba(${({ theme }) => theme.textRgba}, 0.2);
     border-radius: 999px;
+  }
+`;
+
+const SelectorsPanel = styled.section`
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+`;
+
+const SelectorsCard = styled.div`
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+  background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+  border-radius: 18px;
+  padding: clamp(12px, 1.5vw, 18px);
+  width: 100%;
+  max-width: 340px;
+  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.08);
+
+  @media (max-width: 1080px) {
+    max-width: none;
   }
 `;
 
@@ -549,6 +626,10 @@ const SelectorColumn = styled.div`
   @media (min-width: 960px) {
     max-width: 250px;
   }
+`;
+
+const ResumenWrapper = styled.div`
+  min-width: 0;
 `;
 
 const SelectorButton = styled.button`
@@ -578,12 +659,14 @@ const ResumenCard = styled.section`
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
 
   header {
     display: flex;
-    flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
 
     p {
       margin: 4px 0 0;
@@ -598,22 +681,54 @@ const ResumenCard = styled.section`
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-height: 320px;
+    gap: 12px;
+    max-height: 340px;
     overflow-y: auto;
     padding-right: 4px;
+    min-width: 0;
 
     li {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1.6fr 0.5fr 0.7fr 0.7fr auto;
+      gap: 10px;
       align-items: center;
-      padding-bottom: 10px;
+      padding-bottom: 12px;
       border-bottom: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.15);
 
-      .price-area {
+      @media (max-width: 720px) {
+        grid-template-columns: 1fr 0.6fr;
+        grid-template-rows: auto auto;
+        row-gap: 8px;
+      }
+
+      .item-title {
         display: flex;
-        align-items: center;
-        gap: 8px;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .item-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+
+        small {
+          background: rgba(${({ theme }) => theme.textRgba}, 0.06);
+          padding: 4px 8px;
+          border-radius: 10px;
+          font-weight: 600;
+        }
+      }
+
+      .center {
+        text-align: center;
+        font-weight: 700;
+      }
+
+      .end {
+        text-align: right;
+        font-weight: 700;
       }
 
       strong {
@@ -623,6 +738,18 @@ const ResumenCard = styled.section`
       span {
         color: rgba(${({ theme }) => theme.textRgba}, 0.65);
       }
+
+      @media (max-width: 720px) {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        .item-title {
+          grid-column: 1 / -1;
+        }
+
+        .end {
+          text-align: right;
+        }
+      }
     }
 
     .empty {
@@ -630,6 +757,8 @@ const ResumenCard = styled.section`
       border-bottom: none;
       padding: 20px;
       color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+      display: grid;
+      place-items: center;
     }
   }
 
@@ -646,6 +775,61 @@ const ResumenCard = styled.section`
       font-size: 1.2rem;
       line-height: 1.3;
     }
+  }
+`;
+
+const ResumenHeaderRow = styled.div`
+  display: grid;
+  grid-template-columns: 1.6fr 0.5fr 0.7fr 0.7fr auto;
+  gap: 10px;
+  padding: 0 6px;
+  font-weight: 700;
+  color: rgba(${({ theme }) => theme.textRgba}, 0.55);
+  align-items: center;
+
+  .center {
+    text-align: center;
+  }
+
+  .end {
+    text-align: right;
+  }
+
+  @media (max-width: 720px) {
+    display: none;
+  }
+`;
+
+const Totals = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: start;
+
+  div {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.04);
+    border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.12);
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  span {
+    color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+    font-weight: 600;
+  }
+
+  b,
+  strong {
+    font-weight: 800;
+  }
+
+  .neto {
+    background: rgba(23, 224, 192, 0.12);
+    border-color: rgba(23, 224, 192, 0.35);
   }
 `;
 
