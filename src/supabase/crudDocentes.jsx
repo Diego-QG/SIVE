@@ -21,7 +21,7 @@ const handleError = (error) => {
 };
 
 export async function obtenerDocentePorVenta(p = {}) {
-  const ventaId = p?._id_venta ?? p?.id_venta ?? p?.id ?? null;
+  const ventaId = p?._id_venta ?? null;
 
   if (!ventaId) {
     return null;
@@ -58,7 +58,7 @@ export async function obtenerDocentePorVenta(p = {}) {
 
 export async function buscarDocentePorTelefono(p = {}) {
   const telefono = p?.telefono ?? null;
-  const empresaId = p?._id_empresa ?? p?.id_empresa ?? null;
+  const empresaId = p?._id_empresa ?? null;
 
   if (!telefono) {
     return null;
@@ -85,14 +85,14 @@ export async function buscarDocentePorTelefono(p = {}) {
 }
 
 export async function guardarDocenteBorrador(p = {}) {
-  const ventaId = p?._id_venta ?? p?.id_venta ?? null;
+  const ventaId = p?._id_venta ?? null;
 
   if (!ventaId) {
     return null;
   }
 
   const shouldPersist = p?.shouldPersist !== false;
-  const docenteId = p?._id_docente ?? p?.id_docente ?? null;
+  const docenteId = p?._id_docente ?? null;
 
   if (!shouldPersist) {
     const { error } = await supabase
@@ -128,11 +128,7 @@ export async function guardarDocenteBorrador(p = {}) {
         return null;
       }
 
-      const institucionId =
-        p?._id_institucion ??
-        p?.id_institucion ??
-        docenteData?.id_institucion ??
-        null;
+      const institucionId = p?._id_institucion ?? docenteData?.id_institucion ?? null;
 
       if (institucionId) {
         await eliminarInstitucion({ id: institucionId });
@@ -155,7 +151,7 @@ export async function guardarDocenteBorrador(p = {}) {
 
   const docentePayload = {
     id_empresa: empresaId,
-    id_institucion: p?._id_institucion ?? p?.id_institucion ?? null,
+    id_institucion: p?._id_institucion ?? null,
     id_pais: p?._id_pais ?? null,
     nro_doc: p?.nro_doc ? Number(p.nro_doc) : null,
     telefono: p?.telefono ? `${p.telefono}` : null,
@@ -210,7 +206,7 @@ export async function guardarDocenteBorrador(p = {}) {
 }
 
 export async function crearDocenteConInstitucionBorrador(p = {}) {
-  const ventaId = p?._id_venta ?? p?.id_venta ?? null;
+  const ventaId = p?._id_venta ?? null;
   const empresaId = p?._id_empresa ?? null;
   const paisId = p?._id_pais ?? null;
 

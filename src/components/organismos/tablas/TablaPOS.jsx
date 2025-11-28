@@ -5,7 +5,6 @@ import {
   ContentAccionesTabla,
   useVentasStore,
   useUsuariosStore,
-  obtenerVentaDetalle,
 } from "../../../index";
 import { v } from "../../../styles/variables";
 import { useState } from "react";
@@ -21,10 +20,10 @@ import { FaArrowsAltV } from "react-icons/fa";
 import { obtenerEstilosEstado } from "../../../utils/posEstadosConfig";
 import Swal from "sweetalert2";
 import {
-  DetalleVentaModal,
+  DetalleVenta,
   obtenerPartesFecha,
   mostrarConGuion,
-} from "./DetalleVentaModal";
+} from "../POSDesign/DetalleVenta";
 
 
 const obtenerIdVenta = (venta) => {
@@ -66,7 +65,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   const [detalleLoading, setDetalleLoading] = useState(false);
   const [detalleError, setDetalleError] = useState(null);
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
-  const { eliminarborrador } = useVentasStore();
+  const { eliminarborrador, obtenerventadetalle } = useVentasStore();
   const { datausuarios } = useUsuariosStore();
   const canEditBorrador = typeof onEditarBorrador === "function";
 
@@ -125,7 +124,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
     setDetalleError(null);
     setDetalleVenta(null);
 
-    const detalle = await obtenerVentaDetalle({ _id_venta: ventaId });
+    const detalle = await obtenerventadetalle({ _id_venta: ventaId });
 
     if (!detalle) {
       setDetalleError("No se encontraron datos para esta venta.");
@@ -320,7 +319,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   });
   return (
     <>
-      <DetalleVentaModal
+      <DetalleVenta
         open={detalleVisible}
         onClose={cerrarDetalleVenta}
         detalle={detalleVenta}

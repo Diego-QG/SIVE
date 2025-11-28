@@ -48,7 +48,7 @@ export const mostrarConGuion = (valor) => {
   return valor;
 };
 
-export function DetalleVentaModal({ open, onClose, detalle, loading, error, ventaBase }) {
+export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase }) {
   const resumenVenta = useMemo(() => {
     if (!detalle && !ventaBase) return [];
 

@@ -58,7 +58,7 @@ export async function crearInstitucionVacia(p = {}) {
 }
 
 export async function obtenerInstitucionPorVenta(p = {}) {
-  const ventaId = p?._id_venta ?? p?.id_venta ?? p?.id ?? null;
+  const ventaId = p?._id_venta ?? null;
 
   if (!ventaId) {
     console.warn("[crudInstituciones] obtenerInstitucionPorVenta sin ventaId");
@@ -120,7 +120,7 @@ export async function obtenerInstitucionPorVenta(p = {}) {
 
 export async function guardarInstitucionBorrador(p = {}) {
   const shouldPersist = p?.shouldPersist !== false;
-  const institucionId = p?._id_institucion ?? p?.id_institucion ?? null;
+  const institucionId = p?._id_institucion ?? null;
 
   if (!shouldPersist) {
     if (!institucionId) {
@@ -182,7 +182,7 @@ export async function guardarInstitucionBorrador(p = {}) {
 }
 
 export async function eliminarInstitucion(p = {}) {
-  const institucionId = p?.id ?? p?._id ?? null;
+  const institucionId = p?.id ?? null;
 
   if (!institucionId) {
     console.warn("[crudInstituciones] eliminarInstitucion sin id");

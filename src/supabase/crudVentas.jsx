@@ -173,8 +173,7 @@ export async function insertarEditorialEnVenta(p) {
 }
 
 export async function obtenerVentaDetalle(p = {}) {
-  const ventaId =
-    p?._id_venta ?? p?.id_venta ?? p?.id ?? p?.idVenta ?? p?.venta_id ?? null;
+  const ventaId = p?._id_venta ?? null;
 
   if (!ventaId) {
     return null;
@@ -197,8 +196,7 @@ export async function obtenerVentaDetalle(p = {}) {
 }
 
 export async function obtenerVentaBorradorPorId(p = {}) {
-  const idVenta = p?._id_venta ?? p?.id_venta ?? p?.id ?? p?.idVenta ?? null;
-
+  const idVenta = p?._id_venta ?? null;
   if (!idVenta) {
     return null;
   }

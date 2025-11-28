@@ -3,6 +3,7 @@ import {
     eliminarBorrador,
     insertarBorrador,
     insertarEditorialEnVenta,
+    obtenerVentaDetalle,
     mostrarVentasPorUsuario,
 } from "../index";
 
@@ -39,6 +40,9 @@ export const useVentasStore = create((set, get) => ({
             await get().refrescarVentas();
         }
         return response;
+    },
+    obtenerventadetalle: async (p) => {
+        return obtenerVentaDetalle(p);
     },
     mostrarventasporusuario: async (p) => {
         const response = await mostrarVentasPorUsuario(p);
