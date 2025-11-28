@@ -83,6 +83,15 @@ export function RegistrarVentas2({
   const [isDocenteLocked, setIsDocenteLocked] = useState(false);
   const lastSavedSnapshotRef = useRef(null);
 
+  const hasDocenteIdentifyingData = useMemo(
+    () =>
+      Boolean(nombres.trim()) ||
+      Boolean(apellidoPaterno.trim()) ||
+      Boolean(apellidoMaterno.trim()) ||
+      Boolean(dniValue.trim()),
+    [apellidoMaterno, apellidoPaterno, dniValue, nombres]
+  );
+
   const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? null;
   const dniDigitsRequired = paisSeleccionado?.digitos_documento ?? null;
   const phoneCodeLabel = paisSeleccionado?.cod_llamada ?? "+51";
@@ -502,6 +511,12 @@ export function RegistrarVentas2({
       return false;
     }
 
+    const isNewDocente = !docentedraft?.id && phoneLookupState === "not-found";
+
+    if (isNewDocente && !hasDocenteIdentifyingData) {
+      return false;
+    }
+
     const payload = {
       _id_venta: ventaDraftId,
       _id_docente: docentedraft?.id ?? null,
@@ -533,11 +548,13 @@ export function RegistrarVentas2({
     docentedraft?.id_pais,
     empresaId,
     guardardocenteborrador,
+    hasDocenteIdentifyingData,
     institucionDraft?.id,
     isPhoneReady,
     nombres,
     onVentaTieneDatosChange,
     paisSeleccionado?.id,
+    phoneLookupState,
     phoneNumber,
     ventaDraftId,
   ]);
@@ -546,8 +563,6 @@ export function RegistrarVentas2({
     if (!isPhoneReady || !empresaId || !ventaDraftId) {
       return null;
     }
-
-    setPhoneLookupState("searching");
 
     try {
       const existingDocente = await buscarDocentePorTelefono({
@@ -585,7 +600,9 @@ export function RegistrarVentas2({
 
       setPhoneLookupState("not-found");
       setIsDocenteLocked(false);
-      await persistDocenteDraft();
+      if (hasDocenteIdentifyingData) {
+        await persistDocenteDraft();
+      }
       return null;
     } catch (error) {
       console.error("[RegistrarVentas2] Error buscando docente", error);
@@ -600,6 +617,7 @@ export function RegistrarVentas2({
     isPhoneReady,
     paisSeleccionado?.id,
     persistDocenteDraft,
+    hasDocenteIdentifyingData,
     phoneNumber,
     docentedraft?.id_institucion,
     docentedraft?.id_pais,
@@ -634,16 +652,30 @@ export function RegistrarVentas2({
   };
 
   const handlePhoneChange = (event) => {
+    if (isDocenteLocked || docentedraft?.id) {
+      limpiardocentedraft();
+      updateDocenteField("dniValue", "");
+      updateDocenteField("nombres", "");
+      updateDocenteField("apellidoPaterno", "");
+      updateDocenteField("apellidoMaterno", "");
+      resetInstitutionForm();
+      setIsDocenteLocked(false);
+      setIsDniReady(false);
+    }
+
     const rawValue = event.target.value ?? "";
     const digitsOnly = rawValue.replace(/\D/g, "");
     const maxDigits = phoneDigitsRequired ?? 15;
     updateDocenteField("phoneNumber", digitsOnly.slice(0, maxDigits));
     setIsPhoneReady(false);
     setPhoneLookupState("idle");
-    setIsDocenteLocked(false);
   };
 
   const handlePhoneBlur = async () => {
+    if (isDocenteLocked) {
+      return;
+    }
+
     if (!phoneNumber) {
       setIsPhoneReady(false);
       setPhoneLookupState("idle");
@@ -660,8 +692,31 @@ export function RegistrarVentas2({
     }
 
     setIsPhoneReady(true);
-    await lookupDocenteByPhone();
   };
+
+  useEffect(() => {
+    if (!state || !isPhoneReady || phoneLookupState !== "idle") {
+      return;
+    }
+
+    if (!empresaId || !ventaDraftId) {
+      return;
+    }
+
+    const runLookup = async () => {
+      setPhoneLookupState("searching");
+      await lookupDocenteByPhone();
+    };
+
+    runLookup();
+  }, [
+    empresaId,
+    isPhoneReady,
+    lookupDocenteByPhone,
+    phoneLookupState,
+    state,
+    ventaDraftId,
+  ]);
 
   const handleDniChange = (event) => {
     const rawValue = event.target.value ?? "";
@@ -980,7 +1035,14 @@ export function RegistrarVentas2({
               <PhoneCodeSelectorSlot>
                 <Selector
                   state={openDropdown === "phoneCode"}
-                  funcion={() => toggleDropdown("phoneCode")}
+                  funcion={() =>
+                    toggleDropdown(
+                      "phoneCode",
+                      isDocenteLocked
+                        ? "No se puede cambiar el teléfono de un docente existente."
+                        : null
+                    )
+                  }
                   texto1=""
                   texto2={phoneCodeLabel}
                   color={SELECTOR_BORDER_COLOR}
@@ -1001,23 +1063,27 @@ export function RegistrarVentas2({
               </PhoneCodeSelectorSlot>
               <PhoneNumberField
                 type="tel"
-                placeholder="Número sin código"
+                placeholder="Número de teléfono"
                 value={phoneNumber}
                 onChange={handlePhoneChange}
                 onBlur={handlePhoneBlur}
                 maxLength={phoneDigitsRequired ?? 15}
                 inputMode="numeric"
                 autoComplete="tel"
+                disabled={isDocenteLocked}
               />
+              {phoneLookupMessage && (
+                <LookupStatus $status={phoneLookupState}>
+                  {phoneLookupState === "searching" && <InlineSpinner />}
+                  <span>{phoneLookupMessage}</span>
+                </LookupStatus>
+              )}
             </PhoneInputRow>
-            <FieldStatus $status={isPhoneReady ? "success" : "idle"}>
-              {phoneStatusMessage}
-            </FieldStatus>
-            {phoneLookupMessage && (
-              <LookupStatus $status={phoneLookupState}>
-                {phoneLookupMessage}
-              </LookupStatus>
-            )}
+            <PhoneStatusRow>
+              <FieldStatus $status={isPhoneReady ? "success" : "idle"}>
+                {phoneStatusMessage}
+              </FieldStatus>
+            </PhoneStatusRow>
           </InputGroup>
 
           <InputRow>
@@ -1422,11 +1488,19 @@ const PhoneCodeSelectorSlot = styled(ContainerSelector)`
 `;
 
 const PhoneNumberField = styled.input`
-  flex: 1 1 200px;
-  max-width: 280px;
+  flex: 0 1 220px;
+  max-width: 240px;
+  min-width: 180px;
   font-size: 1rem;
   padding: 12px 14px;
   line-height: 1.4;
+`;
+
+const PhoneStatusRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 `;
 
 const InputField = styled.input`
@@ -1450,6 +1524,18 @@ const LookupStatus = styled(FieldStatus)`
       : $status === "not-found"
         ? "#d93025"
         : "rgba(0, 0, 0, 0.55)"};
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+`;
+
+const InlineSpinner = styled(Spinner)`
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  border-color: rgba(0, 0, 0, 0.1);
+  border-top-color: ${({ theme }) => `rgba(${theme.textRgba}, 0.9)`};
 `;
 
 const Footer = styled(ModalFooter)``;
