@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
+import { toast } from "sonner";
 import { v } from "../../../styles/variables";
 import { RegistroVentaStepper } from "../../moleculas/RegistroVentaStepper";
 import {
@@ -152,6 +153,20 @@ export function RegistrarVentas1({
   };
 
   const closeFocusedVoucher = () => setFocusedVoucher(null);
+
+  const handleNext = () => {
+    if (!hasSelectedEditorial) {
+      toast.warning("Debes seleccionar una editorial para continuar.");
+      return;
+    }
+
+    if (!displayedVouchers.length) {
+      toast.warning("Debes subir al menos un comprobante (voucher) para continuar.");
+      return;
+    }
+
+    onNext?.();
+  };
 
   const handleBeforeClose = useCallback(async () => {
     const shouldCreateDraft = !ventaDraftId && vouchers.length > 0;
@@ -438,7 +453,7 @@ export function RegistrarVentas1({
         )}
 
         <Footer>
-          <PrimaryButton type="button" onClick={onNext} disabled={isClosing}>
+          <PrimaryButton type="button" onClick={handleNext} disabled={isClosing}>
             Siguiente <v.icononext />
           </PrimaryButton>
         </Footer>
