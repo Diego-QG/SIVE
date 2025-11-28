@@ -873,6 +873,13 @@ export function RegistrarVentas2({
 
       const savedDocente = await persistDocenteDraft();
 
+      if (reason === "next") {
+        if (!savedDocente && !docentedraft?.id) {
+          toast.warning("Debes asociar un docente a la venta.");
+          return false;
+        }
+      }
+
       if (!shouldPersistInstitution) {
         return true;
       }
@@ -984,7 +991,10 @@ export function RegistrarVentas2({
 
   const handleNavigate = useCallback(
     async (direction) => {
-      await autoSaveDocenteEInstitucion(direction);
+      const success = await autoSaveDocenteEInstitucion(direction);
+      if (!success) {
+        return;
+      }
 
       if (direction === "next") {
         if (hasStartedInstitution() && !hasInstitutionRequiredFields()) {
