@@ -554,8 +554,6 @@ export function RegistrarVentas3({
 const Modal = styled(ModalContainer)`
   width: min(1100px, 88vw);
   max-width: 1100px;
-  height: min(860px, 90vh);
-  max-height: min(860px, 90vh);
 `;
 
 const Header = styled(ModalHeader)``;

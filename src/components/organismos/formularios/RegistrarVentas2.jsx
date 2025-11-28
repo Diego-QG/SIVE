@@ -83,6 +83,15 @@ export function RegistrarVentas2({
   const [isDocenteLocked, setIsDocenteLocked] = useState(false);
   const lastSavedSnapshotRef = useRef(null);
 
+  const {
+    phoneNumber = "",
+    dniValue = "",
+    nombres = "",
+    apellidoPaterno = "",
+    apellidoMaterno = "",
+  } = docenteForm ?? {};
+  const { codigoIe = "", nombreIe = "" } = institucionForm ?? {};
+
   const hasDocenteIdentifyingData = useMemo(
     () =>
       Boolean(nombres.trim()) ||
@@ -95,14 +104,6 @@ export function RegistrarVentas2({
   const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? null;
   const dniDigitsRequired = paisSeleccionado?.digitos_documento ?? null;
   const phoneCodeLabel = paisSeleccionado?.cod_llamada ?? "+51";
-  const {
-    phoneNumber = "",
-    dniValue = "",
-    nombres = "",
-    apellidoPaterno = "",
-    apellidoMaterno = "",
-  } = docenteForm ?? {};
-  const { codigoIe = "", nombreIe = "" } = institucionForm ?? {};
 
   const empresaId = useMemo(
     () => dataempresa?.id ?? datausuarios?.id_empresa ?? null,
@@ -651,6 +652,32 @@ export function RegistrarVentas2({
     setOpenDropdown((prev) => (prev === key ? null : key));
   };
 
+  const handleResetForm = useCallback(() => {
+    setOpenDropdown(null);
+    updateDocenteField("phoneNumber", "");
+    updateDocenteField("dniValue", "");
+    updateDocenteField("nombres", "");
+    updateDocenteField("apellidoPaterno", "");
+    updateDocenteField("apellidoMaterno", "");
+    updateInstitucionField("codigoIe", "");
+    updateInstitucionField("nombreIe", "");
+    setIsPhoneReady(false);
+    setIsDniReady(false);
+    setPhoneLookupState("idle");
+    setIsDocenteLocked(false);
+    setHasHydratedDocente(false);
+    setHasHydratedInstitucion(false);
+    limpiardocentedraft();
+    limpiarinstituciondraft();
+    resetInstitutionForm();
+  }, [
+    limpiardocentedraft,
+    limpiarinstituciondraft,
+    resetInstitutionForm,
+    updateDocenteField,
+    updateInstitucionField,
+  ]);
+
   const handlePhoneChange = (event) => {
     if (isDocenteLocked || docentedraft?.id) {
       limpiardocentedraft();
@@ -1072,6 +1099,9 @@ export function RegistrarVentas2({
                 autoComplete="tel"
                 disabled={isDocenteLocked}
               />
+              <ResetButton type="button" onClick={handleResetForm}>
+                Limpiar
+              </ResetButton>
               {phoneLookupMessage && (
                 <LookupStatus $status={phoneLookupState}>
                   {phoneLookupState === "searching" && <InlineSpinner />}
@@ -1475,10 +1505,16 @@ const LocationDropdownWrapper = styled(DropdownWrapper)`
 `;
 
 const PhoneInputRow = styled.div`
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: auto minmax(140px, 190px) auto minmax(200px, 1fr);
+  align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
 `;
 
 const PhoneCodeSelectorSlot = styled(ContainerSelector)`
@@ -1488,12 +1524,38 @@ const PhoneCodeSelectorSlot = styled(ContainerSelector)`
 `;
 
 const PhoneNumberField = styled.input`
-  flex: 0 1 220px;
-  max-width: 240px;
-  min-width: 180px;
+  width: 100%;
+  max-width: 190px;
+  min-width: 140px;
   font-size: 1rem;
   padding: 12px 14px;
   line-height: 1.4;
+`;
+
+const ResetButton = styled.button`
+  align-self: center;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #f6f8fb;
+  color: #1f2933;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #e7ecf5;
+    color: #111827;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    justify-self: start;
+  }
 `;
 
 const PhoneStatusRow = styled.div`
@@ -1522,12 +1584,16 @@ const LookupStatus = styled(FieldStatus)`
     $status === "found"
       ? "#0f9d58"
       : $status === "not-found"
-        ? "#d93025"
+        ? "#111827"
         : "rgba(0, 0, 0, 0.55)"};
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
   gap: 8px;
-  margin-left: auto;
+  justify-self: start;
+  min-width: 220px;
+  max-width: 100%;
+  line-height: 1.4;
+  word-break: break-word;
 `;
 
 const InlineSpinner = styled(Spinner)`
