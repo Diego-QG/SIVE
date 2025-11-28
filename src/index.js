@@ -33,6 +33,7 @@ export * from './components/organismos/sidebar/Sidebar';
 export * from './components/organismos/tablas/AccionesTabla';
 export * from './components/organismos/tablas/ContentAccionesTabla';
 export * from './components/organismos/tablas/ContentEstadosTabla';
+export * from './components/organismos/tablas/DetalleVentaModal';
 export * from './components/organismos/tablas/EstadosTabla';
 export * from './components/organismos/tablas/Paginacion';
 export * from './components/organismos/tablas/TablaCursos';

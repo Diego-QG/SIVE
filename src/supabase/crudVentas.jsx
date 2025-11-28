@@ -172,6 +172,30 @@ export async function insertarEditorialEnVenta(p) {
   return true;
 }
 
+export async function obtenerVentaDetalle(p = {}) {
+  const ventaId =
+    p?._id_venta ?? p?.id_venta ?? p?.id ?? p?.idVenta ?? p?.venta_id ?? null;
+
+  if (!ventaId) {
+    return null;
+  }
+
+  const { data, error } = await supabase.rpc("fn_get_venta_detalle", {
+    _id_venta: ventaId,
+  });
+
+  if (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: error.message,
+    });
+    return null;
+  }
+
+  return data ?? null;
+}
+
 export async function obtenerVentaBorradorPorId(p = {}) {
   const idVenta = p?._id_venta ?? p?.id_venta ?? p?.id ?? p?.idVenta ?? null;
 

@@ -5,6 +5,7 @@ import {
   ContentAccionesTabla,
   useVentasStore,
   useUsuariosStore,
+  obtenerVentaDetalle,
 } from "../../../index";
 import { v } from "../../../styles/variables";
 import { useState } from "react";
@@ -19,51 +20,12 @@ import {
 import { FaArrowsAltV } from "react-icons/fa";
 import { obtenerEstilosEstado } from "../../../utils/posEstadosConfig";
 import Swal from "sweetalert2";
+import {
+  DetalleVentaModal,
+  obtenerPartesFecha,
+  mostrarConGuion,
+} from "./DetalleVentaModal";
 
-const obtenerPartesFecha = (valor) => {
-  if (!valor) {
-    return { fecha: "--/--/--", hora: "--:--" };
-  }
-
-  if (typeof valor === "string") {
-    const [fechaParte, tiempoParte] = valor.trim().split(/\s+/);
-    if (fechaParte && fechaParte.includes("/")) {
-      return {
-        fecha: fechaParte,
-        hora: tiempoParte ? tiempoParte.slice(0, 5) : "--:--",
-      };
-    }
-
-    const parsed = new Date(valor);
-    if (!Number.isNaN(parsed.getTime())) {
-      const dia = String(parsed.getDate()).padStart(2, "0");
-      const mes = String(parsed.getMonth() + 1).padStart(2, "0");
-      const anio = String(parsed.getFullYear()).slice(-2);
-      const horas = String(parsed.getHours()).padStart(2, "0");
-      const minutos = String(parsed.getMinutes()).padStart(2, "0");
-      return { fecha: `${dia}/${mes}/${anio}`, hora: `${horas}:${minutos}` };
-    }
-  }
-
-  const parsed = new Date(valor);
-  if (!Number.isNaN(parsed.getTime())) {
-    const dia = String(parsed.getDate()).padStart(2, "0");
-    const mes = String(parsed.getMonth() + 1).padStart(2, "0");
-    const anio = String(parsed.getFullYear()).slice(-2);
-    const horas = String(parsed.getHours()).padStart(2, "0");
-    const minutos = String(parsed.getMinutes()).padStart(2, "0");
-    return { fecha: `${dia}/${mes}/${anio}`, hora: `${horas}:${minutos}` };
-  }
-
-  return { fecha: "--/--/--", hora: "--:--" };
-};
-
-const mostrarConGuion = (valor) => {
-  if (valor === null || valor === undefined || valor === "" || valor.trim() === "") {
-    return "-";
-  }
-  return valor;
-};
 
 const obtenerIdVenta = (venta) => {
   if (!venta || typeof venta !== "object") {
@@ -99,6 +61,11 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   const tableData = Array.isArray(data) ? data : [];
   const [pagina, setPagina] = useState(1);
   const [columnFilters, setColumnFilters] = useState([]);
+  const [detalleVisible, setDetalleVisible] = useState(false);
+  const [detalleVenta, setDetalleVenta] = useState(null);
+  const [detalleLoading, setDetalleLoading] = useState(false);
+  const [detalleError, setDetalleError] = useState(null);
+  const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
   const { eliminarborrador } = useVentasStore();
   const { datausuarios } = useUsuariosStore();
   const canEditBorrador = typeof onEditarBorrador === "function";
@@ -138,6 +105,42 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
       const eliminado = await eliminarborrador(payload);
 
     });
+  };
+
+  const abrirDetalleVenta = async (venta) => {
+    const ventaId = obtenerIdVenta(venta);
+
+    if (!ventaId) {
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "No se pudo abrir el detalle porque falta el identificador de la venta.",
+      });
+      return;
+    }
+
+    setVentaSeleccionada(venta ?? null);
+    setDetalleVisible(true);
+    setDetalleLoading(true);
+    setDetalleError(null);
+    setDetalleVenta(null);
+
+    const detalle = await obtenerVentaDetalle({ _id_venta: ventaId });
+
+    if (!detalle) {
+      setDetalleError("No se encontraron datos para esta venta.");
+    } else {
+      setDetalleVenta(detalle);
+    }
+
+    setDetalleLoading(false);
+  };
+
+  const cerrarDetalleVenta = () => {
+    setDetalleVisible(false);
+    setDetalleVenta(null);
+    setDetalleError(null);
+    setVentaSeleccionada(null);
   };
 
   const columns = [
@@ -201,6 +204,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
       },
       cell: (info) => {
         const value = info.getValue();
+        const ventaRow = info.row?.original;
         const normalizedEstado = `${
           info.row?.original?.estado_registro ?? ""
         }`
@@ -217,7 +221,8 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
           <ResumenButton
             type="button"
             title={resumenLabel}
-            aria-label={`Seleccionar resumen ${resumenLabel}`}
+            aria-label={`Ver detalles de ${resumenLabel}`}
+            onClick={() => abrirDetalleVenta(ventaRow)}
           >
             {resumenLabel}
           </ResumenButton>
@@ -315,6 +320,14 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   });
   return (
     <>
+      <DetalleVentaModal
+        open={detalleVisible}
+        onClose={cerrarDetalleVenta}
+        detalle={detalleVenta}
+        loading={detalleLoading}
+        error={detalleError}
+        ventaBase={ventaSeleccionada}
+      />
       <Container>
         <TableScrollArea>
           <table className="responsive-table">
