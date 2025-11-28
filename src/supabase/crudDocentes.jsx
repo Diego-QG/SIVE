@@ -56,6 +56,34 @@ export async function obtenerDocentePorVenta(p = {}) {
   return docente ?? null;
 }
 
+export async function buscarDocentePorTelefono(p = {}) {
+  const telefono = p?.telefono ?? null;
+  const empresaId = p?._id_empresa ?? p?.id_empresa ?? null;
+
+  if (!telefono) {
+    return null;
+  }
+
+  let query = supabase
+    .from(tabla)
+    .select(SELECT_COLUMNS)
+    .eq("telefono", `${telefono}`)
+    .limit(1)
+    .maybeSingle();
+
+  if (empresaId) {
+    query = query.eq("id_empresa", empresaId);
+  }
+
+  const { data, error } = await query;
+
+  if (handleError(error)) {
+    return null;
+  }
+
+  return data ?? null;
+}
+
 export async function guardarDocenteBorrador(p = {}) {
   const ventaId = p?._id_venta ?? p?.id_venta ?? null;
 

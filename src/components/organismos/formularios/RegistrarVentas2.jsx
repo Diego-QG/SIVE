@@ -7,6 +7,7 @@ import {
   ContainerSelector,
   ListaDesplegable,
   Selector,
+  buscarDocentePorTelefono,
   useDocentesStore,
   useEmpresaStore,
   useInstitucionesStore,
@@ -78,6 +79,8 @@ export function RegistrarVentas2({
   const [hasHydratedInstitucion, setHasHydratedInstitucion] = useState(false);
   const [isPhoneReady, setIsPhoneReady] = useState(false);
   const [isDniReady, setIsDniReady] = useState(false);
+  const [phoneLookupState, setPhoneLookupState] = useState("idle");
+  const [isDocenteLocked, setIsDocenteLocked] = useState(false);
   const lastSavedSnapshotRef = useRef(null);
 
   const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? null;
@@ -92,6 +95,11 @@ export function RegistrarVentas2({
   } = docenteForm ?? {};
   const { codigoIe = "", nombreIe = "" } = institucionForm ?? {};
 
+  const empresaId = useMemo(
+    () => dataempresa?.id ?? datausuarios?.id_empresa ?? null,
+    [dataempresa?.id, datausuarios?.id_empresa]
+  );
+
   const updateDocenteField = (field, value) => {
     if (typeof setDocenteForm === "function") {
       setDocenteForm((prev) => ({ ...prev, [field]: value }));
@@ -103,8 +111,6 @@ export function RegistrarVentas2({
       setInstitucionForm((prev) => ({ ...prev, [field]: value }));
     }
   };
-
-  const snapshotsAreEqual = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
   const phoneStatusMessage = useMemo(() => {
     if (isPhoneReady) {
@@ -141,6 +147,49 @@ export function RegistrarVentas2({
 
     return `${dniValue.length}/${dniDigitsRequired} dígitos.`;
   }, [dniDigitsRequired, dniValue, isDniReady]);
+
+  const canEditDocenteFields =
+    isPhoneReady && phoneLookupState !== "searching" && !isDocenteLocked;
+  const canEditInstitutionFields =
+    isPhoneReady && phoneLookupState !== "searching" && !isDocenteLocked;
+
+  const phoneLookupMessage = useMemo(() => {
+    if (phoneLookupState === "found") {
+      return "Se encontraron registros. Datos cargados.";
+    }
+
+    if (phoneLookupState === "not-found") {
+      return "No se encontraron registros. Estás registrando un nuevo docente.";
+    }
+
+    if (phoneLookupState === "searching") {
+      return "Buscando docente por teléfono...";
+    }
+
+    return null;
+  }, [phoneLookupState]);
+
+  const institutionGuardMessage = useMemo(
+    () => (!canEditInstitutionFields ? "Primero confirma el número de teléfono." : null),
+    [canEditInstitutionFields]
+  );
+
+  const departamentoGuardMessage = useMemo(
+    () => institutionGuardMessage ?? (paisSeleccionado ? null : "Selecciona un país antes"),
+    [institutionGuardMessage, paisSeleccionado]
+  );
+
+  const provinciaGuardMessage = useMemo(
+    () =>
+      institutionGuardMessage ??
+      (departamentoSeleccionado ? null : "Selecciona un departamento antes"),
+    [departamentoSeleccionado, institutionGuardMessage]
+  );
+
+  const distritoGuardMessage = useMemo(
+    () => institutionGuardMessage ?? (provinciaSeleccionada ? null : "Selecciona una provincia antes"),
+    [institutionGuardMessage, provinciaSeleccionada]
+  );
 
   const normalizeTextInput = (value) => (value ?? "").toUpperCase().trimStart();
   const handleUppercaseChange = (setter) => (event) => {
@@ -277,7 +326,16 @@ export function RegistrarVentas2({
     setIsDniReady(false);
     setHasHydratedDocente(false);
     setHasHydratedInstitucion(false);
+    setPhoneLookupState("idle");
+    setIsDocenteLocked(false);
   }, [isOpen, state]);
+
+  useEffect(() => {
+    if (!phoneNumber) {
+      setPhoneLookupState("idle");
+      setIsDocenteLocked(false);
+    }
+  }, [phoneNumber]);
 
   useEffect(() => {
     if (!phoneNumber) {
@@ -426,6 +484,129 @@ export function RegistrarVentas2({
     state,
   ]);
 
+  const resetInstitutionForm = useCallback(async () => {
+    updateInstitucionField("codigoIe", "");
+    updateInstitucionField("nombreIe", "");
+    await seleccionardepartamento(null);
+    await seleccionarprovincia(null);
+    seleccionardistrito(null);
+  }, [
+    seleccionarprovincia,
+    seleccionardepartamento,
+    seleccionardistrito,
+    updateInstitucionField,
+  ]);
+
+  const persistDocenteDraft = useCallback(async () => {
+    if (!ventaDraftId || !empresaId || !isPhoneReady) {
+      return false;
+    }
+
+    const payload = {
+      _id_venta: ventaDraftId,
+      _id_docente: docentedraft?.id ?? null,
+      _id_empresa: empresaId,
+      _id_pais: paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
+      _id_institucion: docentedraft?.id_institucion ?? institucionDraft?.id ?? null,
+      telefono: phoneNumber || null,
+      nro_doc: dniValue || null,
+      nombres: nombres || null,
+      apellido_p: apellidoPaterno || null,
+      apellido_m: apellidoMaterno || null,
+      shouldPersist: true,
+    };
+
+    const saved = await guardardocenteborrador(payload);
+
+    if (saved) {
+      onVentaTieneDatosChange?.("docente", true);
+      return saved;
+    }
+
+    return null;
+  }, [
+    apellidoMaterno,
+    apellidoPaterno,
+    dniValue,
+    docentedraft?.id,
+    docentedraft?.id_institucion,
+    docentedraft?.id_pais,
+    empresaId,
+    guardardocenteborrador,
+    institucionDraft?.id,
+    isPhoneReady,
+    nombres,
+    onVentaTieneDatosChange,
+    paisSeleccionado?.id,
+    phoneNumber,
+    ventaDraftId,
+  ]);
+
+  const lookupDocenteByPhone = useCallback(async () => {
+    if (!isPhoneReady || !empresaId || !ventaDraftId) {
+      return null;
+    }
+
+    setPhoneLookupState("searching");
+
+    try {
+      const existingDocente = await buscarDocentePorTelefono({
+        telefono: phoneNumber,
+        _id_empresa: empresaId,
+      });
+
+      if (existingDocente) {
+        updateDocenteField("dniValue", existingDocente.nro_doc ? `${existingDocente.nro_doc}` : "");
+        updateDocenteField("nombres", normalizeTextInput(existingDocente.nombres));
+        updateDocenteField("apellidoPaterno", normalizeTextInput(existingDocente.apellido_p));
+        updateDocenteField("apellidoMaterno", normalizeTextInput(existingDocente.apellido_m));
+        setIsDniReady(Boolean(existingDocente.nro_doc));
+        setIsDocenteLocked(true);
+        setPhoneLookupState("found");
+
+        await guardardocenteborrador({
+          _id_venta: ventaDraftId,
+          _id_docente: existingDocente.id,
+          _id_empresa: empresaId,
+          _id_pais:
+            existingDocente.id_pais ?? paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
+          _id_institucion:
+            existingDocente.id_institucion ?? institucionDraft?.id ?? docentedraft?.id_institucion ?? null,
+          telefono: existingDocente.telefono ?? phoneNumber,
+          nro_doc: existingDocente.nro_doc ?? null,
+          nombres: existingDocente.nombres ?? null,
+          apellido_p: existingDocente.apellido_p ?? null,
+          apellido_m: existingDocente.apellido_m ?? null,
+          shouldPersist: true,
+        });
+
+        return existingDocente;
+      }
+
+      setPhoneLookupState("not-found");
+      setIsDocenteLocked(false);
+      await persistDocenteDraft();
+      return null;
+    } catch (error) {
+      console.error("[RegistrarVentas2] Error buscando docente", error);
+      toast.error("No se pudo buscar el docente por teléfono.");
+      setPhoneLookupState("idle");
+      return null;
+    }
+  }, [
+    empresaId,
+    guardardocenteborrador,
+    institucionDraft?.id,
+    isPhoneReady,
+    paisSeleccionado?.id,
+    persistDocenteDraft,
+    phoneNumber,
+    docentedraft?.id_institucion,
+    docentedraft?.id_pais,
+    updateDocenteField,
+    ventaDraftId,
+  ]);
+
   const handleRequestClose = async () => {
     if (isClosing) {
       return;
@@ -458,11 +639,14 @@ export function RegistrarVentas2({
     const maxDigits = phoneDigitsRequired ?? 15;
     updateDocenteField("phoneNumber", digitsOnly.slice(0, maxDigits));
     setIsPhoneReady(false);
+    setPhoneLookupState("idle");
+    setIsDocenteLocked(false);
   };
 
-  const handlePhoneBlur = () => {
+  const handlePhoneBlur = async () => {
     if (!phoneNumber) {
       setIsPhoneReady(false);
+      setPhoneLookupState("idle");
       return;
     }
 
@@ -471,10 +655,12 @@ export function RegistrarVentas2({
         `La cantidad de dígitos del teléfono es inválida. Se requieren ${phoneDigitsRequired}.`
       );
       setIsPhoneReady(false);
+      setPhoneLookupState("idle");
       return;
     }
 
     setIsPhoneReady(true);
+    await lookupDocenteByPhone();
   };
 
   const handleDniChange = (event) => {
@@ -503,6 +689,9 @@ export function RegistrarVentas2({
     updateDocenteField("nombres", "");
     updateDocenteField("apellidoPaterno", "");
     updateDocenteField("apellidoMaterno", "");
+    if (!isDocenteLocked) {
+      persistDocenteDraft();
+    }
   };
   const geoNivel1Id = departamentoSeleccionado?.id ?? null;
   const geoNivel2Id = provinciaSeleccionada?.id ?? null;
@@ -620,109 +809,78 @@ export function RegistrarVentas2({
         return true;
       }
 
-      const snapshot = buildSnapshot();
-      const hasDocenteInfo =
-        Boolean(snapshot.docente?.nro_doc) ||
-        Boolean(snapshot.docente?.nombres) ||
-        Boolean(snapshot.docente?.apellido_p) ||
-        Boolean(snapshot.docente?.telefono);
-      const hasInstitutionData = hasStartedInstitution();
+      const shouldPersistInstitution = [
+        "next",
+        "previous",
+        "modal-close",
+        "on-finish",
+      ].includes(reason ?? "");
 
-      if (!hasDocenteInfo && !hasInstitutionData && !docentedraft?.id) {
-        onVentaTieneDatosChange?.("docente", false);
+      const savedDocente = await persistDocenteDraft();
+
+      if (!shouldPersistInstitution) {
         return true;
       }
 
-      if (hasStartedInstitution() && !snapshot.institucion) {
-        toast.info(
-          "No se puede registrar la institución porque faltan datos obligatorios (nombre, departamento, provincia y distrito)."
+      if (!hasStartedInstitution()) {
+        if (institucionDraft?.id) {
+          await guardarinstitucionborrador({
+            _id_institucion: institucionDraft.id,
+            shouldPersist: false,
+          });
+          limpiarinstituciondraft();
+        }
+
+        return true;
+      }
+
+      if (!hasInstitutionRequiredFields()) {
+        toast.error(
+          "La institución no pudo guardarse porque faltan datos obligatorios (nombre, departamento, provincia y distrito)."
         );
-      }
-
-      if (snapshotsAreEqual(lastSavedSnapshotRef.current, snapshot)) {
+        await resetInstitutionForm();
+        limpiarinstituciondraft();
         return true;
-      }
-
-      const empresaId = dataempresa?.id ?? datausuarios?.id_empresa ?? null;
-
-      if (!empresaId) {
-        toast.error("No se pudo determinar la empresa del docente.");
-        return false;
       }
 
       try {
-        let savedDocente = null;
-        let savedInstitucion = null;
-
-        if (hasDocenteInfo || docentedraft?.id) {
-          savedDocente = await guardardocenteborrador({
-            _id_venta: ventaDraftId,
-            _id_docente: docentedraft?.id ?? null,
-            _id_empresa: empresaId,
-            _id_pais: snapshot.docente?.id_pais,
-            _id_institucion:
-              snapshot.docente?.id_institucion ?? institucionDraft?.id ?? null,
-            telefono: snapshot.docente?.telefono,
-            nro_doc: snapshot.docente?.nro_doc,
-            nombres: snapshot.docente?.nombres,
-            apellido_p: snapshot.docente?.apellido_p,
-            apellido_m: snapshot.docente?.apellido_m,
-            shouldPersist: true,
-          });
-        }
-
-        if (snapshot.institucion && (savedDocente?.id || docentedraft?.id)) {
-          savedInstitucion = await guardarinstitucionborrador({
-            _id_institucion: snapshot.institucion?.id ?? null,
-            cod_institucion: snapshot.institucion?.cod_institucion,
-            nombre: snapshot.institucion?.nombre,
-            id_pais: snapshot.institucion?.id_pais,
-            id_geo_nivel1: snapshot.institucion?.id_geo_nivel1,
-            id_geo_nivel2: snapshot.institucion?.id_geo_nivel2,
-            id_geo_nivel3: snapshot.institucion?.id_geo_nivel3,
-            shouldPersist: true,
-          });
-
-          if (savedInstitucion) {
-            savedDocente = await guardardocenteborrador({
-              _id_venta: ventaDraftId,
-              _id_docente: savedDocente?.id ?? docentedraft?.id ?? null,
-              _id_empresa: empresaId,
-              _id_pais: snapshot.docente?.id_pais,
-              _id_institucion: savedInstitucion.id,
-              telefono: snapshot.docente?.telefono,
-              nro_doc: snapshot.docente?.nro_doc,
-              nombres: snapshot.docente?.nombres,
-              apellido_p: snapshot.docente?.apellido_p,
-              apellido_m: snapshot.docente?.apellido_m,
-              shouldPersist: true,
-            });
-          }
-        }
-
-        if (savedDocente || savedInstitucion) {
-          onVentaTieneDatosChange?.("docente", Boolean(savedDocente));
-        }
-
-        lastSavedSnapshotRef.current = {
-          ...snapshot,
-          docente: {
-            ...snapshot.docente,
-            id_docente: savedDocente?.id ?? snapshot.docente?.id_docente ?? null,
-            id_institucion:
-              savedDocente?.id_institucion ??
-              snapshot.institucion?.id ??
-              snapshot.docente?.id_institucion ??
-              null,
-          },
-          institucion: snapshot.institucion
-            ? {
-                ...snapshot.institucion,
-                id: savedInstitucion?.id ?? snapshot.institucion?.id ?? null,
-              }
-            : null,
+        const institutionPayload = {
+          _id_institucion: institucionDraft?.id ?? null,
+          cod_institucion: codigoIe.trim() || null,
+          nombre: nombreIe.trim() || null,
+          id_pais: paisSeleccionado?.id ?? DEFAULT_PAIS_ID,
+          id_geo_nivel1: geoNivel1Id,
+          id_geo_nivel2: geoNivel2Id,
+          id_geo_nivel3: geoNivel3Id,
+          shouldPersist: true,
         };
 
+        const savedInstitution = await guardarinstitucionborrador(institutionPayload);
+
+        if (!savedInstitution) {
+          toast.error("La institución no pudo guardarse.");
+          return false;
+        }
+
+        if (docentedraft?.id) {
+          await guardardocenteborrador({
+            _id_venta: ventaDraftId,
+            _id_docente: docentedraft.id,
+            _id_empresa: empresaId,
+            _id_pais: paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
+            _id_institucion: savedInstitution.id,
+            telefono: phoneNumber || null,
+            nro_doc: dniValue || null,
+            nombres: nombres || null,
+            apellido_p: apellidoPaterno || null,
+            apellido_m: apellidoMaterno || null,
+            shouldPersist: true,
+          });
+        }
+
+        lastSavedSnapshotRef.current = buildSnapshot();
+        toast.success("La institución fue guardada de manera exitosa");
+        onVentaTieneDatosChange?.("docente", Boolean(savedDocente || docentedraft?.id));
         return true;
       } catch (error) {
         console.error("[RegistrarVentas2] Auto guardado falló", { reason, error });
@@ -730,18 +888,33 @@ export function RegistrarVentas2({
         return false;
       }
     }, [
+      apellidoMaterno,
+      apellidoPaterno,
       buildSnapshot,
-      dataempresa?.id,
-      datausuarios?.id_empresa,
+      codigoIe,
+      departamentoSeleccionado,
+      distritoSeleccionado,
       docentedraft?.id,
       guardarinstitucionborrador,
       guardardocenteborrador,
       hasStartedInstitution,
+      hasInstitutionRequiredFields,
       institucionDraft?.id,
       limpiardocentedraft,
       limpiarinstituciondraft,
+      dniValue,
+      empresaId,
+      geoNivel1Id,
+      geoNivel2Id,
+      geoNivel3Id,
+      nombreIe,
+      nombres,
       onVentaTieneDatosChange,
-      snapshotsAreEqual,
+      paisSeleccionado?.id,
+      persistDocenteDraft,
+      phoneNumber,
+      provinciaSeleccionada,
+      resetInstitutionForm,
       ventaDraftId,
     ]);
 
@@ -840,6 +1013,11 @@ export function RegistrarVentas2({
             <FieldStatus $status={isPhoneReady ? "success" : "idle"}>
               {phoneStatusMessage}
             </FieldStatus>
+            {phoneLookupMessage && (
+              <LookupStatus $status={phoneLookupState}>
+                {phoneLookupMessage}
+              </LookupStatus>
+            )}
           </InputGroup>
 
           <InputRow>
@@ -848,21 +1026,22 @@ export function RegistrarVentas2({
               <InputField
                 type="text"
                 placeholder="Número de documento"
-                value={dniValue}
-                onChange={handleDniChange}
-                onBlur={handleDniBlur}
-                maxLength={dniDigitsRequired ?? 12}
-                inputMode="numeric"
-                autoComplete="off"
-              />
-              <FieldStatus $status={isDniReady ? "success" : "idle"}>
-                {dniStatusMessage}
-              </FieldStatus>
-            </DniInputGroup>
-            <GhostButton type="button" disabled={!isDniReady}>
-              Consultar
-            </GhostButton>
-          </InputRow>
+              value={dniValue}
+              onChange={handleDniChange}
+              onBlur={handleDniBlur}
+              maxLength={dniDigitsRequired ?? 12}
+              inputMode="numeric"
+              autoComplete="off"
+              disabled={!canEditDocenteFields}
+            />
+            <FieldStatus $status={isDniReady ? "success" : "idle"}>
+              {dniStatusMessage}
+            </FieldStatus>
+          </DniInputGroup>
+          <GhostButton type="button" disabled={!isDniReady || !canEditDocenteFields}>
+            Consultar
+          </GhostButton>
+        </InputRow>
 
           <NameFieldsRow>
             <VentaInput
@@ -872,7 +1051,8 @@ export function RegistrarVentas2({
               onChange={handleUppercaseChange((value) =>
                 updateDocenteField("nombres", value)
               )}
-              disabled={isDniReady}
+              onBlur={persistDocenteDraft}
+              disabled={isDniReady || !canEditDocenteFields}
             />
             <VentaInput
               label="Apellido paterno"
@@ -881,7 +1061,8 @@ export function RegistrarVentas2({
               onChange={handleUppercaseChange((value) =>
                 updateDocenteField("apellidoPaterno", value)
               )}
-              disabled={isDniReady}
+              onBlur={persistDocenteDraft}
+              disabled={isDniReady || !canEditDocenteFields}
             />
             <VentaInput
               label="Apellido materno"
@@ -890,7 +1071,8 @@ export function RegistrarVentas2({
               onChange={handleUppercaseChange((value) =>
                 updateDocenteField("apellidoMaterno", value)
               )}
-              disabled={isDniReady}
+              onBlur={persistDocenteDraft}
+              disabled={isDniReady || !canEditDocenteFields}
             />
           </NameFieldsRow>
 
@@ -904,6 +1086,7 @@ export function RegistrarVentas2({
               )}
               type="text"
               variant="solid"
+              disabled={!canEditInstitutionFields}
             />
             <VentaInput
               label="Nombre de IE"
@@ -914,11 +1097,12 @@ export function RegistrarVentas2({
               )}
               type="text"
               variant="solid"
+              disabled={!canEditInstitutionFields}
             />
             <CountrySelectorWrapper>
               <Selector
                 state={openDropdown === "pais"}
-                funcion={() => toggleDropdown("pais")}
+                funcion={() => toggleDropdown("pais", institutionGuardMessage)}
                 texto1="País"
                 texto2={paisSeleccionado?.nombre ?? "Perú"}
                 color={SELECTOR_BORDER_COLOR}
@@ -944,10 +1128,7 @@ export function RegistrarVentas2({
               <Selector
                 state={openDropdown === "departamento"}
                 funcion={() =>
-                  toggleDropdown(
-                    "departamento",
-                    paisSeleccionado ? null : "Selecciona un país antes",
-                  )
+                  toggleDropdown("departamento", departamentoGuardMessage)
                 }
                 texto1="Departamento"
                 texto2={
@@ -980,12 +1161,7 @@ export function RegistrarVentas2({
               <Selector
                 state={openDropdown === "provincia"}
                 funcion={() =>
-                  toggleDropdown(
-                    "provincia",
-                    departamentoSeleccionado
-                      ? null
-                      : "Selecciona un departamento antes",
-                  )
+                  toggleDropdown("provincia", provinciaGuardMessage)
                 }
                 texto1="Provincia"
                 texto2={
@@ -1018,12 +1194,7 @@ export function RegistrarVentas2({
               <Selector
                 state={openDropdown === "distrito"}
                 funcion={() =>
-                  toggleDropdown(
-                    "distrito",
-                    provinciaSeleccionada
-                      ? null
-                      : "Selecciona una provincia antes",
-                  )
+                  toggleDropdown("distrito", distritoGuardMessage)
                 }
                 texto1="Distrito"
                 texto2={
@@ -1270,6 +1441,15 @@ const FieldStatus = styled.small`
     $status === "success" ? "#0c554a" : `rgba(${theme.textRgba}, 0.65)`};
   opacity: ${({ $status }) => ($status === "success" ? 1 : 0.85)};
   font-weight: ${({ $status }) => ($status === "success" ? 600 : 500)};
+`;
+
+const LookupStatus = styled(FieldStatus)`
+  color: ${({ $status }) =>
+    $status === "found"
+      ? "#0f9d58"
+      : $status === "not-found"
+        ? "#d93025"
+        : "rgba(0, 0, 0, 0.55)"};
 `;
 
 const Footer = styled(ModalFooter)``;
