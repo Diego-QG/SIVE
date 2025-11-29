@@ -280,7 +280,7 @@ export async function confirmarVenta({ idVenta }) {
   return true;
 }
 
-const asegurarCuotaYPagos = async ({ idVenta }) => {
+export const asegurarCuotaYPagos = async ({ idVenta }) => {
   if (!idVenta) return false;
 
   const { data: cuotasExistentes, error: cuotasError } = await supabase
@@ -329,33 +329,60 @@ const asegurarCuotaYPagos = async ({ idVenta }) => {
 
   const { data: pagosActuales, error: pagosError } = await supabase
     .from("pagos")
-    .select("id_evidencia")
+    .select("id, id_evidencia")
     .eq("id_cuota", cuotaId);
 
   if (handleError(pagosError, "asegurarCuotaYPagos.obtenerPagos")) {
     return false;
   }
 
-  const pagosExistentes = new Set((pagosActuales ?? []).map((pago) => pago?.id_evidencia));
+  const pagosExistentes = new Set(
+    (pagosActuales ?? [])
+      .map((pago) => pago?.id_evidencia)
+      .filter((idEvidencia) => idEvidencia !== null && idEvidencia !== undefined)
+  );
 
-  const pagosPorInsertar = evidenciaIds
-    .filter((idEvidencia) => idEvidencia && !pagosExistentes.has(idEvidencia))
-    .map((idEvidencia) => ({
-      id_cuota: cuotaId,
-      id_evidencia: idEvidencia,
-      monto: 0,
+  const evidenciasDisponibles = evidenciaIds.filter(
+    (idEvidencia) => idEvidencia && !pagosExistentes.has(idEvidencia)
+  );
+
+  const pagosSinEvidencia = (pagosActuales ?? []).filter(
+    (pago) => !pago?.id_evidencia
+  );
+
+  const pagosParaActualizar = pagosSinEvidencia
+    .slice(0, evidenciasDisponibles.length)
+    .map((pago, idx) => ({
+      id: pago.id,
+      id_evidencia: evidenciasDisponibles[idx],
     }));
 
-  if (pagosPorInsertar.length === 0) {
-    return true;
+  const evidenciasRestantes = evidenciasDisponibles.slice(pagosParaActualizar.length);
+
+  if (pagosParaActualizar.length > 0) {
+    const { error: updatePagosError } = await supabase
+      .from("pagos")
+      .upsert(pagosParaActualizar);
+
+    if (handleError(updatePagosError, "asegurarCuotaYPagos.updatePagos")) {
+      return false;
+    }
   }
 
-  const { error: insertPagosError } = await supabase
-    .from("pagos")
-    .insert(pagosPorInsertar);
+  const pagosPorInsertar = evidenciasRestantes.map((idEvidencia) => ({
+    id_cuota: cuotaId,
+    id_evidencia: idEvidencia,
+    monto: 0,
+  }));
 
-  if (handleError(insertPagosError, "asegurarCuotaYPagos.insertPagos")) {
-    return false;
+  if (pagosPorInsertar.length > 0) {
+    const { error: insertPagosError } = await supabase
+      .from("pagos")
+      .insert(pagosPorInsertar);
+
+    if (handleError(insertPagosError, "asegurarCuotaYPagos.insertPagos")) {
+      return false;
+    }
   }
 
   return true;

@@ -47,9 +47,25 @@ export const useVentasStore = create((set, get) => ({
     mostrarventasporusuario: async (p) => {
         const response = await mostrarVentasPorUsuario(p);
         const nextData = (response ?? []).map((venta) => {
-            const idVenta = venta?.id ?? venta?.id_venta ?? null;
+            if (!venta || typeof venta !== "object") {
+                return venta;
+            }
 
-            return idVenta ? { ...venta, id: idVenta } : venta;
+            if ("id_venta" in venta && venta.id_venta !== null && venta.id_venta !== undefined) {
+                const idVenta = Number(venta.id_venta);
+                if (Number.isFinite(idVenta)) {
+                    return { ...venta, id: idVenta, id_venta: idVenta };
+                }
+            }
+
+            if ("id" in venta && venta.id !== null && venta.id !== undefined) {
+                const idVenta = Number(venta.id);
+                if (Number.isFinite(idVenta)) {
+                    return { ...venta, id: idVenta, id_venta: idVenta };
+                }
+            }
+
+            return venta;
         });
 
         set({ parametros: p ?? {} });

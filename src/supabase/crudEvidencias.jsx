@@ -1,5 +1,6 @@
 import Swal from "sweetalert2";
 import { supabase } from "../index";
+import { asegurarCuotaYPagos } from "./crudVentaItems";
 const STORAGE_BUCKET_IMAGENES = "imagenes";
 const STORAGE_FOLDER_VOUCHERS = "vouchers_recibidos";
 const TIPO_VOUCHER_RECIBIDO = "voucher_recibido";
@@ -20,7 +21,12 @@ export async function insertarVoucherRecibido(p, file) {
         return;
     }
 
+    const ventaId = p?._id_venta ?? p?.id_venta ?? p?.idVenta ?? null;
+
     if (!file?.size || !nuevoId) {
+        if (ventaId) {
+            await asegurarCuotaYPagos({ idVenta: ventaId });
+        }
         return;
     }
 
@@ -35,6 +41,10 @@ export async function insertarVoucherRecibido(p, file) {
     };
 
     await editarVoucherEvidencia(payload);
+
+    if (ventaId) {
+        await asegurarCuotaYPagos({ idVenta: ventaId });
+    }
 }
 
 async function subirImagen(idevidencia, file) {

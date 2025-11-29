@@ -26,8 +26,26 @@ import {
 } from "../POSDesign/DetalleVenta";
 
 
+const obtenerVentaId = (venta) => {
+  if (!venta || typeof venta !== "object") {
+    return null;
+  }
+
+  if ("id_venta" in venta && venta.id_venta !== null && venta.id_venta !== undefined) {
+    const idNum = Number(venta.id_venta);
+    return Number.isFinite(idNum) ? idNum : null;
+  }
+
+  if ("id" in venta && venta.id !== null && venta.id !== undefined) {
+    const idNum = Number(venta.id);
+    return Number.isFinite(idNum) ? idNum : null;
+  }
+
+  return null;
+};
+
 const obtenerPayloadEliminacion = (venta, usuarioId) => {
-  const idVenta = venta?.id ?? venta?.id_venta ?? null;
+  const idVenta = obtenerVentaId(venta);
 
   if (!idVenta || !usuarioId) {
     return null;
@@ -48,7 +66,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   const [detalleLoading, setDetalleLoading] = useState(false);
   const [detalleError, setDetalleError] = useState(null);
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
-  const detalleRequestRef = useRef(0);
+  const detalleRequestRef = useRef({ id: 0, ventaId: null });
   const { eliminarborrador, obtenerventadetalle } = useVentasStore();
   const { datausuarios } = useUsuariosStore();
   const canEditBorrador = typeof onEditarBorrador === "function";
@@ -163,7 +181,19 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   }, []);
 
   const abrirDetalleVenta = async (venta) => {
-    const ventaId = venta?.id ?? venta?.id_venta ?? null;
+    const ventaId = obtenerVentaId(venta);
+
+    console.log("[TablaPOS] Abrir detalle venta", {
+      ventaSeleccionada: venta,
+      ventaId,
+      camposId: {
+        id_venta: venta ? venta.id_venta : undefined,
+        id: venta ? venta.id : undefined,
+        venta_id: venta ? venta.venta_id : undefined,
+        ventaId: venta ? venta.ventaId : undefined,
+        _id: venta ? venta._id : undefined,
+      },
+    });
 
     if (!ventaId) {
       Swal.fire({
@@ -174,18 +204,38 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
       return;
     }
 
-    setVentaSeleccionada(venta ?? null);
+    setVentaSeleccionada(
+      venta
+        ? {
+            ...venta,
+            id: ventaId,
+            id_venta: ventaId,
+          }
+        : null
+    );
     setDetalleVisible(true);
     setDetalleLoading(true);
     setDetalleError(null);
     setDetalleVenta(null);
 
     const requestId = Date.now();
-    detalleRequestRef.current = requestId;
+    detalleRequestRef.current = { id: requestId, ventaId };
+
+    console.log("[TablaPOS] Solicitando detalle", { requestId, ventaId });
 
     const detalle = await obtenerventadetalle({ _id_venta: ventaId });
 
-    if (detalleRequestRef.current !== requestId) {
+    console.log("[TablaPOS] Respuesta detalle", {
+      requestId,
+      ventaId,
+      detalleExiste: Boolean(detalle),
+      detalle,
+    });
+
+    if (
+      detalleRequestRef.current.id !== requestId ||
+      detalleRequestRef.current.ventaId !== ventaId
+    ) {
       return;
     }
 
@@ -203,6 +253,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
     setDetalleVenta(null);
     setDetalleError(null);
     setVentaSeleccionada(null);
+    detalleRequestRef.current = { id: 0, ventaId: null };
   };
 
   const columns = [
