@@ -75,22 +75,16 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
       { label: "Total bruto", value: venta?.total_bruto },
       { label: "Descuento", value: venta?.total_descuento },
       { label: "Total neto", value: venta?.total_neto },
-      { label: "Moneda", value: venta?.tipomoneda_codigo },
     ];
   }, [detalle]);
 
   const docenteData = detalle ?? {};
-  const institucionData = detalle ?? {};
 
   const items = Array.isArray(detalle?.items) ? detalle.items : [];
   const descuentos = Array.isArray(detalle?.descuentos)
     ? detalle.descuentos
     : [];
   const cuotas = Array.isArray(detalle?.cuotas) ? detalle.cuotas : [];
-  const evidencias = Array.isArray(detalle?.evidencias)
-    ? detalle.evidencias
-    : [];
-  const eventos = Array.isArray(detalle?.eventos) ? detalle.eventos : [];
   const ajustes = Array.isArray(detalle?.ajustes) ? detalle.ajustes : [];
   const incidentes = Array.isArray(detalle?.incidentes)
     ? detalle.incidentes
@@ -150,8 +144,8 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
               </Section>
 
               <Section>
-                <SectionTitle>Docente e institución</SectionTitle>
-                <InfoGrid $cols={3}>
+                <SectionTitle>Docente</SectionTitle>
+                <InfoGrid $cols={2}>
                   <InfoCard>
                     <small>Docente</small>
                     <strong>{mostrarConGuion(docenteData?.docente_nombre_completo)}</strong>
@@ -161,24 +155,6 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
                     <small>Contacto</small>
                     <strong>{mostrarConGuion(docenteData?.docente_telefono)}</strong>
                     <Muted>{mostrarConGuion(docenteData?.docente_tipo_ingreso)}</Muted>
-                  </InfoCard>
-                  <InfoCard>
-                    <small>Institución</small>
-                    <strong>{mostrarConGuion(institucionData?.nombre_institucion)}</strong>
-                    <Muted>{mostrarConGuion(institucionData?.cod_institucion)}</Muted>
-                  </InfoCard>
-                  <InfoCard>
-                    <small>Ubicación</small>
-                    <strong>
-                      {[
-                        institucionData?.geo_nivel1_nombre,
-                        institucionData?.geo_nivel2_nombre,
-                        institucionData?.geo_nivel3_nombre,
-                      ]
-                        .filter(Boolean)
-                        .join(" • ") || "-"}
-                    </strong>
-                    <Muted>{mostrarConGuion(institucionData?.pais_institucion)}</Muted>
                   </InfoCard>
                 </InfoGrid>
               </Section>
@@ -203,18 +179,18 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
                           </div>
                         </div>
                         <div className="item-values">
-                          <div>
-                            <small>Cantidad</small>
+                          <ValueRow>
+                            <Muted>Cantidad</Muted>
                             <strong>{item.cantidad ?? "-"}</strong>
-                          </div>
-                          <div>
-                            <small>Precio unitario</small>
+                          </ValueRow>
+                          <ValueRow>
+                            <Muted>Precio unitario</Muted>
                             <strong>{mostrarConGuion(item.precio_unitario)}</strong>
-                          </div>
-                          <div>
-                            <small>Subtotal</small>
+                          </ValueRow>
+                          <ValueRow>
+                            <Muted>Subtotal</Muted>
                             <strong>{mostrarConGuion(item.subtotal)}</strong>
-                          </div>
+                          </ValueRow>
                         </div>
                       </ItemRow>
                     ))}
@@ -286,7 +262,7 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
                             <div className="pagos-list">
                               {cuota.pagos.map((pago, pagoIdx) => (
                                 <div className="pago" key={`pago-${pagoIdx}`}>
-                                  <div>
+                                  <div className="pago-head">
                                     <Muted>{mostrarConGuion(pago.fecha_pago)}</Muted>
                                     <strong>{mostrarConGuion(pago.monto)}</strong>
                                   </div>
@@ -297,13 +273,34 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
                                   </Muted>
                                   {Array.isArray(pago.evidencias) && pago.evidencias.length > 0 && (
                                     <PagoEvidencias>
-                                      {pago.evidencias.map((ev, evIdx) => (
-                                        <span key={`pago-${pagoIdx}-ev-${evIdx}`}>
-                                          {mostrarConGuion(
-                                            ev.archivo || ev.nombre || ev.notas || `Voucher ${evIdx + 1}`
-                                          )}
-                                        </span>
-                                      ))}
+                                      {pago.evidencias.map((ev, evIdx) => {
+                                        const label = mostrarConGuion(
+                                          ev.nombre || ev.archivo || ev.notas || `Voucher ${evIdx + 1}`
+                                        );
+                                        const url = ev.archivo || ev.url || null;
+                                        const isImage =
+                                          typeof url === "string" && url.match(/\.(png|jpe?g|gif|webp)$/i);
+
+                                        return (
+                                          <EvidenceThumb
+                                            key={`pago-${pagoIdx}-ev-${evIdx}`}
+                                            as={url ? "a" : "div"}
+                                            href={url || undefined}
+                                            target={url ? "_blank" : undefined}
+                                            rel={url ? "noreferrer" : undefined}
+                                          >
+                                            {isImage && url ? (
+                                              <img src={url} alt={label} />
+                                            ) : (
+                                              <div className="evidence-placeholder" aria-hidden>
+                                                📎
+                                              </div>
+                                            )}
+                                            <span className="evidence-label">{label}</span>
+                                            {ev.notas && <small>{mostrarConGuion(ev.notas)}</small>}
+                                          </EvidenceThumb>
+                                        );
+                                      })}
                                     </PagoEvidencias>
                                   )}
                                 </div>
@@ -338,46 +335,6 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
                     <Muted>{mostrarConGuion(entregasActual?.usuario)}</Muted>
                   </InfoCard>
                 </InfoGrid>
-              </Section>
-
-              <Section>
-                <SectionTitle>Notas y evidencias</SectionTitle>
-                <TwoColumn>
-                  <StackedList>
-                    <small>Eventos</small>
-                    {eventos.length === 0 ? (
-                      <Muted>Sin eventos registrados.</Muted>
-                    ) : (
-                      eventos.map((evento, index) => (
-                        <ListRow key={`evento-${index}`}>
-                          <div>
-                            <strong>{mostrarConGuion(evento.evento)}</strong>
-                            <Muted>{mostrarConGuion(evento.area)}</Muted>
-                            <Muted>{mostrarConGuion(evento.detalle)}</Muted>
-                          </div>
-                          <Muted>{mostrarConGuion(evento.fecha)}</Muted>
-                        </ListRow>
-                      ))
-                    )}
-                  </StackedList>
-                  <StackedList>
-                    <small>Evidencias</small>
-                    {evidencias.length === 0 ? (
-                      <Muted>Sin evidencias adjuntas.</Muted>
-                    ) : (
-                      evidencias.map((ev, index) => (
-                        <ListRow key={`evidencia-${index}`}>
-                          <div>
-                            <strong>{mostrarConGuion(ev.archivo)}</strong>
-                            <Muted>{mostrarConGuion(ev.area)}</Muted>
-                            <Muted>{mostrarConGuion(ev.notas)}</Muted>
-                          </div>
-                          <Muted>{mostrarConGuion(ev.fecha)}</Muted>
-                        </ListRow>
-                      ))
-                    )}
-                  </StackedList>
-                </TwoColumn>
               </Section>
 
               <Section>
@@ -566,10 +523,11 @@ const ItemsList = styled.div`
 `;
 
 const ItemRow = styled.div`
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   border-radius: 14px;
-  padding: 12px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
+  padding: 12px 14px;
+  background: ${({ theme }) => theme.bgtotal};
+  box-shadow: 0 8px 28px rgba(${({ theme }) => theme.textRgba}, 0.04);
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
@@ -598,24 +556,29 @@ const ItemRow = styled.div`
 
   .item-values {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 8px;
-
-    div {
-      background: rgba(${({ theme }) => theme.textRgba}, 0.04);
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-    }
-
-    small {
-      color: rgba(${({ theme }) => theme.textRgba}, 0.65);
-    }
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 6px 12px;
   }
 `;
 
 const ItemMeta = styled(Muted)`
   display: block;
+`;
+
+const ValueRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.12);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  strong {
+    font-size: 1rem;
+  }
 `;
 
 const Timeline = styled.div`
@@ -701,21 +664,61 @@ const CuotaCard = styled.div`
       padding: 8px 10px;
       background: rgba(${({ theme }) => theme.textRgba}, 0.04);
     }
+
+    .pago-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
   }
 `;
 
 const PagoEvidencias = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
   margin-top: 6px;
+`;
 
-  span {
-    background: rgba(${({ theme }) => theme.textRgba}, 0.08);
+const EvidenceThumb = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.05);
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
+  color: ${({ theme }) => theme.text};
+  text-decoration: none;
+
+  img {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
     border-radius: 10px;
-    padding: 4px 8px;
-    font-size: 0.85rem;
-    color: ${({ theme }) => theme.text};
+    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+    background: ${({ theme }) => theme.bgtotal};
+  }
+
+  .evidence-placeholder {
+    width: 100%;
+    height: 110px;
+    border-radius: 10px;
+    border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.15);
+    display: grid;
+    place-items: center;
+    color: rgba(${({ theme }) => theme.textRgba}, 0.7);
+    background: ${({ theme }) => theme.bgtotal};
+    font-size: 1.2rem;
+  }
+
+  .evidence-label {
+    font-weight: 700;
+  }
+
+  small {
+    color: rgba(${({ theme }) => theme.textRgba}, 0.75);
   }
 `;
 
