@@ -256,6 +256,10 @@ export async function confirmarVenta({ idVenta }) {
 
   if (handleError(fetchError)) return false;
 
+  const asegurado = await asegurarCuotaYPagos({ idVenta });
+
+  if (!asegurado) return false;
+
   const alreadyUploaded = ventaActual?.estado_registro === "subido";
 
   if (alreadyUploaded) {
@@ -275,3 +279,84 @@ export async function confirmarVenta({ idVenta }) {
 
   return true;
 }
+
+const asegurarCuotaYPagos = async ({ idVenta }) => {
+  if (!idVenta) return false;
+
+  const { data: cuotasExistentes, error: cuotasError } = await supabase
+    .from("cuotas")
+    .select("id")
+    .eq("id_venta", idVenta)
+    .order("nro_cuota", { ascending: true });
+
+  if (handleError(cuotasError, "asegurarCuotaYPagos") || cuotasExistentes === null) {
+    return false;
+  }
+
+  let cuotaId = cuotasExistentes?.[0]?.id ?? null;
+
+  if (!cuotaId) {
+    const { data: nuevaCuota, error: cuotaError } = await supabase
+      .from("cuotas")
+      .insert({
+        id_venta: idVenta,
+        nro_cuota: 1,
+      })
+      .select("id")
+      .single();
+
+    if (handleError(cuotaError, "asegurarCuotaYPagos.insertCuota")) return false;
+
+    cuotaId = nuevaCuota?.id ?? null;
+  }
+
+  if (!cuotaId) return false;
+
+  const { data: evidencias, error: evidenciasError } = await supabase
+    .from("evidencias")
+    .select("id")
+    .eq("id_venta", idVenta);
+
+  if (handleError(evidenciasError, "asegurarCuotaYPagos.obtenerEvidencias")) {
+    return false;
+  }
+
+  if (!Array.isArray(evidencias) || evidencias.length === 0) {
+    return true;
+  }
+
+  const evidenciaIds = evidencias.map((ev) => ev?.id).filter(Boolean);
+
+  const { data: pagosActuales, error: pagosError } = await supabase
+    .from("pagos")
+    .select("id_evidencia")
+    .eq("id_cuota", cuotaId);
+
+  if (handleError(pagosError, "asegurarCuotaYPagos.obtenerPagos")) {
+    return false;
+  }
+
+  const pagosExistentes = new Set((pagosActuales ?? []).map((pago) => pago?.id_evidencia));
+
+  const pagosPorInsertar = evidenciaIds
+    .filter((idEvidencia) => idEvidencia && !pagosExistentes.has(idEvidencia))
+    .map((idEvidencia) => ({
+      id_cuota: cuotaId,
+      id_evidencia: idEvidencia,
+      monto: 0,
+    }));
+
+  if (pagosPorInsertar.length === 0) {
+    return true;
+  }
+
+  const { error: insertPagosError } = await supabase
+    .from("pagos")
+    .insert(pagosPorInsertar);
+
+  if (handleError(insertPagosError, "asegurarCuotaYPagos.insertPagos")) {
+    return false;
+  }
+
+  return true;
+};
