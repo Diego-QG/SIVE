@@ -26,6 +26,7 @@ export function RegistrarVentas3({
   onFinish,
   ventaDraftId,
   onPersistDocente,
+  ventaFlags = {},
 }) {
   const [isClosing, setIsClosing] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -305,6 +306,14 @@ export function RegistrarVentas3({
 
     if (resumenVenta.length === 0) {
       toast.warning("Agrega al menos un item antes de registrar la venta.");
+      return;
+    }
+
+    const { editorial, vouchers, docente } = ventaFlags;
+    if (!editorial || !vouchers || !docente) {
+      toast.warning(
+        "Para completar la venta necesitas una editorial, al menos un voucher y los datos del docente."
+      );
       return;
     }
 
@@ -843,11 +852,11 @@ const SuccessButton = styled(PrimaryButton)`
 `;
 
 const GhostButton = styled.button`
-  border: none;
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.2);
   border-radius: 14px;
   padding: 0 22px;
-  background: rgba(23, 224, 192, 0.15);
-  color: #0c554a;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.12);
+  color: ${({ theme }) => theme.text};
   font-weight: 700;
   cursor: pointer;
   height: 26px;
@@ -855,6 +864,12 @@ const GhostButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.18);
+    border-color: rgba(${({ theme }) => theme.textRgba}, 0.28);
+  }
 
   &:disabled {
     opacity: 0.5;

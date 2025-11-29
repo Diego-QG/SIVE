@@ -188,19 +188,21 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
                 {items.length === 0 ? (
                   <EmptyState>No hay items registrados.</EmptyState>
                 ) : (
-                  <CardsGrid>
+                  <ItemsList>
                     {items.map((item, index) => (
-                      <ItemCard key={`${item.nombre_material}-${index}`}>
-                        <div className="item-header">
+                      <ItemRow key={`${item.nombre_material}-${index}`}>
+                        <div className="item-main">
                           <span className="pill">{mostrarConGuion(item.tipo_contenido)}</span>
-                          <strong>{mostrarConGuion(item.nombre_material)}</strong>
-                          <Muted>
-                            {[item.nivel, item.subnivel, item.curso, item.mes]
-                              .filter(Boolean)
-                              .join(" • ")}
-                          </Muted>
+                          <div className="item-texts">
+                            <strong>{mostrarConGuion(item.nombre_material)}</strong>
+                            <ItemMeta>
+                              {[item.nivel, item.subnivel, item.curso, item.mes]
+                                .filter(Boolean)
+                                .join(" • ") || "Sin detalle"}
+                            </ItemMeta>
+                          </div>
                         </div>
-                        <div className="item-footer">
+                        <div className="item-values">
                           <div>
                             <small>Cantidad</small>
                             <strong>{item.cantidad ?? "-"}</strong>
@@ -214,9 +216,9 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
                             <strong>{mostrarConGuion(item.subtotal)}</strong>
                           </div>
                         </div>
-                      </ItemCard>
+                      </ItemRow>
                     ))}
-                  </CardsGrid>
+                  </ItemsList>
                 )}
               </Section>
 
@@ -293,6 +295,17 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
                                       .filter(Boolean)
                                       .join(" • ") || "-"}
                                   </Muted>
+                                  {Array.isArray(pago.evidencias) && pago.evidencias.length > 0 && (
+                                    <PagoEvidencias>
+                                      {pago.evidencias.map((ev, evIdx) => (
+                                        <span key={`pago-${pagoIdx}-ev-${evIdx}`}>
+                                          {mostrarConGuion(
+                                            ev.archivo || ev.nombre || ev.notas || `Voucher ${evIdx + 1}`
+                                          )}
+                                        </span>
+                                      ))}
+                                    </PagoEvidencias>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -546,29 +559,47 @@ const CardsGrid = styled.div`
   gap: 12px;
 `;
 
-const ItemCard = styled.div`
+const ItemsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const ItemRow = styled.div`
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
   border-radius: 14px;
   padding: 12px;
   background: rgba(${({ theme }) => theme.textRgba}, 0.03);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 10px;
 
-  .item-header {
+  @media (min-width: ${v.bpbart}) {
+    grid-template-columns: 1.2fr 1fr;
+    align-items: center;
+  }
+
+  .item-main {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .item-texts {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 
     strong {
       color: ${({ theme }) => theme.text};
     }
   }
 
-  .item-footer {
+  .item-values {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
 
     div {
       background: rgba(${({ theme }) => theme.textRgba}, 0.04);
@@ -581,6 +612,10 @@ const ItemCard = styled.div`
       color: rgba(${({ theme }) => theme.textRgba}, 0.65);
     }
   }
+`;
+
+const ItemMeta = styled(Muted)`
+  display: block;
 `;
 
 const Timeline = styled.div`
@@ -666,6 +701,21 @@ const CuotaCard = styled.div`
       padding: 8px 10px;
       background: rgba(${({ theme }) => theme.textRgba}, 0.04);
     }
+  }
+`;
+
+const PagoEvidencias = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+
+  span {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.08);
+    border-radius: 10px;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    color: ${({ theme }) => theme.text};
   }
 `;
 

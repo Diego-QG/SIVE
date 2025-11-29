@@ -7,7 +7,7 @@ import {
   useUsuariosStore,
 } from "../../../index";
 import { v } from "../../../styles/variables";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -65,6 +65,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   const [detalleLoading, setDetalleLoading] = useState(false);
   const [detalleError, setDetalleError] = useState(null);
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
+  const detalleRequestRef = useRef(0);
   const { eliminarborrador, obtenerventadetalle } = useVentasStore();
   const { datausuarios } = useUsuariosStore();
   const canEditBorrador = typeof onEditarBorrador === "function";
@@ -106,6 +107,78 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
     });
   };
 
+  const normalizarDetalle = useCallback((detalle, ventaBase) => {
+    const detalleActual = detalle ?? {};
+    const evidencias = Array.isArray(detalleActual.evidencias)
+      ? detalleActual.evidencias
+      : [];
+    const pagosSueltos = Array.isArray(detalleActual.pagos)
+      ? detalleActual.pagos
+      : [];
+    const totalNeto =
+      Number(detalleActual.total_neto ?? ventaBase?.total_neto ?? 0) || 0;
+    const pagosConEvidencias = pagosSueltos.map((pago) => {
+      const pagoId = pago?.id ?? pago?.id_pago ?? pago?.pago_id ?? null;
+      const evidenciasPago = evidencias.filter((ev) => {
+        const evPagoId = ev?.id_pago ?? ev?.pago_id ?? null;
+        return pagoId && evPagoId ? Number(evPagoId) === Number(pagoId) : false;
+      });
+
+      return {
+        ...pago,
+        evidencias: evidenciasPago,
+      };
+    });
+
+    const calcularFechaHoy = () => {
+      const hoy = new Date();
+      const dia = String(hoy.getDate()).padStart(2, "0");
+      const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+      const anio = String(hoy.getFullYear()).slice(-2);
+      return `${dia}/${mes}/${anio}`;
+    };
+
+    const totalPagado = pagosConEvidencias.reduce(
+      (sum, pago) => sum + (Number(pago?.monto) || 0),
+      0
+    );
+
+    const cuotas = Array.isArray(detalleActual.cuotas)
+      ? detalleActual.cuotas
+      : [];
+
+    const cuotasNormalizadas =
+      cuotas.length > 0
+        ? cuotas.map((cuota, index) => ({
+            ...cuota,
+            nro_cuota: cuota.nro_cuota ?? index + 1,
+            pagos:
+              Array.isArray(cuota.pagos) && cuota.pagos.length > 0
+                ? cuota.pagos
+                : pagosConEvidencias,
+            evidencias:
+              Array.isArray(cuota.evidencias) && cuota.evidencias.length > 0
+                ? cuota.evidencias
+                : evidencias,
+          }))
+        : [
+            {
+              nro_cuota: 1,
+              estado: totalPagado >= totalNeto && totalNeto > 0 ? "cancelada" : "pendiente",
+              fecha_vencimiento: detalleActual.fecha_venta ?? calcularFechaHoy(),
+              monto_programado: totalNeto || "-",
+              saldo: totalNeto ? Math.max(totalNeto - totalPagado, 0) : "-",
+              pagos: pagosConEvidencias,
+              evidencias,
+            },
+          ];
+
+    return {
+      ...detalleActual,
+      cuotas: cuotasNormalizadas,
+    };
+  }, []);
+
   const abrirDetalleVenta = async (venta) => {
     const ventaId = obtenerIdVenta(venta);
 
@@ -124,12 +197,19 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
     setDetalleError(null);
     setDetalleVenta(null);
 
+    const requestId = Date.now();
+    detalleRequestRef.current = requestId;
+
     const detalle = await obtenerventadetalle({ _id_venta: ventaId });
+
+    if (detalleRequestRef.current !== requestId) {
+      return;
+    }
 
     if (!detalle) {
       setDetalleError("No se encontraron datos para esta venta.");
     } else {
-      setDetalleVenta(detalle);
+      setDetalleVenta(normalizarDetalle(detalle, venta));
     }
 
     setDetalleLoading(false);

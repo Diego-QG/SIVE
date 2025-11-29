@@ -243,6 +243,7 @@ export function POSTemplate({ datausuarios } = {}) {
         onPrevious={() => setRegistroStep(2)}
         onFinish={handleFinishRegistro}
         ventaDraftId={ventaDraftId}
+        ventaFlags={ventaDraftFlags}
         onPersistDocente={async () => {
           if (typeof persistDocenteHandlerRef.current === "function") {
             return persistDocenteHandlerRef.current();
@@ -357,10 +358,16 @@ const ActionButton = styled.button`
   padding: 14px 30px;
   font-weight: 600;
   font-size: 0.95rem;
-  color: #071424;
+  color: ${({ theme }) => theme.text};
   cursor: pointer;
-  background: linear-gradient(120deg, #ffee58, #17e0c0);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(
+      120deg,
+      rgba(${({ theme }) => theme.textRgba}, 0.18),
+      rgba(${({ theme }) => theme.textRgba}, 0.08)
+    ),
+    linear-gradient(120deg, rgba(255, 238, 88, 0.3), rgba(23, 224, 192, 0.25));
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.16);
+  box-shadow: 0 12px 24px rgba(${({ theme }) => theme.textRgba}, 0.15);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: inline-flex;
   align-items: center;
@@ -372,7 +379,7 @@ const ActionButton = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 16px 30px rgba(${({ theme }) => theme.textRgba}, 0.2);
   }
 
   &:disabled {
