@@ -46,7 +46,11 @@ export const useVentasStore = create((set, get) => ({
     },
     mostrarventasporusuario: async (p) => {
         const response = await mostrarVentasPorUsuario(p);
-        const nextData = response ?? [];
+        const nextData = (response ?? []).map((venta) => {
+            const idVenta = venta?.id ?? venta?.id_venta ?? null;
+
+            return idVenta ? { ...venta, id: idVenta } : venta;
+        });
 
         set({ parametros: p ?? {} });
         set({ dataventas: nextData });

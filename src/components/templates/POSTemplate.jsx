@@ -137,7 +137,7 @@ export function POSTemplate({ datausuarios } = {}) {
 
   const handleEditarVenta = useCallback(
     (venta) => {
-      const ventaId = venta?.id ?? venta?.id_venta ?? venta?.venta_id ?? null;
+      const ventaId = venta?.id ?? venta?.id_venta ?? null;
       if (!ventaId) {
         return;
       }

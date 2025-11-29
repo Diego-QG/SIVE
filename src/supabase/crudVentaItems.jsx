@@ -250,16 +250,15 @@ export async function confirmarVenta({ idVenta }) {
 
   const { data: ventaActual, error: fetchError } = await supabase
     .from("ventas")
-    .select("estado_registro, fecha_venta")
+    .select("estado_registro")
     .eq("id", idVenta)
     .single();
 
   if (handleError(fetchError)) return false;
 
   const alreadyUploaded = ventaActual?.estado_registro === "subido";
-  const shouldStampFecha = !ventaActual?.fecha_venta;
 
-  if (alreadyUploaded && !shouldStampFecha) {
+  if (alreadyUploaded) {
     return true;
   }
 
@@ -269,7 +268,6 @@ export async function confirmarVenta({ idVenta }) {
     .from("ventas")
     .update({
       estado_registro: "subido",
-      ...(shouldStampFecha ? { fecha_venta: new Date().toISOString() } : {}),
     })
     .eq("id", idVenta);
 

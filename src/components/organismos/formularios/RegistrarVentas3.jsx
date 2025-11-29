@@ -483,7 +483,7 @@ export function RegistrarVentas3({
             <ResumenHeaderRow>
               <span>Detalle</span>
               <span className="center">Cantidad</span>
-              <span className="center">Precio unitario</span>
+              <span className="center">P. unitario</span>
               <span className="end">Subtotal</span>
               <span className="actions" aria-hidden />
             </ResumenHeaderRow>
@@ -527,7 +527,7 @@ export function RegistrarVentas3({
                 <b>S/{totalBruto.toFixed(2)}</b>
               </div>
               <div>
-                <span>Total descuento</span>
+                <span>Descuento</span>
                 <b>S/{totalDescuento.toFixed(2)}</b>
               </div>
               <div className="neto">

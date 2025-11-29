@@ -26,25 +26,8 @@ import {
 } from "../POSDesign/DetalleVenta";
 
 
-const obtenerIdVenta = (venta) => {
-  if (!venta || typeof venta !== "object") {
-    return null;
-  }
-
-  const possibleKeys = ["id", "id_venta", "venta_id"];
-
-  for (const key of possibleKeys) {
-    const value = venta[key];
-    if (value !== null && value !== undefined && value !== "") {
-      return value;
-    }
-  }
-
-  return null;
-};
-
 const obtenerPayloadEliminacion = (venta, usuarioId) => {
-  const idVenta = obtenerIdVenta(venta);
+  const idVenta = venta?.id ?? venta?.id_venta ?? null;
 
   if (!idVenta || !usuarioId) {
     return null;
@@ -180,7 +163,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   }, []);
 
   const abrirDetalleVenta = async (venta) => {
-    const ventaId = obtenerIdVenta(venta);
+    const ventaId = venta?.id ?? venta?.id_venta ?? null;
 
     if (!ventaId) {
       Swal.fire({
