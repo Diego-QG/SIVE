@@ -1,7 +1,18 @@
 import { useMemo } from "react";
 import styled from "styled-components";
-import { Overlay, ModalContainer } from "../formularios/RegistroVentaModalLayout";
+import {
+  Overlay,
+  ModalContainer,
+} from "../formularios/RegistroVentaModalLayout";
 import { v } from "../../../styles/variables";
+import {
+  BsCalendarCheck,
+  BsPerson,
+  BsShop,
+  BsBook,
+  BsWallet2,
+  BsTag,
+} from "react-icons/bs";
 
 export const obtenerPartesFecha = (valor) => {
   if (!valor) {
@@ -42,13 +53,25 @@ export const obtenerPartesFecha = (valor) => {
 };
 
 export const mostrarConGuion = (valor) => {
-  if (valor === null || valor === undefined || valor === "" || valor.trim() === "") {
+  if (
+    valor === null ||
+    valor === undefined ||
+    valor === "" ||
+    valor.trim() === ""
+  ) {
     return "-";
   }
   return valor;
 };
 
-export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase }) {
+export function DetalleVenta({
+  open,
+  onClose,
+  detalle,
+  loading,
+  error,
+  ventaBase,
+}) {
   const resumenVenta = useMemo(() => {
     if (!detalle && !ventaBase) return [];
 
@@ -60,21 +83,34 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
 
     return [
       {
-        label: "Fecha de venta",
+        icon: <BsCalendarCheck />,
+        label: "Fecha",
         value: obtenerPartesFecha(venta?.fecha_venta ?? base?.fecha_str).fecha,
       },
-      { label: "Estado", value: statusLabel },
-      { label: "Vendedor", value: venta?.nombre_vendedor ?? base?.usuario },
-      { label: "Editorial", value: venta?.nombre_editorial ?? base?.editorial },
+      {
+        icon: <BsTag />,
+        label: "Estado",
+        value: statusLabel,
+      },
+      {
+        icon: <BsPerson />,
+        label: "Vendedor",
+        value: venta?.nombre_vendedor ?? base?.usuario,
+      },
+      {
+        icon: <BsBook />,
+        label: "Editorial",
+        value: venta?.nombre_editorial ?? base?.editorial,
+      },
     ];
   }, [detalle, ventaBase]);
 
   const montosVenta = useMemo(() => {
     const venta = detalle ?? {};
     return [
-      { label: "Total bruto", value: venta?.total_bruto },
-      { label: "Descuento", value: venta?.total_descuento },
-      { label: "Total neto", value: venta?.total_neto },
+      { label: "Total bruto", value: venta?.total_bruto, highlight: false },
+      { label: "Descuento", value: venta?.total_descuento, highlight: false },
+      { label: "Total neto", value: venta?.total_neto, highlight: true },
     ];
   }, [detalle]);
 
@@ -98,13 +134,18 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
     <Overlay $visible={open}>
       <Modal>
         <ModalHeader>
-          <div>
+          <div className="header-content">
             <h2>Detalles de venta</h2>
-            <p>Visualiza la venta y sus hitos más relevantes.</p>
+            <p>Visualiza la información completa de la transacción</p>
           </div>
-          <button type="button" onClick={onClose} disabled={loading} aria-label="Cerrar detalles">
+          <CloseButton
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            aria-label="Cerrar detalles"
+          >
             ✕
-          </button>
+          </CloseButton>
         </ModalHeader>
 
         <ModalContent>
@@ -119,263 +160,302 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
 
           {!loading && !error && detalle && (
             <ScrollArea>
-              <Section>
-                <SectionTitle>Resumen</SectionTitle>
-                <InfoGrid>
-                  {resumenVenta.map((item) => (
-                    <InfoCard key={item.label}>
+              <TopSummary>
+                {resumenVenta.map((item, index) => (
+                  <SummaryItem key={index}>
+                    <div className="icon-box">{item.icon}</div>
+                    <div className="info-box">
                       <small>{item.label}</small>
                       <strong>{mostrarConGuion(item.value)}</strong>
-                    </InfoCard>
-                  ))}
-                </InfoGrid>
-              </Section>
+                    </div>
+                  </SummaryItem>
+                ))}
+              </TopSummary>
 
-              <Section>
-                <SectionTitle>Montos</SectionTitle>
-                <InfoGrid>
-                  {montosVenta.map((item) => (
-                    <InfoCard key={item.label}>
-                      <small>{item.label}</small>
-                      <strong>{mostrarConGuion(item.value)}</strong>
-                    </InfoCard>
-                  ))}
-                </InfoGrid>
-              </Section>
-
-              <Section>
-                <SectionTitle>Docente</SectionTitle>
-                <InfoGrid $cols={2}>
-                  <InfoCard>
-                    <small>Docente</small>
-                    <strong>{mostrarConGuion(docenteData?.docente_nombre_completo)}</strong>
-                    <Muted>{mostrarConGuion(docenteData?.docente_nro_doc)}</Muted>
-                  </InfoCard>
-                  <InfoCard>
-                    <small>Contacto</small>
-                    <strong>{mostrarConGuion(docenteData?.docente_telefono)}</strong>
-                    <Muted>{mostrarConGuion(docenteData?.docente_tipo_ingreso)}</Muted>
-                  </InfoCard>
-                </InfoGrid>
-              </Section>
-
-              <Section>
-                <SectionTitle>Items vendidos</SectionTitle>
-                {items.length === 0 ? (
-                  <EmptyState>No hay items registrados.</EmptyState>
-                ) : (
-                  <ItemsList>
-                    {items.map((item, index) => (
-                      <ItemRow key={`${item.nombre_material}-${index}`}>
-                        <div className="item-main">
-                          <span className="pill">{mostrarConGuion(item.tipo_contenido)}</span>
-                          <div className="item-texts">
-                            <strong>{mostrarConGuion(item.nombre_material)}</strong>
-                            <ItemMeta>
-                              {[item.nivel, item.subnivel, item.curso, item.mes]
-                                .filter(Boolean)
-                                .join(" • ") || "Sin detalle"}
-                            </ItemMeta>
-                          </div>
-                        </div>
-                        <div className="item-values">
-                          <ValueRow>
-                            <Muted>Cantidad</Muted>
-                            <strong>{item.cantidad ?? "-"}</strong>
-                          </ValueRow>
-                          <ValueRow>
-                            <Muted>Precio unitario</Muted>
-                            <strong>{mostrarConGuion(item.precio_unitario)}</strong>
-                          </ValueRow>
-                          <ValueRow>
-                            <Muted>Subtotal</Muted>
-                            <strong>{mostrarConGuion(item.subtotal)}</strong>
-                          </ValueRow>
-                        </div>
-                      </ItemRow>
-                    ))}
-                  </ItemsList>
-                )}
-              </Section>
-
-              <Section>
-                <SectionTitle>Descuentos aplicados</SectionTitle>
-                {descuentos.length === 0 ? (
-                  <EmptyState>Sin descuentos aplicados.</EmptyState>
-                ) : (
-                  <Timeline>
-                    {descuentos.map((dcto, index) => (
-                      <TimelineItem key={`${dcto.codigo}-${index}`}>
-                        <div className="dot" />
-                        <div className="content">
-                          <div className="title">
-                            <strong>{mostrarConGuion(dcto.nombre)}</strong>
-                            <span className="pill">{mostrarConGuion(dcto.codigo)}</span>
-                          </div>
-                          <Muted>{mostrarConGuion(dcto.fecha_aplicado)}</Muted>
-                          <div className="detail-row">
-                            <span>Aplicado por {mostrarConGuion(dcto.aplicado_por)}</span>
-                            <strong>{mostrarConGuion(dcto.monto_descuento)}</strong>
-                          </div>
-                        </div>
-                      </TimelineItem>
-                    ))}
-                  </Timeline>
-                )}
-              </Section>
-
-              <Section>
-                <SectionTitle>Cuotas y pagos</SectionTitle>
-                {cuotas.length === 0 ? (
-                  <EmptyState>Esta venta no tiene cuotas configuradas.</EmptyState>
-                ) : (
-                  <CardsGrid>
-                    {cuotas.map((cuota, index) => (
-                      <CuotaCard key={`cuota-${index}`}>
-                        <div className="cuota-head">
-                          <div>
-                            <small>Cuota</small>
-                            <strong>#{cuota.nro_cuota}</strong>
-                          </div>
-                          <div>
-                            <small>Estado</small>
-                            <span className="pill">{mostrarConGuion(cuota.estado)}</span>
-                          </div>
-                        </div>
-                        <div className="cuota-body">
-                          <div>
-                            <small>Vencimiento</small>
-                            <strong>{mostrarConGuion(cuota.fecha_vencimiento)}</strong>
-                          </div>
-                          <div>
-                            <small>Programado</small>
-                            <strong>{mostrarConGuion(cuota.monto_programado)}</strong>
-                          </div>
-                          <div>
-                            <small>Saldo</small>
-                            <strong>{mostrarConGuion(cuota.saldo)}</strong>
-                          </div>
-                        </div>
-                        <div className="pagos">
-                          <small>Pagos</small>
-                          {Array.isArray(cuota.pagos) && cuota.pagos.length > 0 ? (
-                            <div className="pagos-list">
-                              {cuota.pagos.map((pago, pagoIdx) => (
-                                <div className="pago" key={`pago-${pagoIdx}`}>
-                                  <div className="pago-head">
-                                    <Muted>{mostrarConGuion(pago.fecha_pago)}</Muted>
-                                    <strong>{mostrarConGuion(pago.monto)}</strong>
-                                  </div>
-                                  <Muted>
-                                    {[pago.cuenta_entidad, pago.cuenta_medio, pago.cuenta_etiqueta]
+              <MainGrid>
+                <LeftColumn>
+                  <Section>
+                    <SectionHeader>
+                      <SectionTitle>Items vendidos</SectionTitle>
+                      <Badge>{items.length}</Badge>
+                    </SectionHeader>
+                    {items.length === 0 ? (
+                      <EmptySection>No hay items registrados.</EmptySection>
+                    ) : (
+                      <ItemsTable>
+                        <thead>
+                          <tr>
+                            <th>Descripción</th>
+                            <th className="text-right">Cant.</th>
+                            <th className="text-right">Unitario</th>
+                            <th className="text-right">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.map((item, index) => (
+                            <tr key={`${item.nombre_material}-${index}`}>
+                              <td>
+                                <div className="item-desc">
+                                  <strong>
+                                    {mostrarConGuion(item.nombre_material)}
+                                  </strong>
+                                  <small>
+                                    {[
+                                      item.tipo_contenido,
+                                      item.nivel,
+                                      item.subnivel,
+                                      item.curso,
+                                    ]
                                       .filter(Boolean)
-                                      .join(" • ") || "-"}
-                                  </Muted>
-                                  {Array.isArray(pago.evidencias) && pago.evidencias.length > 0 && (
-                                    <PagoEvidencias>
-                                      {pago.evidencias.map((ev, evIdx) => {
-                                        const label = mostrarConGuion(
-                                          ev.nombre || ev.archivo || ev.notas || `Voucher ${evIdx + 1}`
-                                        );
-                                        const url = ev.archivo || ev.url || null;
-                                        const isImage =
-                                          typeof url === "string" && url.match(/\.(png|jpe?g|gif|webp)$/i);
-
-                                        return (
-                                          <EvidenceThumb
-                                            key={`pago-${pagoIdx}-ev-${evIdx}`}
-                                            as={url ? "a" : "div"}
-                                            href={url || undefined}
-                                            target={url ? "_blank" : undefined}
-                                            rel={url ? "noreferrer" : undefined}
-                                          >
-                                            {isImage && url ? (
-                                              <img src={url} alt={label} />
-                                            ) : (
-                                              <div className="evidence-placeholder" aria-hidden>
-                                                📎
-                                              </div>
-                                            )}
-                                            <span className="evidence-label">{label}</span>
-                                            {ev.notas && <small>{mostrarConGuion(ev.notas)}</small>}
-                                          </EvidenceThumb>
-                                        );
-                                      })}
-                                    </PagoEvidencias>
-                                  )}
+                                      .join(" • ")}
+                                  </small>
                                 </div>
-                              ))}
+                              </td>
+                              <td className="text-right">
+                                {item.cantidad ?? "-"}
+                              </td>
+                              <td className="text-right">
+                                {mostrarConGuion(item.precio_unitario)}
+                              </td>
+                              <td className="text-right font-bold">
+                                {mostrarConGuion(item.subtotal)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </ItemsTable>
+                    )}
+                  </Section>
+
+                  <Section>
+                    <SectionHeader>
+                      <SectionTitle>Plan de pagos</SectionTitle>
+                      <Badge>{cuotas.length}</Badge>
+                    </SectionHeader>
+                    {cuotas.length === 0 ? (
+                      <EmptySection>
+                        Esta venta no tiene cuotas configuradas.
+                      </EmptySection>
+                    ) : (
+                      <CuotasContainer>
+                        {cuotas.map((cuota, index) => (
+                          <CuotaRow key={`cuota-${index}`}>
+                            <div className="cuota-header">
+                              <div className="cuota-title">
+                                <span className="cuota-number">
+                                  {cuota.nro_cuota}
+                                </span>
+                                <div className="cuota-info">
+                                  <strong>
+                                    Vence:{" "}
+                                    {mostrarConGuion(cuota.fecha_vencimiento)}
+                                  </strong>
+                                  <small>{mostrarConGuion(cuota.estado)}</small>
+                                </div>
+                              </div>
+                              <div className="cuota-amount">
+                                <small>
+                                  Saldo: {mostrarConGuion(cuota.saldo)}
+                                </small>
+                                <strong>
+                                  {mostrarConGuion(cuota.monto_programado)}
+                                </strong>
+                              </div>
                             </div>
-                          ) : (
-                            <Muted>Sin pagos registrados.</Muted>
-                          )}
+
+                            {Array.isArray(cuota.pagos) &&
+                              cuota.pagos.length > 0 && (
+                                <PagosList>
+                                  {cuota.pagos.map((pago, pagoIdx) => (
+                                    <div
+                                      className="pago-wrapper"
+                                      key={`pago-${pagoIdx}`}
+                                    >
+                                      <div className="pago-item">
+                                        <div className="pago-info">
+                                          <strong>
+                                            {mostrarConGuion(pago.fecha_pago)}
+                                          </strong>
+                                          <small>
+                                            {[
+                                              pago.cuenta_entidad,
+                                              pago.cuenta_medio,
+                                              pago.cuenta_etiqueta,
+                                            ]
+                                              .filter(Boolean)
+                                              .join(" - ")}
+                                          </small>
+                                        </div>
+                                        <div className="pago-amount">
+                                          {mostrarConGuion(pago.monto)}
+                                        </div>
+                                      </div>
+
+                                      {/* Evidencias Logic Restored */}
+                                      {pago.archivo_voucher && (
+                                        <PagoEvidencias>
+                                          <EvidenceThumb
+                                            as="a"
+                                            href={pago.archivo_voucher}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                          >
+                                            {/* Aunque la URL no tenga extensión, el navegador igual carga la imagen */}
+                                            <img
+                                              src={pago.archivo_voucher}
+                                              alt={`Voucher cuota ${cuota.nro_cuota}`}
+                                            />
+                                            <span className="evidence-label">
+                                              Voucher
+                                            </span>
+                                          </EvidenceThumb>
+                                        </PagoEvidencias>
+                                      )}
+                                    </div>
+                                  ))}
+                                </PagosList>
+                              )}
+                          </CuotaRow>
+                        ))}
+                      </CuotasContainer>
+                    )}
+                  </Section>
+                </LeftColumn>
+
+                <RightColumn>
+                  <SideCard>
+                    <SideHeader>Resumen Financiero</SideHeader>
+                    <FinancialList>
+                      {montosVenta.map((monto, i) => (
+                        <div
+                          key={i}
+                          className={`financial-row ${monto.highlight ? "highlight" : ""
+                            }`}
+                        >
+                          <span>{monto.label}</span>
+                          <strong>{mostrarConGuion(monto.value)}</strong>
                         </div>
-                      </CuotaCard>
-                    ))}
-                  </CardsGrid>
-                )}
-              </Section>
+                      ))}
+                    </FinancialList>
+                  </SideCard>
 
-              <Section>
-                <SectionTitle>Seguimiento</SectionTitle>
-                <InfoGrid>
-                  <InfoCard>
-                    <small>Supervisión</small>
-                    <strong>{mostrarConGuion(supervisionActual?.estado)}</strong>
-                    <Muted>{mostrarConGuion(supervisionActual?.usuario)}</Muted>
-                  </InfoCard>
-                  <InfoCard>
-                    <small>Contabilidad</small>
-                    <strong>{mostrarConGuion(contabilidadActual?.estado)}</strong>
-                    <Muted>{mostrarConGuion(contabilidadActual?.usuario)}</Muted>
-                  </InfoCard>
-                  <InfoCard>
-                    <small>Entregas</small>
-                    <strong>{mostrarConGuion(entregasActual?.estado)}</strong>
-                    <Muted>{mostrarConGuion(entregasActual?.usuario)}</Muted>
-                  </InfoCard>
-                </InfoGrid>
-              </Section>
+                  {descuentos.length > 0 && (
+                    <SideCard>
+                      <SideHeader>Descuentos Aplicados</SideHeader>
+                      <AlertsList>
+                        {descuentos.map((dcto, index) => (
+                          <AlertItem
+                            key={`${dcto.codigo}-${index}`}
+                            type="descuento"
+                          >
+                            <div className="flex-between">
+                              <strong>{mostrarConGuion(dcto.nombre)}</strong>
+                              <span className="pill">
+                                {mostrarConGuion(dcto.codigo)}
+                              </span>
+                            </div>
+                            <small>
+                              {mostrarConGuion(dcto.fecha_aplicado)}
+                            </small>
+                            <small>
+                              Aplicado por: {mostrarConGuion(dcto.aplicado_por)}
+                            </small>
+                            <strong className="monto-dcto">
+                              -{mostrarConGuion(dcto.monto_descuento)}
+                            </strong>
+                          </AlertItem>
+                        ))}
+                      </AlertsList>
+                    </SideCard>
+                  )}
 
-              <Section>
-                <SectionTitle>Ajustes e incidentes</SectionTitle>
-                <TwoColumn>
-                  <StackedList>
-                    <small>Ajustes</small>
-                    {ajustes.length === 0 ? (
-                      <Muted>Sin ajustes registrados.</Muted>
-                    ) : (
-                      ajustes.map((ajuste, index) => (
-                        <ListRow key={`ajuste-${index}`}>
-                          <div>
-                            <strong>{mostrarConGuion(ajuste.concepto)}</strong>
-                            <Muted>{mostrarConGuion(ajuste.tipo)}</Muted>
-                            <Muted>{mostrarConGuion(ajuste.usuario)}</Muted>
-                          </div>
-                          <strong>{mostrarConGuion(ajuste.monto)}</strong>
-                        </ListRow>
-                      ))
-                    )}
-                  </StackedList>
-                  <StackedList>
-                    <small>Incidentes</small>
-                    {incidentes.length === 0 ? (
-                      <Muted>Sin incidentes.</Muted>
-                    ) : (
-                      incidentes.map((inc, index) => (
-                        <ListRow key={`incidente-${index}`}>
-                          <div>
+                  <SideCard>
+                    <SideHeader>Información del Docente</SideHeader>
+                    <DocenteInfo>
+                      <div className="docente-avatar">
+                        <BsPerson />
+                      </div>
+                      <div className="docente-details">
+                        <strong>
+                          {mostrarConGuion(
+                            docenteData?.docente_nombre_completo
+                          )}
+                        </strong>
+                        <small>
+                          {mostrarConGuion(docenteData?.docente_nro_doc)}
+                        </small>
+                      </div>
+                      <ContactInfo>
+                        <div className="contact-row">
+                          <span>Tel:</span>
+                          <strong>
+                            {mostrarConGuion(docenteData?.docente_telefono)}
+                          </strong>
+                        </div>
+                        <div className="contact-row">
+                          <span>Tipo:</span>
+                          <strong>
+                            {mostrarConGuion(docenteData?.docente_tipo_ingreso)}
+                          </strong>
+                        </div>
+                      </ContactInfo>
+                    </DocenteInfo>
+                  </SideCard>
+
+                  {(ajustes.length > 0 || incidentes.length > 0) && (
+                    <SideCard>
+                      <SideHeader>Incidentes y Ajustes</SideHeader>
+                      <AlertsList>
+                        {ajustes.map((aj, i) => (
+                          <AlertItem key={i} type="ajuste">
+                            <strong>Ajuste: {mostrarConGuion(aj.monto)}</strong>
+                            <small>{mostrarConGuion(aj.concepto)}</small>
+                          </AlertItem>
+                        ))}
+                        {incidentes.map((inc, i) => (
+                          <AlertItem key={i} type="incidente">
                             <strong>{mostrarConGuion(inc.descripcion)}</strong>
-                            <Muted>{[inc.area, inc.severidad, inc.estado].filter(Boolean).join(" • ")}</Muted>
-                            <Muted>{[inc.usuario_reporta, inc.usuario_recibe].filter(Boolean).join(" → ")}</Muted>
-                          </div>
-                          <Muted>{mostrarConGuion(inc.fecha_reporte)}</Muted>
-                        </ListRow>
-                      ))
-                    )}
-                  </StackedList>
-                </TwoColumn>
-              </Section>
+                            <small>{mostrarConGuion(inc.fecha_reporte)}</small>
+                          </AlertItem>
+                        ))}
+                      </AlertsList>
+                    </SideCard>
+                  )}
+
+                  <SideCard>
+                    <SideHeader>Seguimiento</SideHeader>
+                    <StatusSteps>
+                      <Step status={supervisionActual?.estado}>
+                        <div className="step-dot" />
+                        <div className="step-content">
+                          <small>Supervisión</small>
+                          <strong>
+                            {mostrarConGuion(supervisionActual?.estado)}
+                          </strong>
+                        </div>
+                      </Step>
+                      <Step status={contabilidadActual?.estado}>
+                        <div className="step-dot" />
+                        <div className="step-content">
+                          <small>Contabilidad</small>
+                          <strong>
+                            {mostrarConGuion(contabilidadActual?.estado)}
+                          </strong>
+                        </div>
+                      </Step>
+                      <Step status={entregasActual?.estado}>
+                        <div className="step-dot" />
+                        <div className="step-content">
+                          <small>Entregas</small>
+                          <strong>
+                            {mostrarConGuion(entregasActual?.estado)}
+                          </strong>
+                        </div>
+                      </Step>
+                    </StatusSteps>
+                  </SideCard>
+                </RightColumn>
+              </MainGrid>
             </ScrollArea>
           )}
         </ModalContent>
@@ -384,378 +464,597 @@ export function DetalleVenta({ open, onClose, detalle, loading, error, ventaBase
   );
 }
 
+// Styled Components
 const Modal = styled(ModalContainer)`
-  width: min(1100px, 88vw);
-  max-width: 1100px;
-  height: min(900px, calc(100vh - 80px));
-  max-height: min(900px, calc(100vh - 80px));
-  padding: 26px 28px 30px;
-  gap: 18px;
+  width: min(1200px, 95vw);
+  max-width: 1200px;
+  height: min(900px, calc(100vh - 40px));
+  max-height: min(900px, calc(100vh - 40px));
+  padding: 0;
+  gap: 0;
   background: ${({ theme }) => theme.bgtotal};
-`;
-
-const ModalContent = styled.div`
-  flex: 1;
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  border-radius: 20px;
-  background: linear-gradient(
-      180deg,
-      rgba(${({ theme }) => theme.textRgba}, 0.04),
-      rgba(${({ theme }) => theme.textRgba}, 0.02)
-    ),
-    ${({ theme }) => theme.bgtotal};
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 `;
 
 const ModalHeader = styled.header`
+  padding: 20px 24px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  border-bottom: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
+  background: ${({ theme }) => theme.bgtotal};
 
-  p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: rgba(${({ theme }) => theme.textRgba}, 0.65);
-  }
-
-  h2 {
-    margin: 6px 0 0;
-    font-size: 1.4rem;
-  }
-
-  button {
-    border: none;
-    background: rgba(${({ theme }) => theme.textRgba}, 0.08);
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    display: grid;
-    place-items: center;
-    color: ${({ theme }) => theme.text};
-    cursor: pointer;
-  }
-
-  button:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+  .header-content {
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: ${({ theme }) => theme.text};
+      font-weight: 700;
+    }
+    p {
+      margin: 4px 0 0;
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+      font-size: 0.9rem;
+    }
   }
 `;
 
+const CloseButton = styled.button`
+  border: none;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.05);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.1);
+  }
+`;
+
+const ModalContent = styled.div`
+  flex: 1;
+  overflow: hidden;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+  display: flex;
+  flex-direction: column;
+`;
+
 const ScrollArea = styled.div`
-  height: 100%;
-  overflow: auto;
-  padding-right: 8px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 
   &::-webkit-scrollbar {
     width: 8px;
   }
-
   &::-webkit-scrollbar-thumb {
-    background: rgba(${({ theme }) => theme.textRgba}, 0.35);
-    border-radius: 999px;
+    background: rgba(${({ theme }) => theme.textRgba}, 0.2);
+    border-radius: 4px;
   }
 `;
 
-const Section = styled.section`
+const TopSummary = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+`;
+
+const SummaryItem = styled.div`
+  background: ${({ theme }) => theme.bgtotal};
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+
+  .icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(${({ theme }) => theme.textRgba}, 0.05);
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    color: ${({ theme }) => theme.text};
+  }
+
+  .info-box {
+    display: flex;
+    flex-direction: column;
+
+    small {
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+      font-size: 0.8rem;
+    }
+
+    strong {
+      color: ${({ theme }) => theme.text};
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+`;
+
+const MainGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 1fr 320px;
+  }
+`;
+
+const LeftColumn = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 24px;
+`;
+
+const RightColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`;
+
+const Section = styled.div`
+  background: ${({ theme }) => theme.bgtotal};
+  border-radius: 16px;
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+`;
+
+const SectionHeader = styled.div`
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+  display: flex;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
 `;
 
 const SectionTitle = styled.h3`
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   color: ${({ theme }) => theme.text};
 `;
 
-const InfoGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(${(props) => props.$cols || 4}, minmax(0, 1fr));
-  gap: 12px;
-
-  @media (max-width: ${v.bpbart}) {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-
-  @media (min-width: ${v.bpbart}) and (max-width: ${v.bpmarge}) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+const Badge = styled.span`
+  background: rgba(${({ theme }) => theme.textRgba}, 0.1);
+  color: ${({ theme }) => theme.text};
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
 `;
 
-const InfoCard = styled.div`
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
-  border-radius: 14px;
-  padding: 12px 14px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  small {
-    color: rgba(${({ theme }) => theme.textRgba}, 0.65);
-    font-weight: 600;
-  }
-
-  strong {
-    color: ${({ theme }) => theme.text};
-    font-size: 1.05rem;
-  }
+const EmptySection = styled.div`
+  padding: 32px;
+  text-align: center;
+  color: rgba(${({ theme }) => theme.textRgba}, 0.5);
+  font-size: 0.95rem;
 `;
 
-const Muted = styled.span`
-  color: rgba(${({ theme }) => theme.textRgba}, 0.7);
-  font-size: 0.9rem;
-`;
+const ItemsTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
 
-const CardsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-`;
-
-const ItemsList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const ItemRow = styled.div`
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  border-radius: 14px;
-  padding: 12px 14px;
-  background: ${({ theme }) => theme.bgtotal};
-  box-shadow: 0 8px 28px rgba(${({ theme }) => theme.textRgba}, 0.04);
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-
-  @media (min-width: ${v.bpbart}) {
-    grid-template-columns: 1.2fr 1fr;
-    align-items: center;
-  }
-
-  .item-main {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .item-texts {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-
-    strong {
-      color: ${({ theme }) => theme.text};
+  thead {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+    th {
+      padding: 12px 20px;
+      text-align: left;
+      font-size: 0.85rem;
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+      font-weight: 600;
+      border-bottom: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+    }
+    th.text-right {
+      text-align: right;
     }
   }
 
-  .item-values {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 6px 12px;
+  tbody {
+    tr {
+      border-bottom: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.05);
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: 14px 20px;
+      vertical-align: middle;
+      color: ${({ theme }) => theme.text};
+      font-size: 0.95rem;
+    }
+    td.text-right {
+      text-align: right;
+    }
+    td.font-bold {
+      font-weight: 600;
+    }
+  }
+
+  .item-desc {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    strong {
+      font-weight: 600;
+    }
+    small {
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+      font-size: 0.8rem;
+    }
   }
 `;
 
-const ItemMeta = styled(Muted)`
-  display: block;
+const CuotasContainer = styled.div`
+  display: flex;
+  flex-direction: column;
 `;
 
-const ValueRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.12);
-
+const CuotaRow = styled.div`
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   &:last-child {
     border-bottom: none;
   }
 
-  strong {
-    font-size: 1rem;
-  }
-`;
-
-const Timeline = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const TimelineItem = styled.div`
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  align-items: start;
-
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: rgba(${({ theme }) => theme.textRgba}, 0.35);
-    margin-top: 8px;
-  }
-
-  .content {
-    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
-    border-radius: 14px;
-    padding: 10px 12px;
-    background: rgba(${({ theme }) => theme.textRgba}, 0.03);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-
-    .title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      justify-content: space-between;
-    }
-
-    .detail-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-  }
-`;
-
-const CuotaCard = styled.div`
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
-  border-radius: 14px;
-  padding: 12px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  .cuota-head {
+  .cuota-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 12px;
   }
 
-  .cuota-body {
+  .cuota-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cuota-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: ${({ theme }) => theme.colorPrincipal};
+    color: #000;
+    font-weight: 700;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    place-items: center;
+    font-size: 0.9rem;
   }
 
-  .pagos {
+  .cuota-info {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 2px;
+    strong {
+      font-size: 0.9rem;
+    }
+    small {
+      font-size: 0.8rem;
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+    }
+  }
 
-    .pagos-list {
+  .cuota-amount {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    small {
+      font-size: 0.8rem;
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+    }
+    strong {
+      font-size: 1rem;
+      color: ${({ theme }) => theme.text};
+    }
+  }
+`;
+
+const PagosList = styled.div`
+  margin-left: 44px;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .pago-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+    background: ${({ theme }) => theme.bgtotal};
+    border-radius: 6px;
+    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.05);
+  }
+
+  .pago-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .pago-info {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-    }
-
-    .pago {
-      border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
-      border-radius: 12px;
-      padding: 8px 10px;
-      background: rgba(${({ theme }) => theme.textRgba}, 0.04);
-    }
-
-    .pago-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
+      strong {
+        font-size: 0.85rem;
       }
+      small {
+        font-size: 0.75rem;
+        color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+      }
+    }
+
+    .pago-amount {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
   }
 `;
 
 const PagoEvidencias = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin-top: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-top: 4px;
 `;
 
 const EvidenceThumb = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.05);
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   color: ${({ theme }) => theme.text};
   text-decoration: none;
+  font-size: 0.8rem;
 
   img {
     width: 100%;
-    height: 110px;
+    height: 80px;
     object-fit: cover;
-    border-radius: 10px;
-    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+    border-radius: 6px;
+    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.05);
     background: ${({ theme }) => theme.bgtotal};
   }
 
   .evidence-placeholder {
     width: 100%;
-    height: 110px;
-    border-radius: 10px;
+    height: 80px;
+    border-radius: 6px;
     border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.15);
     display: grid;
     place-items: center;
-    color: rgba(${({ theme }) => theme.textRgba}, 0.7);
+    color: rgba(${({ theme }) => theme.textRgba}, 0.6);
     background: ${({ theme }) => theme.bgtotal};
     font-size: 1.2rem;
   }
 
   .evidence-label {
-    font-weight: 700;
-  }
-
-  small {
-    color: rgba(${({ theme }) => theme.textRgba}, 0.75);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 `;
 
-const TwoColumn = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+const SideCard = styled.div`
+  background: ${({ theme }) => theme.bgtotal};
+  border-radius: 16px;
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+`;
+
+const SideHeader = styled.h4`
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  color: rgba(${({ theme }) => theme.textRgba}, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+`;
+
+const FinancialList = styled.div`
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+
+  .financial-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    color: rgba(${({ theme }) => theme.textRgba}, 0.8);
+
+    &.highlight {
+      margin-top: 8px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
+      font-weight: 700;
+      color: ${({ theme }) => theme.text};
+      font-size: 1.1rem;
+    }
+  }
 `;
 
-const StackedList = styled.div`
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
-  border-radius: 14px;
-  padding: 12px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
+const DocenteInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+
+  .docente-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(${({ theme }) => theme.textRgba}, 0.05);
+    display: grid;
+    place-items: center;
+    font-size: 1.8rem;
+    color: ${({ theme }) => theme.text};
+  }
+
+  .docente-details {
+    strong {
+      display: block;
+      font-size: 1.1rem;
+    }
+    small {
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+    }
+  }
+`;
+
+const ContactInfo = styled.div`
+  width: 100%;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
   display: flex;
   flex-direction: column;
   gap: 8px;
 
-  small {
-    color: rgba(${({ theme }) => theme.textRgba}, 0.7);
-    font-weight: 700;
+  .contact-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    span {
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+    }
+    strong {
+      color: ${({ theme }) => theme.text};
+    }
   }
 `;
 
-const ListRow = styled.div`
+const AlertsList = styled.div`
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.04);
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+`;
 
-  div {
+const AlertItem = styled.div`
+  padding: 10px;
+  border-radius: 8px;
+  background: ${(props) =>
+    props.type === "incidente"
+      ? "rgba(245, 78, 65, 0.1)"
+      : props.type === "descuento"
+        ? "rgba(83, 178, 87, 0.1)"
+        : "rgba(243, 210, 12, 0.1)"};
+  border: 1px solid
+    ${(props) =>
+    props.type === "incidente"
+      ? "rgba(245, 78, 65, 0.2)"
+      : props.type === "descuento"
+        ? "rgba(83, 178, 87, 0.2)"
+        : "rgba(243, 210, 12, 0.2)"};
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  strong {
+    font-size: 0.9rem;
+  }
+  small {
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+
+  .flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .pill {
+    background: ${({ theme }) => theme.bgtotal};
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
+  }
+
+  .monto-dcto {
+    align-self: flex-end;
+    margin-top: 4px;
+    font-size: 1rem;
+    color: ${({ theme }) => theme.text};
+  }
+`;
+
+const StatusSteps = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+
+  &:before {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: rgba(${({ theme }) => theme.textRgba}, 0.1);
+  }
+`;
+
+const Step = styled.div`
+  display: flex;
+  gap: 16px;
+  position: relative;
+  padding-bottom: 24px;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  .step-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: ${(props) =>
+    props.status ? props.theme.verde : `rgba(${props.theme.textRgba}, 0.2)`};
+    border: 2px solid ${({ theme }) => theme.bgtotal};
+    z-index: 1;
+  }
+
+  .step-content {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    margin-top: -2px;
+    small {
+      font-size: 0.8rem;
+      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
+    }
+    strong {
+      font-size: 0.95rem;
+    }
   }
 `;
 
@@ -785,9 +1084,8 @@ const LoadingState = styled.div`
 `;
 
 const EmptyState = styled.div`
-  padding: 18px;
+  padding: 48px;
   text-align: center;
-  border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.25);
-  border-radius: 14px;
-  color: rgba(${({ theme }) => theme.textRgba}, 0.75);
+  color: rgba(${({ theme }) => theme.textRgba}, 0.5);
+  font-size: 1.1rem;
 `;
