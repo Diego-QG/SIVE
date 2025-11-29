@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import styled from "styled-components";
 import {
   Overlay,
@@ -72,6 +72,8 @@ export function DetalleVenta({
   error,
   ventaBase,
 }) {
+  const [focusedVoucher, setFocusedVoucher] = useState(null);
+
   const resumenVenta = useMemo(() => {
     if (!detalle && !ventaBase) return [];
 
@@ -295,12 +297,26 @@ export function DetalleVenta({
                                       {pago.archivo_voucher && (
                                         <PagoEvidencias>
                                           <EvidenceThumb
-                                            as="a"
-                                            href={pago.archivo_voucher}
-                                            target="_blank"
-                                            rel="noreferrer"
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() =>
+                                              setFocusedVoucher({
+                                                preview: pago.archivo_voucher,
+                                                id: `voucher-${index}-${pagoIdx}`,
+                                              })
+                                            }
+                                            onKeyDown={(e) => {
+                                              if (
+                                                e.key === "Enter" ||
+                                                e.key === " "
+                                              ) {
+                                                setFocusedVoucher({
+                                                  preview: pago.archivo_voucher,
+                                                  id: `voucher-${index}-${pagoIdx}`,
+                                                });
+                                              }
+                                            }}
                                           >
-                                            {/* Aunque la URL no tenga extensión, el navegador igual carga la imagen */}
                                             <img
                                               src={pago.archivo_voucher}
                                               alt={`Voucher cuota ${cuota.nro_cuota}`}
@@ -458,6 +474,27 @@ export function DetalleVenta({
               </MainGrid>
             </ScrollArea>
           )}
+
+          {focusedVoucher && (
+            <VoucherLightboxOverlay onClick={() => setFocusedVoucher(null)}>
+              <VoucherLightboxContent
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="close"
+                  onClick={() => setFocusedVoucher(null)}
+                  aria-label="Cerrar vista ampliada"
+                >
+                  ×
+                </button>
+                <img
+                  src={focusedVoucher.preview}
+                  alt={`Vista ampliada`}
+                />
+              </VoucherLightboxContent>
+            </VoucherLightboxOverlay>
+          )}
         </ModalContent>
       </Modal>
     </Overlay>
@@ -465,6 +502,55 @@ export function DetalleVenta({
 }
 
 // Styled Components
+const VoucherLightboxOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  padding: 16px;
+`;
+
+const VoucherLightboxContent = styled.div`
+  position: relative;
+  width: min(640px, calc(100% - 64px));
+  max-height: min(90vh, 820px);
+  background: ${({ theme }) => theme.bgtotal};
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+  img {
+    width: 100%;
+    height: auto;
+    max-height: calc(90vh - 160px);
+    object-fit: contain;
+    border-radius: 18px;
+    background: rgba(4, 18, 29, 0.75);
+    padding: 8px;
+  }
+
+  .close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    font-size: 1.3rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+`;
+
 const Modal = styled(ModalContainer)`
   width: min(1200px, 95vw);
   max-width: 1200px;
@@ -822,22 +908,29 @@ const PagoEvidencias = styled.div`
 const EvidenceThumb = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 6px;
-  border-radius: 8px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(${({ theme }) => theme.textRgba}, 0.04);
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   color: ${({ theme }) => theme.text};
   text-decoration: none;
   font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(${({ theme }) => theme.textRgba}, 0.06);
+    transform: translateY(-2px);
+  }
 
   img {
     width: 100%;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 6px;
-    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.05);
-    background: ${({ theme }) => theme.bgtotal};
+    height: 120px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: rgba(4, 18, 29, 0.3);
+    padding: 4px;
   }
 
   .evidence-placeholder {
