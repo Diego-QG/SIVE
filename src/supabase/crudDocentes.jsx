@@ -5,7 +5,7 @@ import { crearInstitucionVacia, eliminarInstitucion } from "./crudInstituciones"
 const tabla = "docentes";
 const TABLA_VENTAS = "ventas";
 const SELECT_COLUMNS =
-  "id, id_empresa, id_pais, id_institucion, nro_doc, telefono, nombres, apellido_p, apellido_m";
+  "id, id_empresa, id_pais, id_institucion, nro_doc, telefono, nombres, apellido_p, apellido_m, valido";
 
 const handleError = (error) => {
   if (error) {
@@ -202,6 +202,15 @@ export async function guardarDocenteBorrador(p = {}) {
     return null;
   }
 
+  const { error: docenteValidoError } = await supabase
+    .from(tabla)
+    .update({ valido: true })
+    .eq("id", savedDocente.id);
+
+  if (handleError(docenteValidoError)) {
+    return null;
+  }
+
   return savedDocente;
 }
 
@@ -254,6 +263,19 @@ export async function crearDocenteConInstitucionBorrador(p = {}) {
     .eq("id", ventaId);
 
   if (handleError(ventaError)) {
+    await supabase.from(tabla).delete().eq("id", docente.id);
+    if (institucionId) {
+      await eliminarInstitucion({ id: institucionId });
+    }
+    return null;
+  }
+
+  const { error: docenteValidoError } = await supabase
+    .from(tabla)
+    .update({ valido: true })
+    .eq("id", docente.id);
+
+  if (handleError(docenteValidoError)) {
     await supabase.from(tabla).delete().eq("id", docente.id);
     if (institucionId) {
       await eliminarInstitucion({ id: institucionId });
