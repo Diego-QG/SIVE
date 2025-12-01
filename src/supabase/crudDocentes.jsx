@@ -163,6 +163,17 @@ export async function guardarDocenteBorrador(p = {}) {
   let savedDocente = null;
 
   if (docenteId) {
+    // Si estamos actualizando, primero aseguramos que la venta apunte a este docente.
+    // Esto es necesario para cumplir con la política RLS "Enable update for borrador ventas only".
+    const { error: linkError } = await supabase
+      .from(TABLA_VENTAS)
+      .update({ id_docente: docenteId })
+      .eq("id", ventaId);
+
+    if (handleError(linkError)) {
+      return null;
+    }
+
     const { data, error } = await supabase
       .from(tabla)
       .update(docentePayload)
@@ -176,6 +187,7 @@ export async function guardarDocenteBorrador(p = {}) {
 
     savedDocente = data ?? null;
   } else {
+    // Si es nuevo, primero insertamos (permitido por RLS "Enable insert").
     const { data, error } = await supabase
       .from(tabla)
       .insert(docentePayload)
@@ -187,18 +199,21 @@ export async function guardarDocenteBorrador(p = {}) {
     }
 
     savedDocente = data ?? null;
+
+    if (savedDocente?.id) {
+      // Luego enlazamos a la venta.
+      const { error: ventaError } = await supabase
+        .from(TABLA_VENTAS)
+        .update({ id_docente: savedDocente.id })
+        .eq("id", ventaId);
+
+      if (handleError(ventaError)) {
+        return null;
+      }
+    }
   }
 
   if (!savedDocente?.id) {
-    return null;
-  }
-
-  const { error: ventaError } = await supabase
-    .from(TABLA_VENTAS)
-    .update({ id_docente: savedDocente.id })
-    .eq("id", ventaId);
-
-  if (handleError(ventaError)) {
     return null;
   }
 
