@@ -203,7 +203,7 @@ export async function obtenerVentaBorradorPorId(p = {}) {
 
   const { data, error } = await supabase
     .from(TABLA_VENTAS)
-    .select("id, id_editorial")
+    .select("id, id_editorial, total_neto, total_bruto, total_descuento")
     .eq("id", idVenta)
     .maybeSingle();
 

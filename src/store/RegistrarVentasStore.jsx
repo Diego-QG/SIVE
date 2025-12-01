@@ -205,7 +205,11 @@ export const useRegistrarVentasStore = create((set, get) => ({
     set({ isLoadingResumen: true });
     const data = await obtenerVentaItemsDetalle({ idVenta });
     const resumenVenta = (data ?? []).map(buildResumenItem);
-    const totalResumen = resumenVenta.reduce((sum, item) => sum + (item?.precio ?? 0), 0);
+
+    // Fetch sale totals from DB
+    const { obtenerVentaBorradorPorId } = await import("../index");
+    const ventaData = await obtenerVentaBorradorPorId({ _id_venta: idVenta });
+    const totalResumen = Number(ventaData?.total_neto ?? 0);
 
     set({ resumenVenta, totalResumen, isLoadingResumen: false });
     return resumenVenta;
@@ -224,7 +228,6 @@ export const useRegistrarVentasStore = create((set, get) => ({
         id_material_editorial: material.id,
         cantidad: 1,
         precio_unitario: material.precio,
-        subtotal: material.precio,
       }));
 
     const inserted = await insertarItemsEnVenta({ idVenta, items: payload });

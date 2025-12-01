@@ -197,7 +197,6 @@ export async function insertarItemsEnVenta({ idVenta, items }) {
     id_venta: idVenta,
     cantidad: item?.cantidad ?? 1,
     precio_unitario: item?.precio_unitario ?? null,
-    subtotal: item?.subtotal ?? null,
     id_material_editorial: item?.id_material_editorial ?? null,
   }));
 
