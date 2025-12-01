@@ -356,7 +356,6 @@ export function RegistrarVentas1({
       clearEditorialSelection();
       await onClose?.();
     } catch (error) {
-      console.error(error);
       setIsClosing(false);
     }
   };

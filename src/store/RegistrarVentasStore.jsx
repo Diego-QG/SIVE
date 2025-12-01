@@ -46,6 +46,7 @@ const buildMaterialOption = (material) => {
     precio: Number(material?.precio ?? 0) || 0,
     id_contenidobase: material?.id_contenidobase ?? null,
     id_pack: material?.id_pack ?? null,
+    anio: material?.anio ?? null,
   };
 };
 
