@@ -17,6 +17,7 @@ import {
   useRegistrarVentasStore,
   useVentasStore,
 } from "../../../index";
+import { InputText } from "./InputText";
 
 export function RegistrarVentas3({
   state,
@@ -34,11 +35,16 @@ export function RegistrarVentas3({
     nivel: "bottom",
     subnivel: "bottom",
     contenido: "bottom",
+    year: "bottom",
     items: "bottom",
   });
+  const [selectedYear, setSelectedYear] = useState(2025);
+  const [searchTerm, setSearchTerm] = useState("");
+
   const nivelTriggerRef = useRef(null);
   const subnivelTriggerRef = useRef(null);
   const contenidoTriggerRef = useRef(null);
+  const yearTriggerRef = useRef(null);
   const itemsTriggerRef = useRef(null);
   const { refrescarVentas } = useVentasStore();
   const { editorialesitemselect } = useEditorialesStore();
@@ -47,12 +53,14 @@ export function RegistrarVentas3({
   const IconAgregar = v.iconoagregar;
   const IconFlechaIzquierda = v.iconoflechaizquierda;
   const IconCheck = v.iconocheck;
+  const IconLupa = v.iconobuscar;
 
   const triggerRefs = useMemo(
     () => ({
       nivel: nivelTriggerRef,
       subnivel: subnivelTriggerRef,
       contenido: contenidoTriggerRef,
+      year: yearTriggerRef,
       items: itemsTriggerRef,
     }),
     []
@@ -114,6 +122,14 @@ export function RegistrarVentas3({
     [totalBruto, totalDescuento]
   );
 
+  const years = useMemo(
+    () => [
+      { id: 2024, nombre: "2024" },
+      { id: 2025, nombre: "2025" },
+    ],
+    []
+  );
+
   useEffect(() => {
     if (!state) {
       return;
@@ -130,6 +146,8 @@ export function RegistrarVentas3({
     if (state || isOpen) return;
     limpiarSeleccion();
     setOpenDropdown(null);
+    setSearchTerm("");
+    setSelectedYear(2025);
   }, [isOpen, limpiarSeleccion, state]);
 
   const nivelLabel = useMemo(() => {
@@ -149,6 +167,20 @@ export function RegistrarVentas3({
     if (isLoadingContenidos) return "Cargando contenidos...";
     return "Cursos o paquetes";
   }, [isLoadingContenidos, selectedContenido]);
+
+  const filteredMateriales = useMemo(() => {
+    return materiales.filter((m) => {
+      const mYear = m.anio ? Number(m.anio) : null;
+      // If material has no year, we include it? Or strict filtering?
+      // Assuming strict if year is present. If null, include?
+      // User asked for "filter by year".
+      const matchesYear = mYear ? mYear === selectedYear : true;
+      const matchesSearch = searchTerm
+        ? m.label.toLowerCase().includes(searchTerm.toLowerCase())
+        : true;
+      return matchesYear && matchesSearch;
+    });
+  }, [materiales, selectedYear, searchTerm]);
 
   const itemsLabel = useMemo(() => {
     if (isLoadingMateriales) return "Buscando materiales...";
@@ -174,7 +206,6 @@ export function RegistrarVentas3({
     try {
       await onClose?.();
     } catch (error) {
-      console.error(error);
       setIsClosing(false);
     }
   };
@@ -267,7 +298,14 @@ export function RegistrarVentas3({
     seleccionarContenido(contenido);
     await cargarMateriales({ editorialId });
     setOpenDropdown(null);
-    setOpenDropdown("items");
+    setOpenDropdown("items"); // Automatically open items selection logic could be here, but maybe year needs to be checked?
+    // Current flow: user selects content, then maybe year, then items.
+    // If we auto-open items, year defaults to 2025.
+  };
+
+  const handleSelectYear = (yearOption) => {
+    setSelectedYear(yearOption.id);
+    setOpenDropdown(null);
   };
 
   const handleAgregarItems = async () => {
@@ -285,6 +323,7 @@ export function RegistrarVentas3({
     if (agregado) {
       toast.success("Materiales agregados correctamente.");
       setOpenDropdown(null);
+      setSearchTerm("");
     } else {
       toast.error("No se pudieron agregar los materiales.");
     }
@@ -324,8 +363,10 @@ export function RegistrarVentas3({
 
     const confirmado = await confirmarVenta({ idVenta: ventaDraftId });
     if (confirmado) {
-      await refrescarVentas();
+      // Optimistic closing
       onFinish?.();
+      // Background update
+      refrescarVentas();
       return;
     }
 
@@ -410,6 +451,24 @@ export function RegistrarVentas3({
               />
             </SelectorColumn>
             <SelectorColumn>
+              <span>Seleccionar año</span>
+              <SelectorButton
+                type="button"
+                ref={triggerRefs.year}
+                onClick={() => toggleDropdown("year")}
+                $disabled={isBusy}
+              >
+                {selectedYear}
+              </SelectorButton>
+              <ListaDesplegable
+                data={years}
+                state={openDropdown === "year"}
+                setState={() => setOpenDropdown(null)}
+                funcion={handleSelectYear}
+                placement={dropdownPlacement.year}
+              />
+            </SelectorColumn>
+            <SelectorColumn>
               <span>Seleccionar items</span>
               <SelectorButton
                 type="button"
@@ -424,16 +483,34 @@ export function RegistrarVentas3({
                   ref={itemsTriggerRef}
                   $placement={dropdownPlacement.items}
                 >
+                  <SearchContainer>
+                    <InputText icono={<IconLupa/>}>
+                      <input
+                        type="text"
+                        className="form__field"
+                        placeholder="Buscar item..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label className="form__label">Buscar item</label>
+                    </InputText>
+                  </SearchContainer>
+
                   {isLoadingMateriales ? (
                     <div className="empty">
                       <Spinner />
                       <small>Cargando items...</small>
                     </div>
-                  ) : materiales.length === 0 ? (
-                    <EmptyState>Sin materiales para los filtros seleccionados.</EmptyState>
+                  ) : filteredMateriales.length === 0 ? (
+                    <EmptyState>
+                      {materiales.length === 0
+                        ? "Sin materiales para los filtros seleccionados."
+                        : "No se encontraron items con ese nombre."}
+                    </EmptyState>
                   ) : (
                     <ul>
-                      {materiales.map((material) => {
+                      {filteredMateriales.map((material) => {
                         const isChecked = selectedItems.includes(material.id);
                         return (
                           <li key={material.id}>
@@ -604,7 +681,7 @@ const SelectorsPanel = styled.section`
 
 const SelectorsCard = styled.div`
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+  background: ${({ theme }) => theme.posPanelBg};
   border-radius: 18px;
   padding: clamp(12px, 1.5vw, 18px);
   width: 100%;
@@ -643,7 +720,7 @@ const SelectorButton = styled.button`
   border-radius: 16px;
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.2);
   padding: 12px 18px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+  background: ${({ theme }) => theme.posInputBg};
   color: ${({ theme }) => theme.text};
   text-align: left;
   cursor: pointer;
@@ -661,7 +738,7 @@ const SelectorButton = styled.button`
 const ResumenCard = styled.section`
   border-radius: 24px;
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  background: rgba(${({ theme }) => theme.textRgba}, 0.03);
+  background: ${({ theme }) => theme.posPanelBg};
   padding: clamp(16px, 1.8vw, 22px);
   display: flex;
   flex-direction: column;
@@ -915,7 +992,7 @@ const ItemsDropdown = styled.div`
     padding: 8px 10px;
     border-radius: 12px;
     border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
-    background: rgba(${({ theme }) => theme.textRgba}, 0.02);
+    background: ${({ theme }) => theme.posInputBg};
   }
 
   .info {
@@ -944,6 +1021,13 @@ const ItemsDropdown = styled.div`
   .add-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+  }
+`;
+
+const SearchContainer = styled.div`
+  padding: 0 4px 4px;
+  .form__group {
+    padding-top: 10px;
   }
 `;
 

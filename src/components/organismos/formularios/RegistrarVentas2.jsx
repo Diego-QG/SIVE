@@ -606,7 +606,6 @@ export function RegistrarVentas2({
       }
       return null;
     } catch (error) {
-      console.error("[RegistrarVentas2] Error buscando docente", error);
       toast.error("No se pudo buscar el docente por teléfono.");
       setPhoneLookupState("idle");
       return null;
@@ -637,7 +636,6 @@ export function RegistrarVentas2({
       await autoSaveDocenteEInstitucion("modal-close");
       await onClose?.();
     } catch (error) {
-      console.error(error);
       setIsClosing(false);
     }
   };
@@ -965,7 +963,6 @@ export function RegistrarVentas2({
         onVentaTieneDatosChange?.("docente", Boolean(savedDocente || docentedraft?.id));
         return true;
       } catch (error) {
-        console.error("[RegistrarVentas2] Auto guardado falló", { reason, error });
         toast.error("No se pudieron guardar los datos del docente automáticamente.");
         return false;
       }
