@@ -6,6 +6,7 @@ const TABLA_EVIDENCIAS = "evidencias";
 const TABLA_VENTAS = "ventas";
 const TABLA_DOCENTES = "docentes";
 const TABLA_INSTITUCIONES = "instituciones";
+const TABLA_CUOTAS = "cuotas";
 
 export async function insertarBorrador(p) {
   const { error, data } = await supabase.rpc("fn_insertarborrador", p);
@@ -35,7 +36,62 @@ export async function mostrarVentasPorUsuario(p) {
         return [];
     }
 
-    return data ?? [];
+    const ventas = data ?? [];
+
+    const ventasIds = Array.from(
+        new Set(
+            ventas
+                .map((venta) => {
+                    const ventaId = Number(
+                        venta?.id_venta ?? venta?.id ?? venta?.venta_id ?? null
+                    );
+                    return Number.isFinite(ventaId) ? ventaId : null;
+                })
+                .filter(Boolean)
+        )
+    );
+
+    let contabilidadCuota1Map = new Map();
+
+    if (ventasIds.length > 0) {
+        const { data: cuotasData, error: cuotasError } = await supabase
+            .from(TABLA_CUOTAS)
+            .select("id_venta, estado_contabilidad")
+            .in("id_venta", ventasIds)
+            .eq("nro_cuota", 1);
+
+        if (cuotasError) {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: cuotasError.message,
+            });
+        } else {
+            contabilidadCuota1Map = new Map(
+                (cuotasData ?? [])
+                    .map(({ id_venta, estado_contabilidad }) => {
+                        const ventaId = Number(id_venta);
+                        return Number.isFinite(ventaId)
+                            ? [ventaId, estado_contabilidad]
+                            : null;
+                    })
+                    .filter(Boolean)
+            );
+        }
+    }
+
+    return ventas.map((venta) => {
+        const ventaId = Number(venta?.id_venta ?? venta?.id ?? venta?.venta_id);
+        const contabilidadEstado =
+            (Number.isFinite(ventaId) && contabilidadCuota1Map.get(ventaId)) ||
+            venta?.contabilidad_cuota1_estado ||
+            venta?.estado_contabilidad;
+
+        return {
+            ...venta,
+            contabilidad_cuota1_estado: contabilidadEstado,
+        };
+    });
 }
 
 export async function eliminarBorrador(p) {

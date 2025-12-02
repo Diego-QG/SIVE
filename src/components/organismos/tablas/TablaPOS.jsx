@@ -401,7 +401,10 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
         return (
           <ContentEstadosTabla
             estadoSupervision={info.row?.original?.estado_supervision}
-            estadoContabilidad={info.row?.original?.estado_contabilidad}
+            estadoContabilidad={
+              info.row?.original?.contabilidad_cuota1_estado ??
+              info.row?.original?.estado_contabilidad
+            }
             estadoEntregas={info.row?.original?.estado_entregas}
           />
         );

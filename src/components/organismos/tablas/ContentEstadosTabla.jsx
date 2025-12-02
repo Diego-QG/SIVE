@@ -57,6 +57,9 @@ const SUPERVISION_COLORS = {
 
 const EVALUACION_COLORS = {
   pendiente: STATE_STYLES.gray,
+  en_revision: STATE_STYLES.purple,
+  aprobado: STATE_STYLES.green,
+  observado: STATE_STYLES.red,
   pendiente_evidencia: STATE_STYLES.orange,
   en_evaluacion: STATE_STYLES.purple,
   valido: STATE_STYLES.green,
