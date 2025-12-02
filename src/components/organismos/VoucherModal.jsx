@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { v } from "../../../styles/variables";
+import { v } from "../../styles/variables";
 
 const ModalOverlay = styled.div`
   position: fixed;
