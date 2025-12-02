@@ -11,23 +11,29 @@ const TABLA_EVIDENCIAS = "evidencias";
 
 export async function mostrarVentasSupervision() {
   const { data, error } = await supabase
-    .from(TABLA_VENTAS)
+    .from(TABLA_VENTA_SUPERVISION)
     .select(`
       id,
-      total_neto,
-      fecha_venta,
-      observaciones,
-      id_docente,
-      estado_registro,
-      docentes (nombres, apellido_p, apellido_m, tipo_ingreso),
-      venta_supervision (estado, actor_usuario, comentario, usuarios (nombres)),
+      estado,
+      actor_usuario,
+      comentario,
+      created_at,
       usuarios (nombres),
-      venta_items (
+      ventas (
         id,
-        materiales_editorial (nombre)
+        total_neto,
+        fecha_venta,
+        observaciones,
+        id_docente,
+        estado_registro,
+        docentes (nombres, apellido_p, apellido_m, tipo_ingreso),
+        usuarios (nombres),
+        venta_items (
+          id,
+          materiales_editorial (nombre)
+        )
       )
     `)
-    .neq("estado_registro", "borrador")
     .order("created_at", { ascending: false });
 
   if (error) {
