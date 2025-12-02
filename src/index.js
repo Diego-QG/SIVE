@@ -39,6 +39,7 @@ export * from './components/organismos/tablas/ContentEstadosTabla';
 export * from './components/organismos/tablas/EstadosTabla';
 export * from './components/organismos/tablas/Paginacion';
 export * from './components/organismos/tablas/SupervisionTable';
+export * from './components/organismos/tablas/SupervisionTableStyles';
 export * from './components/organismos/tablas/TablaCursos';
 export * from './components/organismos/tablas/TablaEditoriales';
 export * from './components/organismos/tablas/TablaMateriales';
