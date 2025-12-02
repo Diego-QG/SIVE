@@ -11,6 +11,7 @@ import {
   Materiales,
   POS,
   Layout,
+  Supervision,
 } from "../index";
 
 export function MyRoutes() {
@@ -103,6 +104,16 @@ export function MyRoutes() {
           <ProtectedRoute accessBy="authenticated">
             <Layout>
               <Materiales />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+
+        <Route
+        path="/herramientas/supervision"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <Supervision />
             </Layout>
           </ProtectedRoute>} 
         />
