@@ -64,18 +64,17 @@ export async function buscarDocentePorTelefono(p = {}) {
     return null;
   }
 
+  // Corregido: primero armamos el query, luego ejecutamos con maybeSingle()
   let query = supabase
     .from(tabla)
     .select(SELECT_COLUMNS)
-    .eq("telefono", `${telefono}`)
-    .limit(1)
-    .maybeSingle();
+    .eq("telefono", `${telefono}`);
 
   if (empresaId) {
     query = query.eq("id_empresa", empresaId);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query.limit(1).maybeSingle();
 
   if (handleError(error)) {
     return null;
@@ -94,6 +93,7 @@ export async function guardarDocenteBorrador(p = {}) {
   const shouldPersist = p?.shouldPersist !== false;
   const docenteId = p?._id_docente ?? null;
 
+  // Caso: NO persistir -> quitamos el docente de la venta y borramos el docente (y su institución si toca)
   if (!shouldPersist) {
     const { error } = await supabase
       .from(TABLA_VENTAS)
@@ -138,6 +138,7 @@ export async function guardarDocenteBorrador(p = {}) {
     return null;
   }
 
+  // Caso: SÍ persistir
   const empresaId = p?._id_empresa ?? null;
 
   if (!empresaId) {
@@ -158,13 +159,13 @@ export async function guardarDocenteBorrador(p = {}) {
     nombres: p?.nombres ?? null,
     apellido_p: p?.apellido_p ?? null,
     apellido_m: p?.apellido_m ?? null,
+    // valido NO se toca aquí; queda en el default (false) hasta que la venta se suba
   };
 
   let savedDocente = null;
 
   if (docenteId) {
-    // Si estamos actualizando, primero aseguramos que la venta apunte a este docente.
-    // Esto es necesario para cumplir con la política RLS "Enable update for borrador ventas only".
+    // Actualizar docente existente
     const { error: linkError } = await supabase
       .from(TABLA_VENTAS)
       .update({ id_docente: docenteId })
@@ -187,7 +188,7 @@ export async function guardarDocenteBorrador(p = {}) {
 
     savedDocente = data ?? null;
   } else {
-    // Si es nuevo, primero insertamos (permitido por RLS "Enable insert").
+    // Crear nuevo docente
     const { data, error } = await supabase
       .from(tabla)
       .insert(docentePayload)
@@ -201,7 +202,6 @@ export async function guardarDocenteBorrador(p = {}) {
     savedDocente = data ?? null;
 
     if (savedDocente?.id) {
-      // Luego enlazamos a la venta.
       const { error: ventaError } = await supabase
         .from(TABLA_VENTAS)
         .update({ id_docente: savedDocente.id })
@@ -217,6 +217,7 @@ export async function guardarDocenteBorrador(p = {}) {
     return null;
   }
 
+  // Aseguramos que la venta tenga el docente enlazado
   const { error: ventaError } = await supabase
     .from(TABLA_VENTAS)
     .update({ id_docente: savedDocente.id })
@@ -226,15 +227,8 @@ export async function guardarDocenteBorrador(p = {}) {
     return null;
   }
 
-  const { error: docenteValidoError } = await supabase
-    .from(tabla)
-    .update({ valido: true })
-    .eq("id", savedDocente.id);
-
-  if (handleError(docenteValidoError)) {
-    return null;
-  }
-
+  // 👇 OJO: aquí ya NO cambiamos valido.
+  // El docente sigue con valido=false hasta que la venta se marque como "subido" en la BD.
   return savedDocente;
 }
 
@@ -259,6 +253,7 @@ export async function crearDocenteConInstitucionBorrador(p = {}) {
     nombres: null,
     apellido_p: null,
     apellido_m: null,
+    // valido queda en false por default
   };
 
   const { data: docente, error } = await supabase
@@ -294,18 +289,6 @@ export async function crearDocenteConInstitucionBorrador(p = {}) {
     return null;
   }
 
-  const { error: docenteValidoError } = await supabase
-    .from(tabla)
-    .update({ valido: true })
-    .eq("id", docente.id);
-
-  if (handleError(docenteValidoError)) {
-    await supabase.from(tabla).delete().eq("id", docente.id);
-    if (institucionId) {
-      await eliminarInstitucion({ id: institucionId });
-    }
-    return null;
-  }
-
+  // 👇 Tampoco cambiamos valido aquí. Sigue en false.
   return { docente, institucion };
 }
