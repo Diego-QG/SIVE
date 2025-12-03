@@ -37,7 +37,6 @@ export function RegistrarVentas3({
     agregarvoucherspendientes,
     removervoucherpendiente,
     setventaactual,
-    limpiarvoucherspendientes,
     subirvoucherspendientes,
     eliminarvoucherrecibido,
   } = useEvidenciasStore();
@@ -53,6 +52,8 @@ export function RegistrarVentas3({
   // Cuotas State
   const [cuotas, setCuotas] = useState([]);
 
+  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+
   // Load Total and Vouchers
   useEffect(() => {
     if (!state || !ventaDraftId) return;
@@ -66,13 +67,19 @@ export function RegistrarVentas3({
       ]);
 
       if (ventaData) {
-        setTotalVenta(Number(ventaData.total_neto ?? 0));
-        // Initialize Cuota 1 if empty
-        if (cuotas.length === 0) {
-            setCuotas([
-                { id: 1, monto: Number(ventaData.total_neto ?? 0), fecha: new Date().toISOString().split('T')[0] }
-            ]);
-        }
+        const total = Number(ventaData.total_neto ?? 0);
+        setTotalVenta(total);
+        setCuotas((prev) =>
+          prev.length === 0
+            ? [
+                {
+                  id: 1,
+                  monto: total,
+                  fecha: todayStr,
+                },
+              ]
+            : prev
+        );
       }
 
       setPersistedVouchers(
@@ -87,7 +94,7 @@ export function RegistrarVentas3({
     };
 
     loadData();
-  }, [state, ventaDraftId]);
+  }, [state, ventaDraftId, obtenerVentaBorradorPorId, obtenerVouchersRecibidosPorVenta, setventaactual, todayStr]);
 
   // Vouchers Logic
   const addVouchers = (incomingFiles) => {
@@ -134,85 +141,88 @@ export function RegistrarVentas3({
   const isValidTotal = Math.abs(totalCuotas - totalVenta) < 0.01;
 
   const handleAddCuota = () => {
-    const nextId = cuotas.length + 1;
-    setCuotas([...cuotas, { id: nextId, monto: 0, fecha: "" }]);
+    setCuotas((prev) => {
+      const nextId = prev.length + 1;
+      return [...prev, { id: nextId, monto: 0, fecha: "" }];
+    });
   };
 
   const handleRemoveCuota = (id) => {
-    if (cuotas.length <= 1) return;
-    setCuotas(cuotas.filter((c) => c.id !== id).map((c, i) => ({ ...c, id: i + 1 })));
+    setCuotas((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev
+        .filter((c) => c.id !== id)
+        .map((c, i) => ({ ...c, id: i + 1 }));
+    });
   };
 
   const updateCuota = (id, field, value) => {
-    setCuotas(cuotas.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
+    setCuotas((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
   };
 
   // Confirm Logic
   const handleFinish = async () => {
     if (!ventaDraftId) {
-        toast.error("Error: No hay venta activa.");
-        return;
+      toast.error("Error: No hay venta activa.");
+      return;
     }
 
     if (displayedVouchers.length === 0) {
-        toast.warning("Debes subir al menos un voucher (evidencia de pago).");
-        return;
+      toast.warning("Debes subir al menos un voucher (evidencia de pago).");
+      return;
     }
 
     if (!isValidTotal) {
-        toast.warning(`La suma de las cuotas (S/${totalCuotas.toFixed(2)}) debe ser igual al total de la venta (S/${totalVenta.toFixed(2)}).`);
-        return;
+      toast.warning(`La suma de las cuotas (S/${totalCuotas.toFixed(2)}) debe ser igual al total de la venta (S/${totalVenta.toFixed(2)}).`);
+      return;
     }
 
-    // Persist doc/inst if pending
     const canPersistDocente = await onPersistDocente?.();
     if (canPersistDocente === false) return;
 
     setIsClosing(true);
 
-    // Upload pending vouchers
     if (vouchers.length > 0) {
-        await subirvoucherspendientes({
-            idVenta: ventaDraftId,
-            idUsuario: datausuarios?.id ?? null,
-        });
+      await subirvoucherspendientes({
+        idVenta: ventaDraftId,
+        idUsuario: datausuarios?.id ?? null,
+      });
     }
 
-    // Confirm Sale and Insert Cuotas
-    // Pass cuotas to confirmVenta or call separate endpoint
     const payload = {
-        idVenta: ventaDraftId,
-        cuotas: cuotas.map(c => ({
-            nro_cuota: c.id,
-            fecha_vencimiento: c.fecha || new Date().toISOString().split('T')[0], // Default today if missing
-            monto_programado: Number(c.monto),
-        }))
+      idVenta: ventaDraftId,
+      cuotas: cuotas.map((c) => ({
+        nro_cuota: c.id,
+        fecha_vencimiento: c.fecha || todayStr,
+        monto_programado: Number(c.monto),
+      })),
     };
 
-    // La store usa `confirmarventa` con las cuotas ya normalizadas y sincronizadas.
     const confirmado = await confirmarventa(payload);
 
     if (confirmado) {
-        await refrescarVentas();
-        onFinish?.();
+      await refrescarVentas();
+      onFinish?.();
     } else {
-        toast.error("No se pudo registrar la venta.");
-        setIsClosing(false);
+      toast.error("No se pudo registrar la venta.");
+      setIsClosing(false);
     }
   };
 
   const handleRequestClose = async () => {
     if (isClosing) return;
-    // Upload pending vouchers before closing if user wants?
-    // Usually "X" means cancel or just close modal.
-    // Vouchers logic in Step 1 uploaded on close. Here we can do the same.
-    if (vouchers.length > 0) {
-         await subirvoucherspendientes({
-            idVenta: ventaDraftId,
-            idUsuario: datausuarios?.id ?? null,
+    setIsClosing(true);
+    try {
+      if (vouchers.length > 0) {
+        await subirvoucherspendientes({
+          idVenta: ventaDraftId,
+          idUsuario: datausuarios?.id ?? null,
         });
+      }
+      onClose?.();
+    } finally {
+      setIsClosing(false);
     }
-    onClose?.();
   };
 
   if (!isOpen) return null;

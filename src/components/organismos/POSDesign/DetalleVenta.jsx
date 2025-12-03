@@ -340,7 +340,7 @@ export function DetalleVenta({
                                         {voucherArchivo && (
                                           <PagoEvidencias>
                                             <EvidenceThumb
-                                              ole="button"
+                                              role="button"
                                               tabIndex={0}
                                               onClick={() =>
                                                 setFocusedVoucher({
