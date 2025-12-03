@@ -372,17 +372,18 @@ export async function confirmarVentaItems({ idVenta, cuotas = [] }) {
 export const asegurarCuotaYPagos = async ({ idVenta }) => {
   if (!idVenta) return false;
 
-  const { data: cuotasExistentes, error: cuotasError } = await supabase
+  const { data: cuotaPrincipal, error: cuotasError } = await supabase
     .from("cuotas")
     .select("id")
     .eq("id_venta", idVenta)
-    .order("nro_cuota", { ascending: true });
+    .eq("nro_cuota", 1)
+    .maybeSingle();
 
-  if (handleError(cuotasError, "asegurarCuotaYPagos") || cuotasExistentes === null) {
+  if (handleError(cuotasError, "asegurarCuotaYPagos")) {
     return false;
   }
 
-  let cuotaId = cuotasExistentes?.[0]?.id ?? null;
+  let cuotaId = cuotaPrincipal?.id ?? null;
 
   if (!cuotaId) {
     const { data: nuevaCuota, error: cuotaError } = await supabase
