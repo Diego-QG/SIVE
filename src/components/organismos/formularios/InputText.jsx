@@ -14,12 +14,19 @@ const Container = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  min-width: 0;
+
+  @media (max-width: 640px) {
+    gap: 6px;
+  }
+
   p {
     color: #f46943;
   }
   .form__group {
     position: relative;
-    padding: 20px 0 0;
+    padding: 16px 0 0;
     width: 100%;
   }
   input:-webkit-autofill,
@@ -34,6 +41,7 @@ const Container = styled.div`
   .form__field {
     font-family: inherit;
     width: 100%;
+    min-width: 0;
     border: none;
     border-bottom: 2px solid #9b9b9b;
     outline: 0;
@@ -70,6 +78,10 @@ const Container = styled.div`
     font-size: 17px;
     color: #9b9b9b;
     pointer-events: none;
+
+    @media (max-width: 640px) {
+      font-size: 14px;
+    }
   }
 
   .form__field:focus {
