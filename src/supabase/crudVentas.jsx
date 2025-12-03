@@ -235,20 +235,143 @@ export async function obtenerVentaDetalle(p = {}) {
     return null;
   }
 
-  const { data, error } = await supabase.rpc("fn_get_venta_detalle", {
-    _id_venta: ventaId,
-  });
+  const [ventaResponse, itemsResponse, cuotasResponse, evidenciasResponse] =
+    await Promise.all([
+      supabase
+        .from(TABLA_VENTAS)
+        .select(
+          `id, fecha_venta, total_bruto, total_descuento, total_neto, observaciones, estado_registro, id_editorial, id_usuario,
+          editoriales(nombre),
+          usuarios(nombres),
+          docentes(apellido_p, apellido_m, nombres),
+          venta_supervision:venta_supervision(estado, comentario, updated_at),
+          venta_contabilidad:venta_contabilidad(estado, comentario, updated_at),
+          venta_entregas:venta_entregas(estado, comentario, updated_at)
+        `
+        )
+        .eq("id", ventaId)
+        .maybeSingle(),
+      supabase
+        .from("venta_items")
+        .select(
+          `id, cantidad, precio_unitario, subtotal,
+          material:materiales_editorial(
+            id, nombre, precio,
+            tipocontenidos:tipocontenidos(nombre)
+          )`
+        )
+        .eq("id_venta", ventaId),
+      supabase
+        .from(TABLA_CUOTAS)
+        .select(
+          `id, nro_cuota, fecha_vencimiento, monto_programado, saldo,
+          pagos(id, monto, fecha_pago, id_evidencia)`
+        )
+        .eq("id_venta", ventaId)
+        .order("nro_cuota", { ascending: true }),
+      supabase
+        .from(TABLA_EVIDENCIAS)
+        .select("id, archivo, notas, id_venta")
+        .eq("id_venta", ventaId),
+    ]);
 
-  if (error) {
+  const errorActual =
+    ventaResponse.error ||
+    itemsResponse.error ||
+    cuotasResponse.error ||
+    evidenciasResponse.error;
+
+  if (errorActual) {
     Swal.fire({
       icon: "error",
       title: "Oops...",
-      text: error.message,
+      text: errorActual.message,
     });
     return null;
   }
 
-  return data ?? null;
+  const ventaData = ventaResponse.data ?? {};
+  const itemsData = itemsResponse.data ?? [];
+  const cuotasData = cuotasResponse.data ?? [];
+  const evidenciasData = evidenciasResponse.data ?? [];
+
+  const evidenciaMap = new Map(
+    evidenciasData.map((ev) => [ev?.id, { ...ev, id_pago: ev?.id_pago ?? null }])
+  );
+
+  const cuotas = cuotasData.map((cuota) => {
+    const pagos = (cuota?.pagos ?? []).map((pago) => ({
+      id: pago?.id,
+      monto: Number(pago?.monto ?? 0) || 0,
+      fecha_pago: pago?.fecha_pago ?? null,
+      id_evidencia: pago?.id_evidencia ?? null,
+      id_cuota: cuota?.id ?? null,
+    }));
+
+    const evidenciasCuota = pagos
+      .map((pago) => {
+        if (!pago?.id_evidencia) return null;
+        const evidencia = evidenciaMap.get(pago.id_evidencia);
+        return evidencia ? { ...evidencia, id_pago: pago.id } : null;
+      })
+      .filter(Boolean);
+
+    return {
+      id: cuota?.id ?? null,
+      nro_cuota: cuota?.nro_cuota ?? null,
+      fecha_vencimiento: cuota?.fecha_vencimiento ?? null,
+      monto_programado: cuota?.monto_programado ?? null,
+      saldo: cuota?.saldo ?? null,
+      pagos,
+      evidencias: evidenciasCuota,
+    };
+  });
+
+  const pagosPlanos = cuotas.flatMap((cuota) =>
+    (cuota?.pagos ?? []).map((pago) => ({
+      ...pago,
+      nro_cuota: cuota?.nro_cuota ?? null,
+    }))
+  );
+
+  const evidenciasPlanas =
+    cuotas.length > 0
+      ? cuotas.flatMap((cuota) => cuota?.evidencias ?? [])
+      : evidenciasData;
+
+  const items = itemsData.map((item) => ({
+    id: item?.id ?? null,
+    nombre_material: item?.material?.nombre ?? "-",
+    cantidad: item?.cantidad ?? 0,
+    precio_unitario: item?.precio_unitario ?? item?.material?.precio ?? 0,
+    subtotal: item?.subtotal ?? 0,
+    tipo_contenido: item?.material?.tipocontenidos?.nombre ?? "-",
+  }));
+
+  const nombreDocente = [
+    ventaData?.docentes?.nombres,
+    ventaData?.docentes?.apellido_p,
+    ventaData?.docentes?.apellido_m,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return {
+    ...ventaData,
+    nombre_vendedor: ventaData?.usuarios?.nombres ?? null,
+    nombre_editorial: ventaData?.editoriales?.nombre ?? null,
+    nombre_docente: nombreDocente || null,
+    items,
+    cuotas,
+    pagos: pagosPlanos,
+    evidencias: evidenciasPlanas,
+    descuentos: [],
+    ajustes: [],
+    incidentes: [],
+    supervision_actual: ventaData?.venta_supervision?.[0] ?? null,
+    contabilidad_actual: ventaData?.venta_contabilidad?.[0] ?? null,
+    entregas_actual: ventaData?.venta_entregas?.[0] ?? null,
+  };
 }
 
 export async function obtenerVentaBorradorPorId(p = {}) {

@@ -242,7 +242,88 @@ export async function eliminarVentaItem({ id }) {
   return true;
 }
 
-export async function confirmarVentaItems({ idVenta }) {
+const normalizarCuotasPayload = (cuotas = []) =>
+  (Array.isArray(cuotas) ? cuotas : [])
+    .map((cuota, index) => {
+      const nroCuota = Number(
+        cuota?.nro_cuota ?? cuota?.id ?? cuota?.nro ?? index + 1
+      );
+
+      if (!Number.isFinite(nroCuota)) {
+        return null;
+      }
+
+      const monto = Number(cuota?.monto_programado ?? cuota?.monto ?? 0) || 0;
+      const fechaVencimiento =
+        cuota?.fecha_vencimiento ||
+        cuota?.fecha ||
+        new Date().toISOString().split("T")[0];
+
+      return {
+        nro_cuota: nroCuota,
+        fecha_vencimiento: fechaVencimiento,
+        monto_programado: monto,
+        saldo: monto,
+      };
+    })
+    .filter(Boolean);
+
+const sincronizarCuotas = async ({ idVenta, cuotas }) => {
+  const cuotasNormalizadas = normalizarCuotasPayload(cuotas);
+
+  const { data: existentes, error: cuotasError } = await supabase
+    .from("cuotas")
+    .select("id, nro_cuota")
+    .eq("id_venta", idVenta);
+
+  if (handleError(cuotasError, "sincronizarCuotas.obtenerCuotas")) {
+    return false;
+  }
+
+  const nroSet = new Set(cuotasNormalizadas.map((cuota) => cuota.nro_cuota));
+
+  const idsParaEliminar = (existentes ?? [])
+    .filter((cuota) => !nroSet.has(Number(cuota.nro_cuota)))
+    .map((cuota) => cuota.id)
+    .filter(Boolean);
+
+  if (idsParaEliminar.length > 0) {
+    const { error: eliminarError } = await supabase
+      .from("cuotas")
+      .delete()
+      .in("id", idsParaEliminar);
+
+    if (handleError(eliminarError, "sincronizarCuotas.eliminarSobrantes")) {
+      return false;
+    }
+  }
+
+  if (cuotasNormalizadas.length === 0) {
+    return true;
+  }
+
+  const mapaExistentes = new Map(
+    (existentes ?? []).map((cuota) => [Number(cuota.nro_cuota), cuota.id])
+  );
+
+  const payload = cuotasNormalizadas.map((cuota) => ({
+    id: mapaExistentes.get(Number(cuota.nro_cuota)) ?? undefined,
+    id_venta: idVenta,
+    ...cuota,
+  }));
+
+  const { error: upsertError } = await supabase
+    .from("cuotas")
+    .upsert(payload);
+
+  if (handleError(upsertError, "sincronizarCuotas.upsert")) {
+    return false;
+  }
+
+  return true;
+};
+
+export async function confirmarVentaItems({ idVenta, cuotas = [] }) {
   if (!idVenta) return false;
 
   console.info("[crudVentaItems] Confirmando venta", { idVenta });
@@ -255,6 +336,17 @@ export async function confirmarVentaItems({ idVenta }) {
 
   if (handleError(fetchError)) return false;
 
+  if (Array.isArray(cuotas) && cuotas.length > 0) {
+    const cuotasSincronizadas = await sincronizarCuotas({
+      idVenta,
+      cuotas,
+    });
+
+    if (!cuotasSincronizadas) {
+      return false;
+    }
+  }
+
   const asegurado = await asegurarCuotaYPagos({ idVenta });
 
   if (!asegurado) return false;
@@ -265,8 +357,6 @@ export async function confirmarVentaItems({ idVenta }) {
     return true;
   }
 
-  // Solo actualizamos el estado de la venta; un trigger en la BD se encarga
-  // de crear los registros relacionados (supervisión, contabilidad, entregas).
   const { error } = await supabase
     .from("ventas")
     .update({
