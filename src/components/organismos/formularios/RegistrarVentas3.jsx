@@ -42,8 +42,8 @@ export function RegistrarVentas3({
     eliminarvoucherrecibido,
   } = useEvidenciasStore();
   const { datausuarios } = useUsuariosStore();
-  const { insertarborrador } = useVentasStore();
-  const { confirmarVenta } = useRegistrarVentasStore();
+  const { refrescarVentas } = useVentasStore();
+  const { confirmarventa } = useRegistrarVentasStore();
 
   const [isClosing, setIsClosing] = useState(false);
   const [focusedVoucher, setFocusedVoucher] = useState(null);
@@ -189,15 +189,11 @@ export function RegistrarVentas3({
         }))
     };
 
-    // Note: confirmarVenta in store currently only calls fn_confirmar_venta.
-    // I need to update the store/crud to accept cuotas or call a new function.
-    // For now, I will assume I updated `confirmarVenta` in store/crud to handle this,
-    // OR I call a new function `insertarCuotas` before confirming.
-
-    // I will use `confirmarVenta` and pass payload, assuming I'll update the store next.
-    const confirmado = await confirmarVenta(payload);
+    // La store usa `confirmarventa` con las cuotas ya normalizadas y sincronizadas.
+    const confirmado = await confirmarventa(payload);
 
     if (confirmado) {
+        await refrescarVentas();
         onFinish?.();
     } else {
         toast.error("No se pudo registrar la venta.");

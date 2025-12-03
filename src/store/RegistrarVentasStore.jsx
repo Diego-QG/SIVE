@@ -254,10 +254,10 @@ export const useRegistrarVentasStore = create((set, get) => ({
     return deleted;
   },
 
-  confirmarVenta: async ({ idVenta }) => {
+  confirmarventa: async ({ idVenta, cuotas }) => {
     if (!idVenta) return false;
     set({ isConfirming: true });
-    const confirmado = await confirmarVentaItems({ idVenta });
+    const confirmado = await confirmarVentaItems({ idVenta, cuotas });
     set({ isConfirming: false });
     return confirmado;
   },
