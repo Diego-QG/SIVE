@@ -303,16 +303,35 @@ const sincronizarCuotas = async ({ idVenta, cuotas }) => {
       id_venta: idVenta,
       ...cuota,
     };
+
     if (existingId) {
       obj.id = existingId;
     }
+
     return obj;
   });
 
-  const { error: upsertError } = await supabase.from("cuotas").upsert(payload);
+  const registrosConId = payload.filter((cuota) => Boolean(cuota.id));
+  const registrosSinId = payload.filter((cuota) => !cuota.id);
 
-  if (handleError(upsertError, "sincronizarCuotas.upsert")) {
-    return false;
+  if (registrosConId.length > 0) {
+    const { error: upsertError } = await supabase
+      .from("cuotas")
+      .upsert(registrosConId);
+
+    if (handleError(upsertError, "sincronizarCuotas.upsert")) {
+      return false;
+    }
+  }
+
+  if (registrosSinId.length > 0) {
+    const { error: insertarError } = await supabase
+      .from("cuotas")
+      .insert(registrosSinId);
+
+    if (handleError(insertarError, "sincronizarCuotas.insert")) {
+      return false;
+    }
   }
 
   return true;
