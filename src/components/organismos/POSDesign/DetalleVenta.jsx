@@ -53,15 +53,27 @@ export const obtenerPartesFecha = (valor) => {
 };
 
 export const mostrarConGuion = (valor) => {
-  if (
-    valor === null ||
-    valor === undefined ||
-    valor === "" ||
-    valor.trim() === ""
-  ) {
+  if (valor === null || valor === undefined) {
     return "-";
   }
-  return valor;
+
+  if (valor instanceof Date) {
+    const dia = String(valor.getDate()).padStart(2, "0");
+    const mes = String(valor.getMonth() + 1).padStart(2, "0");
+    const anio = String(valor.getFullYear()).slice(-2);
+    return `${dia}/${mes}/${anio}`;
+  }
+
+  if (typeof valor === "string") {
+    const trimmed = valor.trim();
+    return trimmed === "" ? "-" : trimmed;
+  }
+
+  if (typeof valor === "number") {
+    return Number.isFinite(valor) ? valor : "-";
+  }
+
+  return valor ?? "-";
 };
 
 export function DetalleVenta({
