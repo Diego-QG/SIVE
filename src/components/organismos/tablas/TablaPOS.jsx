@@ -183,18 +183,6 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   const abrirDetalleVenta = async (venta) => {
     const ventaId = obtenerVentaId(venta);
 
-    console.log("[TablaPOS] Abrir detalle venta", {
-      ventaSeleccionada: venta,
-      ventaId,
-      camposId: {
-        id_venta: venta ? venta.id_venta : undefined,
-        id: venta ? venta.id : undefined,
-        venta_id: venta ? venta.venta_id : undefined,
-        ventaId: venta ? venta.ventaId : undefined,
-        _id: venta ? venta._id : undefined,
-      },
-    });
-
     if (!ventaId) {
       Swal.fire({
         icon: "error",
@@ -221,16 +209,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
     const requestId = Date.now();
     detalleRequestRef.current = { id: requestId, ventaId };
 
-    console.log("[TablaPOS] Solicitando detalle", { requestId, ventaId });
-
     const detalle = await obtenerventadetalle({ _id_venta: ventaId });
-
-    console.log("[TablaPOS] Respuesta detalle", {
-      requestId,
-      ventaId,
-      detalleExiste: Boolean(detalle),
-      detalle,
-    });
 
     if (
       detalleRequestRef.current.id !== requestId ||

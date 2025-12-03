@@ -17,7 +17,6 @@ export async function insertarTipoContenido(p) {
 
 export async function mostrarTipoContenidos(p) {
     const { error, data } = await supabase.rpc("mostrartipocontenidos", p);
-    console.log(data[0]);
         if (error) {
             Swal.fire({
                 icon: "error",

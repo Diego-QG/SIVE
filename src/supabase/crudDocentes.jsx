@@ -5,7 +5,7 @@ import { crearInstitucionVacia, eliminarInstitucion } from "./crudInstituciones"
 const tabla = "docentes";
 const TABLA_VENTAS = "ventas";
 const SELECT_COLUMNS =
-  "id, id_empresa, id_pais, id_institucion, nro_doc, telefono, nombres, apellido_p, apellido_m, valido";
+  "id, id_empresa, id_pais, id_institucion, nro_doc, telefono, nombres, apellido_p, apellido_m";
 
 const handleError = (error) => {
   if (error) {
