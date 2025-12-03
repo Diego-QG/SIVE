@@ -36,11 +36,10 @@ export function RegistrarEditoriales({
   const { isPending, mutate: doInsertar } = useMutation({
     mutationFn: insertar,
     mutationKey: "insertar editoriales",
-    onError: (err) => console.log("El error", err.message),
+    onError: (err) => {},
     onSuccess: () => cerrarFormulario(),
   });
   const handlesub = (data) => {
-    console.log("[ED1-FORM] submit editoriales:", { data, tieneArchivo: !!file });
     doInsertar(data);
   };
   const cerrarFormulario = () => {

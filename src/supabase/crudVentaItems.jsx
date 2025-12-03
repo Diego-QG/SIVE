@@ -102,7 +102,6 @@ export async function obtenerMaterialesParaVenta({
   } else {
     // Caso PACK: debemos buscar el contenidobase "maestro" del pack para ese subnivel
     if (!subnivelId) {
-      console.warn("⚠ No hay subnivelId para buscar contenidobase del pack");
       return [];
     }
 
@@ -120,9 +119,6 @@ export async function obtenerMaterialesParaVenta({
     }
 
     if (!cbRow) {
-      console.warn(
-        "⚠ No se encontró contenidobase con espaquete=true para ese subnivel"
-      );
       return [];
     }
 
@@ -130,7 +126,6 @@ export async function obtenerMaterialesParaVenta({
   }
 
   if (!idContenidoBase) {
-    console.warn("⚠ No se pudo determinar idContenidoBase");
     return [];
   }
 
@@ -200,8 +195,6 @@ export async function insertarItemsEnVenta({ idVenta, items }) {
     id_material_editorial: item?.id_material_editorial ?? null,
   }));
 
-  console.info("[crudVentaItems] Insertando items en venta", { idVenta, items });
-
   const { error } = await supabase.from("venta_items").insert(payload);
 
   if (handleError(error)) return false;
@@ -232,8 +225,6 @@ export async function obtenerVentaItemsDetalle({ idVenta }) {
 
 export async function eliminarVentaItem({ id }) {
   if (!id) return false;
-
-  console.info("[crudVentaItems] Eliminando venta_item", { id });
 
   const { error } = await supabase.from("venta_items").delete().eq("id", id);
 
@@ -306,15 +297,19 @@ const sincronizarCuotas = async ({ idVenta, cuotas }) => {
     (existentes ?? []).map((cuota) => [Number(cuota.nro_cuota), cuota.id])
   );
 
-  const payload = cuotasNormalizadas.map((cuota) => ({
-    id: mapaExistentes.get(Number(cuota.nro_cuota)) ?? undefined,
-    id_venta: idVenta,
-    ...cuota,
-  }));
+  const payload = cuotasNormalizadas.map((cuota) => {
+    const existingId = mapaExistentes.get(Number(cuota.nro_cuota));
+    const obj = {
+      id_venta: idVenta,
+      ...cuota,
+    };
+    if (existingId) {
+      obj.id = existingId;
+    }
+    return obj;
+  });
 
-  const { error: upsertError } = await supabase
-    .from("cuotas")
-    .upsert(payload);
+  const { error: upsertError } = await supabase.from("cuotas").upsert(payload);
 
   if (handleError(upsertError, "sincronizarCuotas.upsert")) {
     return false;
@@ -325,8 +320,6 @@ const sincronizarCuotas = async ({ idVenta, cuotas }) => {
 
 export async function confirmarVentaItems({ idVenta, cuotas = [] }) {
   if (!idVenta) return false;
-
-  console.info("[crudVentaItems] Confirmando venta", { idVenta });
 
   const { data: ventaActual, error: fetchError } = await supabase
     .from("ventas")
