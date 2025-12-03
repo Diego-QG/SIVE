@@ -128,9 +128,26 @@ export function DetalleVenta({
     ];
   }, [detalle]);
 
-  const docenteData = detalle ?? {};
+  const docenteData = useMemo(() => {
+    const data = detalle ?? {};
 
-  const items = Array.isArray(detalle?.items) ? detalle.items : [];
+    return {
+      nombre:
+        data.docente_nombre_completo ??
+        data.nombre_docente ??
+        data.docente?.nombre ??
+        data.docente?.docente_nombre_completo,
+      nro_doc: data.docente_nro_doc ?? data.docente?.nro_doc,
+      telefono: data.docente_telefono ?? data.docente?.telefono,
+      tipo_ingreso: data.docente_tipo_ingreso ?? data.docente?.tipo_ingreso,
+    };
+  }, [detalle]);
+
+  const items = Array.isArray(detalle?.items)
+    ? detalle.items
+    : Array.isArray(detalle?.materiales)
+      ? detalle.materiales
+      : [];
   const descuentos = Array.isArray(detalle?.descuentos)
     ? detalle.descuentos
     : [];
@@ -219,9 +236,10 @@ export function DetalleVenta({
                                       item.nivel,
                                       item.subnivel,
                                       item.curso,
+                                      item.mes,
                                     ]
                                       .filter(Boolean)
-                                      .join(" • ")}
+                                      .join(" • ") || "-"}
                                   </small>
                                 </div>
                               </td>
@@ -280,67 +298,81 @@ export function DetalleVenta({
                             {Array.isArray(cuota.pagos) &&
                               cuota.pagos.length > 0 && (
                                 <PagosList>
-                                  {cuota.pagos.map((pago, pagoIdx) => (
-                                    <div
-                                      className="pago-wrapper"
-                                      key={`pago-${pagoIdx}`}
-                                    >
-                                      <div className="pago-item">
-                                        <div className="pago-info">
-                                          <strong>
-                                            {mostrarConGuion(pago.fecha_pago)}
-                                          </strong>
-                                          <small>
-                                            {[
-                                              pago.cuenta_entidad,
-                                              pago.cuenta_medio,
-                                              pago.cuenta_etiqueta,
-                                            ]
-                                              .filter(Boolean)
-                                              .join(" - ")}
-                                          </small>
-                                        </div>
-                                        <div className="pago-amount">
-                                          {mostrarConGuion(pago.monto)}
-                                        </div>
-                                      </div>
+                                  {cuota.pagos.map((pago, pagoIdx) => {
+                                    const cuenta = pago?.cuenta ?? {};
+                                    const cuotaNumero =
+                                      cuota.nro_cuota ?? pago.nro_cuota ?? pagoIdx + 1;
+                                    const cuentaInfo =
+                                      [
+                                        cuenta.entidad,
+                                        cuenta.medio,
+                                        cuenta.etiqueta,
+                                        cuenta.numero,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" - ");
+                                    const voucherArchivo =
+                                      pago?.archivo_voucher ??
+                                      pago?.voucher ??
+                                      pago?.evidencia?.archivo ??
+                                      pago?.evidencias?.[0]?.archivo ??
+                                      null;
 
-                                      {/* Evidencias Logic Restored */}
-                                      {pago.archivo_voucher && (
-                                        <PagoEvidencias>
-                                          <EvidenceThumb
-                                            ole="button"
-                                            tabIndex={0}
-                                            onClick={() =>
-                                              setFocusedVoucher({
-                                                preview: pago.archivo_voucher,
-                                                id: `voucher-${index}-${pagoIdx}`,
-                                              })
-                                            }
-                                            onKeyDown={(e) => {
-                                              if (
-                                                e.key === "Enter" ||
-                                                e.key === " "
-                                              ) {
+                                    return (
+                                      <div
+                                        className="pago-wrapper"
+                                        key={`pago-${pagoIdx}`}
+                                      >
+                                        <div className="pago-item">
+                                          <div className="pago-info">
+                                            <strong>
+                                              {mostrarConGuion(pago.fecha_pago)}
+                                            </strong>
+                                            <small>
+                                              {cuentaInfo || `Cuota #${cuotaNumero}`}
+                                            </small>
+                                          </div>
+                                          <div className="pago-amount">
+                                            {mostrarConGuion(pago.monto)}
+                                          </div>
+                                        </div>
+
+                                        {voucherArchivo && (
+                                          <PagoEvidencias>
+                                            <EvidenceThumb
+                                              ole="button"
+                                              tabIndex={0}
+                                              onClick={() =>
                                                 setFocusedVoucher({
-                                                  preview: pago.archivo_voucher,
+                                                  preview: voucherArchivo,
                                                   id: `voucher-${index}-${pagoIdx}`,
-                                                });
+                                                })
                                               }
-                                            }}
-                                          >
-                                            <img
-                                              src={pago.archivo_voucher}
-                                              alt={`Voucher cuota ${cuota.nro_cuota}`}
-                                            />
-                                            <span className="evidence-label">
-                                              Voucher
-                                            </span>
-                                          </EvidenceThumb>
-                                        </PagoEvidencias>
-                                      )}
-                                    </div>
-                                  ))}
+                                              onKeyDown={(e) => {
+                                                if (
+                                                  e.key === "Enter" ||
+                                                  e.key === " "
+                                                ) {
+                                                  setFocusedVoucher({
+                                                    preview: voucherArchivo,
+                                                    id: `voucher-${index}-${pagoIdx}`,
+                                                  });
+                                                }
+                                              }}
+                                            >
+                                              <img
+                                                src={voucherArchivo}
+                                                alt={`Voucher cuota ${cuotaNumero}`}
+                                              />
+                                              <span className="evidence-label">
+                                                Voucher cuota {cuotaNumero}
+                                              </span>
+                                            </EvidenceThumb>
+                                          </PagoEvidencias>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </PagosList>
                               )}
                           </CuotaRow>
@@ -405,25 +437,23 @@ export function DetalleVenta({
                       </div>
                       <div className="docente-details">
                         <strong>
-                          {mostrarConGuion(
-                            docenteData?.docente_nombre_completo
-                          )}
+                          {mostrarConGuion(docenteData?.nombre)}
                         </strong>
                         <small>
-                          {mostrarConGuion(docenteData?.docente_nro_doc)}
+                          {mostrarConGuion(docenteData?.nro_doc)}
                         </small>
                       </div>
                       <ContactInfo>
                         <div className="contact-row">
                           <span>Tel:</span>
                           <strong>
-                            {mostrarConGuion(docenteData?.docente_telefono)}
+                            {mostrarConGuion(docenteData?.telefono)}
                           </strong>
                         </div>
                         <div className="contact-row">
                           <span>Tipo:</span>
                           <strong>
-                            {mostrarConGuion(docenteData?.docente_tipo_ingreso)}
+                            {mostrarConGuion(docenteData?.tipo_ingreso)}
                           </strong>
                         </div>
                       </ContactInfo>
