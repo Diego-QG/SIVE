@@ -1,9 +1,9 @@
 import styled from "styled-components";
 
 const steps = [
-  { id: 1, label: "Comprobantes" },
-  { id: 2, label: "Docente" },
-  { id: 3, label: "Materiales" },
+  { id: 1, label: "Docente" },
+  { id: 2, label: "Materiales" },
+  { id: 3, label: "Comprobantes" },
 ];
 
 export function RegistroVentaStepper({ currentStep = 1 }) {

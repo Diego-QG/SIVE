@@ -332,6 +332,9 @@ const Body = styled.div`
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 `;
 const SplitPanel = styled.div`
     display: grid;
@@ -341,8 +344,19 @@ const SplitPanel = styled.div`
         grid-template-columns: 1fr;
     }
 `;
-const LeftPanel = styled.div``;
-const RightPanel = styled.div`
+const PanelCard = styled.section`
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+  background: ${({ theme }) => theme.posPanelBg};
+  border-radius: 18px;
+  padding: clamp(14px, 1.4vw, 18px);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+`;
+const LeftPanel = styled(PanelCard)``;
+const RightPanel = styled(PanelCard)`
     display: flex;
     flex-direction: column;
     gap: 12px;
