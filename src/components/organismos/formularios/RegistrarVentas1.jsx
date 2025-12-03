@@ -9,7 +9,6 @@ import {
   Selector,
   Spinner,
   useEmpresaStore,
-  useEditorialesStore,
   useUsuariosStore,
   useVentasStore,
   buscarDocentePorTelefono,
@@ -47,13 +46,9 @@ export function RegistrarVentas1({
   institucionForm,
   setInstitucionForm,
 }) {
-  // --- Editorial State ---
   const { dataempresa } = useEmpresaStore();
-  const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
-  const { dataeditoriales, editorialesitemselect, selecteditorial } = useEditorialesStore();
   const { datausuarios } = useUsuariosStore();
-  const { insertarborrador, insertareditorialenventa } = useVentasStore();
-  const [isSavingEditorial, setIsSavingEditorial] = useState(false);
+  const { insertarborrador } = useVentasStore();
 
   // --- Docente State ---
   const {
@@ -85,7 +80,6 @@ export function RegistrarVentas1({
   } = useUbicacionesStore();
 
   const [isClosing, setIsClosing] = useState(false);
-  const [draftEditorialId, setDraftEditorialId] = useState(null);
   const [isLoadingDraftData, setIsLoadingDraftData] = useState(false);
 
   // Docente Local State
@@ -108,8 +102,6 @@ export function RegistrarVentas1({
   } = docenteForm ?? {};
   const { codigoIe = "", nombreIe = "" } = institucionForm ?? {};
 
-  const hasEditoriales = (dataeditoriales ?? []).length > 0;
-  const hasSelectedEditorial = Boolean(editorialesitemselect?.nombre?.trim());
   const isLoadingInitialData = isEditing && isLoadingDraftData;
 
   const empresaId = useMemo(
@@ -120,48 +112,6 @@ export function RegistrarVentas1({
   const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? null;
   const dniDigitsRequired = paisSeleccionado?.digitos_documento ?? null;
   const phoneCodeLabel = paisSeleccionado?.cod_llamada ?? "+51";
-
-  // --- Editorial Logic ---
-
-  const selectorText = isLoadingInitialData
-    ? "Cargando datos..."
-    : hasSelectedEditorial
-    ? editorialesitemselect?.nombre
-    : hasEditoriales
-    ? "Editoriales disponibles"
-    : "Sin editoriales disponibles";
-
-  const clearEditorialSelection = () => {
-    selecteditorial(null);
-    onVentaTieneDatosChange?.("editorial", false);
-    setDraftEditorialId(null);
-  };
-
-  const handleEditorialSelection = async (editorial) => {
-    if (isLoadingInitialData) return;
-    
-    if (!editorial?.id || !ventaDraftId) {
-      clearEditorialSelection();
-      return;
-    }
-
-    setIsSavingEditorial(true);
-    const isSaved = await insertareditorialenventa({
-      _id_venta: ventaDraftId,
-      _id_editorial: editorial.id,
-    });
-    setIsSavingEditorial(false);
-
-    if (isSaved) {
-      selecteditorial(editorial);
-      onVentaTieneDatosChange?.("editorial", true);
-    }
-  };
-
-  const toggleEditoriales = () => {
-    if (!hasEditoriales || isLoadingInitialData) return;
-    setStateEditorialesLista((prev) => !prev);
-  };
 
   // --- Docente Logic Helpers ---
 
@@ -571,17 +521,14 @@ export function RegistrarVentas1({
       if (isCancelled || !nuevoId) return;
 
       onDraftCreated?.(nuevoId);
-      onVentaTieneDatosChange?.("editorial", false);
-      selecteditorial(null);
     };
     crearBorrador();
     return () => { isCancelled = true; };
-  }, [state, ventaDraftId, datausuarios?.id, insertarborrador, onDraftCreated, onDraftCreationStateChange, onVentaTieneDatosChange, selecteditorial]);
+  }, [state, ventaDraftId, datausuarios?.id, insertarborrador, onDraftCreated, onDraftCreationStateChange]);
 
   // Load existing draft data
   useEffect(() => {
     if (!state || !ventaDraftId || !isEditing) {
-      setDraftEditorialId(null);
       setIsLoadingDraftData(false);
       return;
     }
@@ -590,35 +537,9 @@ export function RegistrarVentas1({
     setIsLoadingDraftData(true);
 
     const cargarDatos = async () => {
-      // Need to load Venta details to get Editorial
-      // Need to load Docente details
-      const ventaData = await useVentasStore.getState().obtenerventadetalle({ _id_venta: ventaDraftId });
-      // Actually obtaining draft data from `obtenerVentaBorradorPorId` might be better or reusing store
-      // The `RegistrarVentas1` original used `obtenerVentaBorradorPorId`.
-      // Let's assume we can use the store methods or import if needed.
-      // But `cargardocenteporventa` handles docente.
-
       await cargardocenteporventa({ _id_venta: ventaDraftId });
       await cargarinstitucionporventa({ _id_venta: ventaDraftId });
-
-      // For editorial, we need to check if we can fetch it.
-      // Assuming `cargardocenteporventa` or similar doesn't bring editorial.
-      // We can use `useVentasStore.dataventas` if it's there, but better fetch fresh.
-      // Using `obtenerVentaBorradorPorId` from index would be good but I need to import it.
-      // Oh wait, I am using `useVentasStore`.
-
-      // Let's rely on `dataeditoriales` being present.
-      // We need to know which editorial is selected.
-      // In the original file `obtenerVentaBorradorPorId` was imported.
-
-      // I need to ensure I set `setDraftEditorialId` correctly.
-
-      if (!isCancelled) {
-         // If I had the editorial ID, I'd set it.
-         // Since I removed the direct import in my overwrite block (oops), I should check if I can get it.
-         // Ah, I can import it.
-      }
-      setIsLoadingDraftData(false);
+      if (!isCancelled) setIsLoadingDraftData(false);
     };
 
     cargarDatos();
@@ -643,10 +564,6 @@ export function RegistrarVentas1({
     updateDocenteField("apellidoPaterno", normalizeTextInput(docentedraft?.apellido_p));
     updateDocenteField("apellidoMaterno", normalizeTextInput(docentedraft?.apellido_m));
     setHasHydratedDocente(true);
-
-    // Also hydrate editorial if possible.
-    // Assuming `docentedraft` or another store has it? No.
-    // I need to fetch the sale details to get editorial.
   }, [docentedraft, state, hasHydratedDocente, paisSeleccionado, phoneDigitsRequired, dniDigitsRequired]);
 
   // Restore Institucion fields
@@ -682,7 +599,6 @@ export function RegistrarVentas1({
     setIsClosing(true);
     try {
       await autoSaveDocenteEInstitucion();
-      clearEditorialSelection();
       await onClose?.();
     } catch (error) {
       setIsClosing(false);
@@ -690,10 +606,6 @@ export function RegistrarVentas1({
   };
 
   const handleNext = async () => {
-    if (!hasSelectedEditorial) {
-        toast.warning("Debes seleccionar una editorial.");
-        return;
-    }
     await autoSaveDocenteEInstitucion("next");
     if (hasStartedInstitution() && !hasInstitutionRequiredFields()) {
         toast.info("No se puede registrar la institución porque faltan datos obligatorios.");
@@ -709,7 +621,7 @@ export function RegistrarVentas1({
         <Header>
           <div>
             <p>Registrar nueva venta</p>
-            <h2>Docente y Editorial</h2>
+            <h2>Docente</h2>
           </div>
           <button type="button" onClick={handleRequestClose} aria-label="Cerrar" disabled={isClosing}>
             <v.iconocerrar />
@@ -719,238 +631,223 @@ export function RegistrarVentas1({
         <RegistroVentaStepper currentStep={1} />
 
         <Body>
-          {/* Editorial Selection Section */}
-          <SectionTitle>Datos de la Venta</SectionTitle>
-          <EditorialSelectorRow>
-            <Label>Seleccionar editorial</Label>
-            <DropdownWrapper>
-              <Selector
-                state={stateEditorialesLista}
-                funcion={toggleEditoriales}
-                texto1=""
-                texto2={isSavingEditorial ? "Guardando..." : selectorText}
-                color="#F9D70B"
-                isPlaceholder={!hasSelectedEditorial || isSavingEditorial}
-                onClear={hasSelectedEditorial ? clearEditorialSelection : undefined}
-              />
-              <ListaDesplegable
-                state={stateEditorialesLista}
-                data={dataeditoriales}
-                funcion={handleEditorialSelection}
-                top="3.5rem"
-                setState={() => setStateEditorialesLista((prev) => !prev)}
-                onClear={hasSelectedEditorial ? clearEditorialSelection : undefined}
-                clearLabel="Limpiar selección"
-              />
-            </DropdownWrapper>
-          </EditorialSelectorRow>
-
-          <Divider />
-
-          {/* Docente Selection Section */}
           <SectionTitle>Datos del Docente</SectionTitle>
-          <InputGroup>
-            <label>Número de teléfono</label>
-            <PhoneInputRow>
-              <PhoneCodeSelectorSlot>
+
+          <ContentGrid>
+            <Card>
+              <CardHeader>
+                <div>
+                  <h3>Contacto y validación</h3>
+                  <HelperText>Confirma el número para buscar docentes existentes o crear uno nuevo.</HelperText>
+                </div>
+              </CardHeader>
+
+              <InputGroup>
+                <label>Número de teléfono</label>
+                <PhoneInputRow>
+                  <PhoneCodeSelectorSlot>
+                    <Selector
+                      state={openDropdown === "phoneCode"}
+                      funcion={() => toggleDropdown("phoneCode", isDocenteLocked ? "No se puede cambiar el teléfono." : null)}
+                      texto1=""
+                      texto2={phoneCodeLabel}
+                      color={SELECTOR_BORDER_COLOR}
+                      isPlaceholder={false}
+                      width="auto"
+                      minWidth="88px"
+                    />
+                    <ListaDesplegable
+                      state={openDropdown === "phoneCode"}
+                      data={paises}
+                      funcion={seleccionarpais}
+                      setState={closeDropdown}
+                      width="260px"
+                      top="3.3rem"
+                      placement="bottom"
+                      emptyLabel="No hay códigos"
+                    />
+                  </PhoneCodeSelectorSlot>
+                  <PhoneNumberField
+                    type="tel"
+                    placeholder="Número de teléfono"
+                    value={phoneNumber}
+                    onChange={handlePhoneChange}
+                    onBlur={handlePhoneBlur}
+                    maxLength={phoneDigitsRequired ?? 15}
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    disabled={isDocenteLocked}
+                  />
+                  <ResetButton type="button" onClick={handleResetForm}>Limpiar</ResetButton>
+                  {phoneLookupMessage && (
+                    <LookupStatus $status={phoneLookupState}>
+                      {phoneLookupState === "searching" && <InlineSpinner />}
+                      <span>{phoneLookupMessage}</span>
+                    </LookupStatus>
+                  )}
+                </PhoneInputRow>
+                <PhoneStatusRow>
+                  <FieldStatus $status={isPhoneReady ? "success" : "idle"}>{phoneStatusMessage}</FieldStatus>
+                </PhoneStatusRow>
+              </InputGroup>
+
+              <InputRow>
+                <DniInputGroup>
+                  <label>DNI</label>
+                  <InputField
+                    type="text"
+                    placeholder="Número de documento"
+                    value={dniValue}
+                    onChange={handleDniChange}
+                    onBlur={handleDniBlur}
+                    maxLength={dniDigitsRequired ?? 12}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    disabled={!canEditDocenteFields}
+                  />
+                  <FieldStatus $status={isDniReady ? "success" : "idle"}>{dniStatusMessage}</FieldStatus>
+                </DniInputGroup>
+              </InputRow>
+
+              <NameFieldsRow>
+                <VentaInput
+                  label="Nombres"
+                  placeholder="Nombre del docente"
+                  value={nombres}
+                  onChange={handleUppercaseChange((value) => updateDocenteField("nombres", value))}
+                  disabled={!canEditDocenteFields}
+                  autoCapitalize="characters"
+                />
+                <VentaInput
+                  label="Apellido paterno"
+                  placeholder="Apellido paterno"
+                  value={apellidoPaterno}
+                  onChange={handleUppercaseChange((value) => updateDocenteField("apellidoPaterno", value))}
+                  disabled={!canEditDocenteFields}
+                  autoCapitalize="characters"
+                />
+                <VentaInput
+                  label="Apellido materno"
+                  placeholder="Apellido materno"
+                  value={apellidoMaterno}
+                  onChange={handleUppercaseChange((value) => updateDocenteField("apellidoMaterno", value))}
+                  disabled={!canEditDocenteFields}
+                  autoCapitalize="characters"
+                />
+              </NameFieldsRow>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div>
+                  <h3>Institución</h3>
+                  <HelperText>Completa la información de la institución educativa del docente.</HelperText>
+                </div>
+              </CardHeader>
+
+              <CountrySelectorWrapper>
+                <Label>País</Label>
                 <Selector
-                  state={openDropdown === "phoneCode"}
-                  funcion={() => toggleDropdown("phoneCode", isDocenteLocked ? "No se puede cambiar el teléfono." : null)}
+                  state={openDropdown === "country"}
+                  funcion={() => toggleDropdown("country")}
                   texto1=""
-                  texto2={phoneCodeLabel}
+                  texto2={paisSeleccionado?.nombre ?? "País"}
                   color={SELECTOR_BORDER_COLOR}
-                  isPlaceholder={false}
-                  width="auto"
-                  minWidth="88px"
+                  isPlaceholder={!paisSeleccionado}
                 />
                 <ListaDesplegable
-                  state={openDropdown === "phoneCode"}
+                  state={openDropdown === "country"}
                   data={paises}
                   funcion={seleccionarpais}
                   setState={closeDropdown}
-                  width="260px"
-                  top="3.3rem"
+                  width="240px"
                   placement="bottom"
-                  emptyLabel="No hay códigos"
                 />
-              </PhoneCodeSelectorSlot>
-              <PhoneNumberField
-                type="tel"
-                placeholder="Número de teléfono"
-                value={phoneNumber}
-                onChange={handlePhoneChange}
-                onBlur={handlePhoneBlur}
-                maxLength={phoneDigitsRequired ?? 15}
-                inputMode="numeric"
-                autoComplete="tel"
-                disabled={isDocenteLocked}
-              />
-              <ResetButton type="button" onClick={handleResetForm}>Limpiar</ResetButton>
-              {phoneLookupMessage && (
-                <LookupStatus $status={phoneLookupState}>
-                  {phoneLookupState === "searching" && <InlineSpinner />}
-                  <span>{phoneLookupMessage}</span>
-                </LookupStatus>
-              )}
-            </PhoneInputRow>
-            <PhoneStatusRow>
-              <FieldStatus $status={isPhoneReady ? "success" : "idle"}>{phoneStatusMessage}</FieldStatus>
-            </PhoneStatusRow>
-          </InputGroup>
+              </CountrySelectorWrapper>
 
-          <InputRow>
-            <DniInputGroup>
-              <label>DNI</label>
-              <InputField
-                type="text"
-                placeholder="Número de documento"
-                value={dniValue}
-                onChange={handleDniChange}
-                onBlur={handleDniBlur}
-                maxLength={dniDigitsRequired ?? 12}
-                inputMode="numeric"
-                autoComplete="off"
-                disabled={!canEditDocenteFields}
-              />
-              <FieldStatus $status={isDniReady ? "success" : "idle"}>{dniStatusMessage}</FieldStatus>
-            </DniInputGroup>
-          </InputRow>
+              <DualGrid>
+                <VentaInput
+                  label="Código de IE (opcional)"
+                  placeholder="Código modular"
+                  value={codigoIe}
+                  onChange={handleUppercaseChange((value) => updateInstitucionField("codigoIe", value))}
+                  disabled={!canEditInstitutionFields}
+                />
+                <VentaInput
+                  label="Nombre de la institución"
+                  placeholder="Nombre de la IE"
+                  value={nombreIe}
+                  onChange={handleUppercaseChange((value) => updateInstitucionField("nombreIe", value))}
+                  disabled={!canEditInstitutionFields}
+                />
+              </DualGrid>
 
-          <NameFieldsRow>
-            <VentaInput
-              label="Nombres"
-              placeholder="Nombres completos"
-              value={nombres}
-              onChange={handleUppercaseChange((value) => updateDocenteField("nombres", value))}
-              onBlur={persistDocenteDraft}
-              disabled={isDniReady || !canEditDocenteFields}
-            />
-            <VentaInput
-              label="Apellido paterno"
-              placeholder="Apellido paterno"
-              value={apellidoPaterno}
-              onChange={handleUppercaseChange((value) => updateDocenteField("apellidoPaterno", value))}
-              onBlur={persistDocenteDraft}
-              disabled={isDniReady || !canEditDocenteFields}
-            />
-            <VentaInput
-              label="Apellido materno"
-              placeholder="Apellido materno"
-              value={apellidoMaterno}
-              onChange={handleUppercaseChange((value) => updateDocenteField("apellidoMaterno", value))}
-              onBlur={persistDocenteDraft}
-              disabled={isDniReady || !canEditDocenteFields}
-            />
-          </NameFieldsRow>
+              <LocationSelectorsRow>
+                <LocationDropdownWrapper>
+                  <Label>Departamento</Label>
+                  <Selector
+                    state={openDropdown === "departamento"}
+                    funcion={() => toggleDropdown("departamento", departamentoGuardMessage)}
+                    texto1=""
+                    texto2={departamentoSeleccionado?.nombre ?? "Seleccionar"}
+                    color={SELECTOR_BORDER_COLOR}
+                    isPlaceholder={!departamentoSeleccionado}
+                  />
+                  <ListaDesplegable
+                    state={openDropdown === "departamento"}
+                    data={departamentos}
+                    funcion={(value) => seleccionarDepartamentoSeguro(value)}
+                    setState={closeDropdown}
+                    width="100%"
+                    top="3.4rem"
+                    placement="bottom"
+                  />
+                </LocationDropdownWrapper>
 
-          <DualGrid>
-            <VentaInput
-              label="Código de IE"
-              placeholder="Código de institución"
-              value={codigoIe}
-              onChange={handleUppercaseChange((value) => updateInstitucionField("codigoIe", value))}
-              type="text"
-              variant="solid"
-              disabled={!canEditInstitutionFields}
-            />
-            <VentaInput
-              label="Nombre de IE"
-              placeholder="Nombre de institución"
-              value={nombreIe}
-              onChange={handleUppercaseChange((value) => updateInstitucionField("nombreIe", value))}
-              type="text"
-              variant="solid"
-              disabled={!canEditInstitutionFields}
-            />
-            <CountrySelectorWrapper>
-              <Selector
-                state={openDropdown === "pais"}
-                funcion={() => toggleDropdown("pais", institutionGuardMessage)}
-                texto1="País"
-                texto2={paisSeleccionado?.nombre ?? "Perú"}
-                color={SELECTOR_BORDER_COLOR}
-                isPlaceholder={false}
-                width="auto"
-                minWidth="120px"
-              />
-              <ListaDesplegable
-                state={openDropdown === "pais"}
-                data={paises}
-                funcion={seleccionarpais}
-                setState={closeDropdown}
-                width="100%"
-                top="3.5rem"
-                placement="top"
-                emptyLabel="No hay países"
-              />
-            </CountrySelectorWrapper>
-          </DualGrid>
+                <LocationDropdownWrapper>
+                  <Label>Provincia</Label>
+                  <Selector
+                    state={openDropdown === "provincia"}
+                    funcion={() => toggleDropdown("provincia", provinciaGuardMessage)}
+                    texto1=""
+                    texto2={provinciaSeleccionada?.nombre ?? "Seleccionar"}
+                    color={SELECTOR_BORDER_COLOR}
+                    isPlaceholder={!provinciaSeleccionada}
+                  />
+                  <ListaDesplegable
+                    state={openDropdown === "provincia"}
+                    data={provincias}
+                    funcion={(value) => seleccionarProvinciaSeguro(value)}
+                    setState={closeDropdown}
+                    width="100%"
+                    top="3.4rem"
+                    placement="bottom"
+                  />
+                </LocationDropdownWrapper>
 
-          <LocationSelectorsRow>
-             <LocationDropdownWrapper>
-              <Selector
-                state={openDropdown === "departamento"}
-                funcion={() => toggleDropdown("departamento", departamentoGuardMessage)}
-                texto1="Departamento"
-                texto2={departamentoSeleccionado?.nombre ?? "Selecciona"}
-                color={SELECTOR_BORDER_COLOR}
-                isPlaceholder={!departamentoSeleccionado}
-                width="auto"
-                minWidth="180px"
-              />
-              <ListaDesplegable
-                state={openDropdown === "departamento"}
-                data={departamentos}
-                funcion={seleccionardepartamento}
-                setState={closeDropdown}
-                width="100%"
-                top="3.5rem"
-                placement="top"
-              />
-            </LocationDropdownWrapper>
-             <LocationDropdownWrapper>
-              <Selector
-                state={openDropdown === "provincia"}
-                funcion={() => toggleDropdown("provincia", provinciaGuardMessage)}
-                texto1="Provincia"
-                texto2={provinciaSeleccionada?.nombre ?? "Selecciona"}
-                color={SELECTOR_BORDER_COLOR}
-                isPlaceholder={!provinciaSeleccionada}
-                width="auto"
-                minWidth="180px"
-              />
-              <ListaDesplegable
-                state={openDropdown === "provincia"}
-                data={provincias}
-                funcion={seleccionarprovincia}
-                setState={closeDropdown}
-                width="100%"
-                top="3.5rem"
-                placement="top"
-              />
-            </LocationDropdownWrapper>
-             <LocationDropdownWrapper>
-              <Selector
-                state={openDropdown === "distrito"}
-                funcion={() => toggleDropdown("distrito", distritoGuardMessage)}
-                texto1="Distrito"
-                texto2={distritoSeleccionado?.nombre ?? "Selecciona"}
-                color={SELECTOR_BORDER_COLOR}
-                isPlaceholder={!distritoSeleccionado}
-                width="auto"
-                minWidth="180px"
-              />
-              <ListaDesplegable
-                state={openDropdown === "distrito"}
-                data={distritos}
-                funcion={seleccionardistrito}
-                setState={closeDropdown}
-                width="100%"
-                top="3.5rem"
-                placement="top"
-              />
-            </LocationDropdownWrapper>
-          </LocationSelectorsRow>
+                <LocationDropdownWrapper>
+                  <Label>Distrito</Label>
+                  <Selector
+                    state={openDropdown === "distrito"}
+                    funcion={() => toggleDropdown("distrito", distritoGuardMessage)}
+                    texto1=""
+                    texto2={distritoSeleccionado?.nombre ?? "Seleccionar"}
+                    color={SELECTOR_BORDER_COLOR}
+                    isPlaceholder={!distritoSeleccionado}
+                  />
+                  <ListaDesplegable
+                    state={openDropdown === "distrito"}
+                    data={distritos}
+                    funcion={(value) => seleccionarDistritoSeguro(value)}
+                    setState={closeDropdown}
+                    width="100%"
+                    top="3.4rem"
+                    placement="bottom"
+                  />
+                </LocationDropdownWrapper>
+              </LocationSelectorsRow>
+            </Card>
+          </ContentGrid>
         </Body>
 
         <Footer>
@@ -990,17 +887,38 @@ const SectionTitle = styled.h3`
   margin: 0;
   color: ${({ theme }) => theme.text};
 `;
-const Divider = styled.hr`
-  border: 0;
-  height: 1px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.1);
-  margin: 10px 0;
+const ContentGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: clamp(14px, 2vw, 22px);
+  align-items: start;
 `;
-const EditorialSelectorRow = styled.div`
+const Card = styled.section`
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+  background: ${({ theme }) => theme.posPanelBg};
+  border-radius: 18px;
+  padding: clamp(14px, 1.6vw, 20px);
   display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  box-shadow: 0 14px 50px rgba(0, 0, 0, 0.08);
+`;
+const CardHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+`;
+const HelperText = styled.p`
+  margin: 4px 0 0;
+  color: rgba(${({ theme }) => theme.textRgba}, 0.7);
+  font-weight: 500;
 `;
 const Label = styled.p`
   margin: 0;

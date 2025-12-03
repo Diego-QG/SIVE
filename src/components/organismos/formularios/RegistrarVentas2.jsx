@@ -26,6 +26,7 @@ export function RegistrarVentas2({
   onNext,
   onPrevious,
   ventaDraftId,
+  onVentaTieneDatosChange,
 }) {
   const [isClosing, setIsClosing] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -38,13 +39,15 @@ export function RegistrarVentas2({
   });
   const [selectedYear, setSelectedYear] = useState(2025);
   const [searchTerm, setSearchTerm] = useState("");
+  const [stateEditorialesLista, setStateEditorialesLista] = useState(false);
+  const [isSavingEditorial, setIsSavingEditorial] = useState(false);
 
   const nivelTriggerRef = useRef(null);
   const subnivelTriggerRef = useRef(null);
   const contenidoTriggerRef = useRef(null);
   const yearTriggerRef = useRef(null);
   const itemsTriggerRef = useRef(null);
-  const { editorialesitemselect } = useEditorialesStore();
+  const { dataeditoriales, editorialesitemselect, selecteditorial } = useEditorialesStore();
   const editorialId = editorialesitemselect?.id ?? null;
   const IconCerrar = v.iconocerrar;
   const IconAgregar = v.iconoagregar;
@@ -92,6 +95,7 @@ export function RegistrarVentas2({
     agregarItemsAVenta,
     eliminarItemDeVenta,
   } = useRegistrarVentasStore();
+  const { insertareditorialenventa } = useVentasStore();
 
   const isBusy = isClosing || isSavingItems;
 
@@ -116,6 +120,16 @@ export function RegistrarVentas2({
     () => Math.max(totalBruto - totalDescuento, 0),
     [totalBruto, totalDescuento]
   );
+
+  const hasEditoriales = (dataeditoriales ?? []).length > 0;
+  const hasSelectedEditorial = Boolean(editorialesitemselect?.nombre?.trim());
+  const selectorText = isSavingEditorial
+    ? "Guardando..."
+    : hasSelectedEditorial
+    ? editorialesitemselect?.nombre
+    : hasEditoriales
+    ? "Editoriales disponibles"
+    : "Sin editoriales disponibles";
 
   const years = useMemo(
     () => [
@@ -143,7 +157,43 @@ export function RegistrarVentas2({
     setOpenDropdown(null);
     setSearchTerm("");
     setSelectedYear(2025);
+    setStateEditorialesLista(false);
   }, [isOpen, limpiarSeleccion, state]);
+
+  const clearEditorialSelection = () => {
+    selecteditorial(null);
+    onVentaTieneDatosChange?.("editorial", false);
+  };
+
+  const handleEditorialSelection = async (editorial) => {
+    if (!editorial?.id || !ventaDraftId) {
+      clearEditorialSelection();
+      return;
+    }
+
+    setIsSavingEditorial(true);
+    const saved = await insertareditorialenventa({
+      _id_venta: ventaDraftId,
+      _id_editorial: editorial.id,
+    });
+    setIsSavingEditorial(false);
+
+    if (saved) {
+      selecteditorial(editorial);
+      onVentaTieneDatosChange?.("editorial", true);
+      await cargarContenidos({
+        idNivel: selectedNivel?.id,
+        idSubnivel: selectedSubnivel?.id,
+        editorialId: editorial.id,
+      });
+      await cargarMateriales({ editorialId: editorial.id });
+    }
+  };
+
+  const toggleEditoriales = () => {
+    if (!hasEditoriales || isBusy) return;
+    setStateEditorialesLista((prev) => !prev);
+  };
 
   const nivelLabel = useMemo(() => {
     if (selectedNivel?.nombre) return selectedNivel.nombre;
@@ -227,7 +277,7 @@ export function RegistrarVentas2({
 
     if (name === "contenido") {
       if (!editorialId) {
-        toast.warning("Selecciona una editorial en el paso 1.");
+        toast.warning("Selecciona una editorial primero.");
         return;
       }
       if (!selectedNivel) {
@@ -249,7 +299,7 @@ export function RegistrarVentas2({
 
     if (name === "items") {
       if (!editorialId) {
-        toast.warning("Selecciona primero una editorial en el paso 1.");
+        toast.warning("Selecciona una editorial para ver los items.");
         return;
       }
       if (!selectedNivel || !selectedSubnivel || !selectedContenido) {
@@ -328,6 +378,10 @@ export function RegistrarVentas2({
   };
 
   const handleNavigateNext = () => {
+    if (!hasSelectedEditorial) {
+      toast.warning("Selecciona una editorial antes de continuar.");
+      return;
+    }
     if (resumenVenta.length === 0) {
       toast.warning("Agrega al menos un item antes de continuar.");
       return;
@@ -351,228 +405,250 @@ export function RegistrarVentas2({
         <RegistroVentaStepper currentStep={2} />
 
         <Body>
-          <SelectorsPanel>
+          <EditorialCard>
+            <EditorialHeader>
+              <div>
+                <span className="eyebrow">Editorial</span>
+                <h3>Selecciona la editorial</h3>
+                <HelperText>Elige la editorial para habilitar los filtros y materiales.</HelperText>
+              </div>
+              <EditorialSelectorWrapper>
+                <SelectorButton
+                  type="button"
+                  onClick={toggleEditoriales}
+                  $disabled={isBusy || !hasEditoriales}
+                >
+                  {selectorText}
+                </SelectorButton>
+                <ListaDesplegable
+                  data={dataeditoriales}
+                  state={stateEditorialesLista}
+                  setState={() => setStateEditorialesLista((prev) => !prev)}
+                  funcion={handleEditorialSelection}
+                  onClear={hasSelectedEditorial ? clearEditorialSelection : undefined}
+                  clearLabel="Limpiar selección"
+                  placement="bottom"
+                />
+              </EditorialSelectorWrapper>
+            </EditorialHeader>
+          </EditorialCard>
+
+          <PanelsGrid>
             <SelectorsCard>
               <SelectorGrid>
-            <SelectorColumn>
-              <span>Seleccionar nivel</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.nivel}
-                onClick={() => toggleDropdown("nivel")}
-                $disabled={isBusy}
-              >
-                {nivelLabel}
-              </SelectorButton>
-              <ListaDesplegable
-                data={niveles}
-                state={openDropdown === "nivel"}
-                setState={() => setOpenDropdown(null)}
-                funcion={handleSelectNivel}
-                onClear={() => seleccionarNivel(null)}
-                placement={dropdownPlacement.nivel}
-              />
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Seleccionar subnivel</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.subnivel}
-                onClick={() => toggleDropdown("subnivel")}
-                $disabled={isBusy}
-              >
-                {subnivelLabel}
-              </SelectorButton>
-              <ListaDesplegable
-                data={subniveles}
-                state={openDropdown === "subnivel"}
-                setState={() => setOpenDropdown(null)}
-                funcion={handleSelectSubnivel}
-                onClear={() => seleccionarSubnivel(null)}
-                placement={dropdownPlacement.subnivel}
-              />
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Seleccionar curso o paquete</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.contenido}
-                onClick={() => toggleDropdown("contenido")}
-                $disabled={isBusy}
-              >
-                {contenidoLabel}
-              </SelectorButton>
-              <ListaDesplegable
-                data={contenidos}
-                state={openDropdown === "contenido"}
-                setState={() => setOpenDropdown(null)}
-                funcion={handleSelectContenido}
-                onClear={() => seleccionarContenido(null)}
-                emptyLabel={selectedSubnivel ? "Sin cursos ni paquetes" : "Selecciona un subnivel"}
-                placement={dropdownPlacement.contenido}
-              />
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Seleccionar año</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.year}
-                onClick={() => toggleDropdown("year")}
-                $disabled={isBusy}
-              >
-                {selectedYear}
-              </SelectorButton>
-              <ListaDesplegable
-                data={years}
-                state={openDropdown === "year"}
-                setState={() => setOpenDropdown(null)}
-                funcion={handleSelectYear}
-                placement={dropdownPlacement.year}
-              />
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Seleccionar items</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.items}
-                onClick={() => toggleDropdown("items")}
-                $disabled={isBusy}
-              >
-                {itemsLabel}
-              </SelectorButton>
-              {openDropdown === "items" && (
-                <ItemsDropdown
-                  ref={itemsTriggerRef}
-                  $placement={dropdownPlacement.items}
-                >
-                  <SearchContainer>
-                    <InputText icono={<IconLupa/>}>
-                      <input
-                        type="text"
-                        className="form__field"
-                        placeholder="Buscar item..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <label className="form__label">Buscar item</label>
-                    </InputText>
-                  </SearchContainer>
-
-                  {isLoadingMateriales ? (
-                    <div className="empty">
-                      <Spinner />
-                      <small>Cargando items...</small>
-                    </div>
-                  ) : filteredMateriales.length === 0 ? (
-                    <EmptyState>
-                      {materiales.length === 0
-                        ? "Sin materiales para los filtros seleccionados."
-                        : "No se encontraron items con ese nombre."}
-                    </EmptyState>
-                  ) : (
-                    <ul>
-                      {filteredMateriales.map((material) => {
-                        const isChecked = selectedItems.includes(material.id);
-                        return (
-                          <li key={material.id}>
-                            <label>
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleItem(material.id)}
-                              />
-                              <div className="info">
-                                <span className="label">{material.label}</span>
-                                <small>S/{material.precio.toFixed(2)}</small>
-                              </div>
-                            </label>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  <button
+                <SelectorColumn>
+                  <span>Seleccionar nivel</span>
+                  <SelectorButton
                     type="button"
-                    className="add-btn"
-                    onClick={handleAgregarItems}
-                    disabled={isSavingItems || isBusy}
+                    ref={triggerRefs.nivel}
+                    onClick={() => toggleDropdown("nivel")}
+                    $disabled={isBusy}
                   >
-                    {isSavingItems ? <Spinner /> : <IconAgregar />}
-                    <span>Agregar</span>
-                  </button>
-                </ItemsDropdown>
-              )}
-            </SelectorColumn>
+                    {nivelLabel}
+                  </SelectorButton>
+                  <ListaDesplegable
+                    data={niveles}
+                    state={openDropdown === "nivel"}
+                    setState={() => setOpenDropdown(null)}
+                    funcion={handleSelectNivel}
+                    onClear={() => seleccionarNivel(null)}
+                    placement={dropdownPlacement.nivel}
+                  />
+                </SelectorColumn>
+                <SelectorColumn>
+                  <span>Seleccionar subnivel</span>
+                  <SelectorButton
+                    type="button"
+                    ref={triggerRefs.subnivel}
+                    onClick={() => toggleDropdown("subnivel")}
+                    $disabled={isBusy}
+                  >
+                    {subnivelLabel}
+                  </SelectorButton>
+                  <ListaDesplegable
+                    data={subniveles}
+                    state={openDropdown === "subnivel"}
+                    setState={() => setOpenDropdown(null)}
+                    funcion={handleSelectSubnivel}
+                    onClear={() => seleccionarSubnivel(null)}
+                    placement={dropdownPlacement.subnivel}
+                  />
+                </SelectorColumn>
+                <SelectorColumn>
+                  <span>Seleccionar curso o paquete</span>
+                  <SelectorButton
+                    type="button"
+                    ref={triggerRefs.contenido}
+                    onClick={() => toggleDropdown("contenido")}
+                    $disabled={isBusy}
+                  >
+                    {contenidoLabel}
+                  </SelectorButton>
+                  <ListaDesplegable
+                    data={contenidos}
+                    state={openDropdown === "contenido"}
+                    setState={() => setOpenDropdown(null)}
+                    funcion={handleSelectContenido}
+                    onClear={() => seleccionarContenido(null)}
+                    emptyLabel={selectedSubnivel ? "Sin cursos ni paquetes" : "Selecciona un subnivel"}
+                    placement={dropdownPlacement.contenido}
+                  />
+                </SelectorColumn>
+                <SelectorColumn>
+                  <span>Seleccionar año</span>
+                  <SelectorButton
+                    type="button"
+                    ref={triggerRefs.year}
+                    onClick={() => toggleDropdown("year")}
+                    $disabled={isBusy}
+                  >
+                    {selectedYear}
+                  </SelectorButton>
+                  <ListaDesplegable
+                    data={years}
+                    state={openDropdown === "year"}
+                    setState={() => setOpenDropdown(null)}
+                    funcion={handleSelectYear}
+                    placement={dropdownPlacement.year}
+                  />
+                </SelectorColumn>
+                <SelectorColumn>
+                  <span>Seleccionar items</span>
+                  <SelectorButton
+                    type="button"
+                    ref={triggerRefs.items}
+                    onClick={() => toggleDropdown("items")}
+                    $disabled={isBusy}
+                  >
+                    {itemsLabel}
+                  </SelectorButton>
+                  {openDropdown === "items" && (
+                    <ItemsDropdown
+                      ref={itemsTriggerRef}
+                      $placement={dropdownPlacement.items}
+                    >
+                      <SearchContainer>
+                        <InputText icono={<IconLupa/>}>
+                          <input
+                            type="text"
+                            className="form__field"
+                            placeholder="Buscar item..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <label className="form__label">Buscar item</label>
+                        </InputText>
+                      </SearchContainer>
+
+                      {isLoadingMateriales ? (
+                        <div className="empty">
+                          <Spinner />
+                          <small>Cargando items...</small>
+                        </div>
+                      ) : filteredMateriales.length === 0 ? (
+                        <div className="empty">
+                          <strong>No hay items disponibles.</strong>
+                          <small>Ajusta los filtros o busca otro término.</small>
+                        </div>
+                      ) : (
+                        <ul>
+                          {filteredMateriales.map((item) => (
+                            <li key={item.id}>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedItems.includes(item.id)}
+                                  onChange={() => toggleItem(item.id)}
+                                />
+                                <div className="info">
+                                  <span className="label">{item.label}</span>
+                                  <small>{item.descripcion ?? "Sin descripción"}</small>
+                                </div>
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      <button className="add-btn" onClick={handleAgregarItems} disabled={isBusy}>
+                        <IconAgregar /> Agregar items seleccionados
+                      </button>
+                    </ItemsDropdown>
+                  )}
+                </SelectorColumn>
               </SelectorGrid>
             </SelectorsCard>
-          </SelectorsPanel>
 
-          <ResumenWrapper>
-            <ResumenCard>
-            <header>
-              <div>
-                <h4>Resumen de venta</h4>
-                <p>Los montos se actualizan al agregar o quitar items.</p>
-              </div>
-            </header>
-            <ResumenHeaderRow>
-              <span>Detalle</span>
-              <span className="center">Cantidad</span>
-              <span className="center">P. unitario</span>
-              <span className="end">Subtotal</span>
-              <span className="actions" aria-hidden />
-            </ResumenHeaderRow>
-            <ul>
-              {isLoadingResumen ? (
-                <li className="empty">
-                  <Spinner />
-                </li>
-              ) : resumenVenta.length === 0 ? (
-                <li className="empty">
-                  <span>No hay materiales agregados todavía.</span>
-                </li>
-              ) : (
-                resumenVenta.map((item) => (
-                  <li key={item.id}>
-                    <div className="item-title">
-                      <strong>{item.nombre}</strong>
-                      <div className="item-meta">
-                        {item.nivel && <small>{item.nivel}</small>}
-                        {item.subnivel && <small>{item.subnivel}</small>}
-                        {item.curso && <small>{item.curso}</small>}
-                      </div>
-                    </div>
-                    <div className="center">x{item.cantidad ?? 1}</div>
-                    <div className="center">S/{(item.precioUnitario ?? item.precio).toFixed(2)}</div>
-                    <div className="end">S/{(item.subtotal ?? item.precio).toFixed(2)}</div>
-                    <RemoveButton
-                      type="button"
-                      onClick={() => handleEliminarItem(item.id)}
-                      disabled={isBusy}
-                    >
-                      <IconCerrar aria-hidden />
-                    </RemoveButton>
-                  </li>
-                ))
-              )}
-            </ul>
-            <Totals>
-              <div>
-                <span>Total bruto</span>
-                <b>S/{totalBruto.toFixed(2)}</b>
-              </div>
-              <div>
-                <span>Descuento</span>
-                <b>S/{totalDescuento.toFixed(2)}</b>
-              </div>
-              <div className="neto">
-                <span>Total neto</span>
-                <strong>S/{totalNeto.toFixed(2)}</strong>
-              </div>
-            </Totals>
-            </ResumenCard>
-          </ResumenWrapper>
+            <ResumenWrapper>
+              <ResumenCard>
+                <header>
+                  <div>
+                    <h3>Resumen de venta</h3>
+                    <p>Los montos se actualizan al agregar o quitar items.</p>
+                  </div>
+                  <div className="badges">
+                    <span className="badge">Total items: {resumenVenta.length}</span>
+                  </div>
+                </header>
+                <ResumenHeaderRow>
+                  <span>Detalle</span>
+                  <span className="center">Cantidad</span>
+                  <span className="center">P. unitario</span>
+                  <span className="end">Subtotal</span>
+                  <span className="actions" aria-hidden />
+                </ResumenHeaderRow>
+                <ul>
+                  {isLoadingResumen ? (
+                    <li className="empty">
+                      <Spinner />
+                    </li>
+                  ) : resumenVenta.length === 0 ? (
+                    <li className="empty">
+                      <span>No hay materiales agregados todavía.</span>
+                    </li>
+                  ) : (
+                    resumenVenta.map((item) => (
+                      <li key={item.id}>
+                        <div className="item-title">
+                          <strong>{item.nombre}</strong>
+                          <div className="item-meta">
+                            {item.nivel && <small>{item.nivel}</small>}
+                            {item.subnivel && <small>{item.subnivel}</small>}
+                            {item.curso && <small>{item.curso}</small>}
+                          </div>
+                        </div>
+                        <div className="center">x{item.cantidad ?? 1}</div>
+                        <div className="center">S/{(item.precioUnitario ?? item.precio).toFixed(2)}</div>
+                        <div className="end">S/{(item.subtotal ?? item.precio).toFixed(2)}</div>
+                        <RemoveButton
+                          type="button"
+                          onClick={() => handleEliminarItem(item.id)}
+                          disabled={isBusy}
+                        >
+                          <IconCerrar aria-hidden />
+                        </RemoveButton>
+                      </li>
+                    ))
+                  )}
+                </ul>
+                <Totals>
+                  <div>
+                    <span>Total bruto</span>
+                    <b>S/{totalBruto.toFixed(2)}</b>
+                  </div>
+                  <div>
+                    <span>Descuento</span>
+                    <b>S/{totalDescuento.toFixed(2)}</b>
+                  </div>
+                  <div className="neto">
+                    <span>Total neto</span>
+                    <strong>S/{totalNeto.toFixed(2)}</strong>
+                  </div>
+                </Totals>
+              </ResumenCard>
+            </ResumenWrapper>
+          </PanelsGrid>
         </Body>
 
         <Footer>
@@ -604,19 +680,14 @@ const Modal = styled(ModalContainer)`
 const Header = styled(ModalHeader)``;
 
 const Body = styled.div`
-  display: grid;
-  grid-template-columns: minmax(260px, 0.36fr) minmax(460px, 0.64fr);
-  gap: clamp(16px, 2vw, 26px);
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 2vw, 20px);
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 6px;
-
-  @media (max-width: 1080px) {
-    grid-template-columns: 1fr;
-  }
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -632,10 +703,70 @@ const Body = styled.div`
   }
 `;
 
-const SelectorsPanel = styled.section`
+const PanelsGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(340px, 0.45fr) minmax(420px, 0.55fr);
+  gap: clamp(16px, 2vw, 24px);
+  align-items: stretch;
+
+  @media (max-width: 1080px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const EditorialCard = styled.div`
+  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
+  background: ${({ theme }) => theme.posPanelBg};
+  border-radius: 18px;
+  padding: clamp(14px, 1.5vw, 18px);
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: rgba(${({ theme }) => theme.textRgba}, 0.65);
+  }
+
+  h3 {
+    margin: 4px 0 0;
+  }
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`;
+
+const EditorialHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   width: 100%;
+
+  h3 {
+    font-size: 1.05rem;
+  }
+`;
+
+const HelperText = styled.p`
+  margin: 6px 0 0;
+  color: rgba(${({ theme }) => theme.textRgba}, 0.7);
+  font-weight: 500;
+`;
+
+const EditorialSelectorWrapper = styled.div`
+  position: relative;
+  min-width: min(260px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 `;
 
 const SelectorsCard = styled.div`
@@ -644,12 +775,10 @@ const SelectorsCard = styled.div`
   border-radius: 18px;
   padding: clamp(12px, 1.5vw, 18px);
   width: 100%;
-  max-width: 340px;
   box-shadow: 0 16px 60px rgba(0, 0, 0, 0.08);
-
-  @media (max-width: 1080px) {
-    max-width: none;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 `;
 
 const SelectorGrid = styled.div`
@@ -673,6 +802,7 @@ const SelectorColumn = styled.div`
 
 const ResumenWrapper = styled.div`
   min-width: 0;
+  height: 100%;
 `;
 
 const SelectorButton = styled.button`
@@ -703,6 +833,7 @@ const ResumenCard = styled.section`
   flex-direction: column;
   gap: 14px;
   min-width: 0;
+  height: 100%;
 
   header {
     display: flex;
