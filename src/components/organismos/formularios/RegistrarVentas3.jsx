@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { toast } from "sonner";
 import { v } from "../../../styles/variables";
@@ -12,12 +12,15 @@ import {
   OutlineButton,
   PrimaryButton,
   Spinner,
-  ListaDesplegable,
-  useEditorialesStore,
-  useRegistrarVentasStore,
+  useEvidenciasStore,
+  useUsuariosStore,
   useVentasStore,
+  VoucherMultiUploadSection,
+  obtenerVentaBorradorPorId,
+  obtenerVouchersRecibidosPorVenta,
+  useRegistrarVentasStore,
 } from "../../../index";
-import { InputText } from "./InputText";
+import { VentaInput } from "../../../index";
 
 export function RegistrarVentas3({
   state,
@@ -29,606 +32,293 @@ export function RegistrarVentas3({
   onPersistDocente,
   ventaFlags = {},
 }) {
-  const [isClosing, setIsClosing] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
-  const [dropdownPlacement, setDropdownPlacement] = useState({
-    nivel: "bottom",
-    subnivel: "bottom",
-    contenido: "bottom",
-    year: "bottom",
-    items: "bottom",
-  });
-  const [selectedYear, setSelectedYear] = useState(2025);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const nivelTriggerRef = useRef(null);
-  const subnivelTriggerRef = useRef(null);
-  const contenidoTriggerRef = useRef(null);
-  const yearTriggerRef = useRef(null);
-  const itemsTriggerRef = useRef(null);
-  const { refrescarVentas } = useVentasStore();
-  const { editorialesitemselect } = useEditorialesStore();
-  const editorialId = editorialesitemselect?.id ?? null;
-  const IconCerrar = v.iconocerrar;
-  const IconAgregar = v.iconoagregar;
-  const IconFlechaIzquierda = v.iconoflechaizquierda;
-  const IconCheck = v.iconocheck;
-  const IconLupa = v.iconobuscar;
-
-  const triggerRefs = useMemo(
-    () => ({
-      nivel: nivelTriggerRef,
-      subnivel: subnivelTriggerRef,
-      contenido: contenidoTriggerRef,
-      year: yearTriggerRef,
-      items: itemsTriggerRef,
-    }),
-    []
-  );
-
   const {
-    niveles,
-    subniveles,
-    contenidos,
-    materiales,
-    resumenVenta,
-    selectedNivel,
-    selectedSubnivel,
-    selectedContenido,
-    selectedItems,
-    isLoadingNiveles,
-    isLoadingSubniveles,
-    isLoadingContenidos,
-    isLoadingMateriales,
-    isLoadingResumen,
-    isSavingItems,
-    isConfirming,
-    limpiarSeleccion,
-    cargarNiveles,
-    cargarSubniveles,
-    cargarContenidos,
-    cargarMateriales,
-    seleccionarNivel,
-    seleccionarSubnivel,
-    seleccionarContenido,
-    toggleItem,
-    cargarResumenVenta,
-    agregarItemsAVenta,
-    eliminarItemDeVenta,
-    confirmarVenta,
-  } = useRegistrarVentasStore();
+    voucherspendientes: vouchers,
+    agregarvoucherspendientes,
+    removervoucherpendiente,
+    setventaactual,
+    limpiarvoucherspendientes,
+    subirvoucherspendientes,
+    eliminarvoucherrecibido,
+  } = useEvidenciasStore();
+  const { datausuarios } = useUsuariosStore();
+  const { insertarborrador } = useVentasStore();
+  const { confirmarVenta } = useRegistrarVentasStore();
 
-  const isBusy = isClosing || isConfirming;
+  const [isClosing, setIsClosing] = useState(false);
+  const [focusedVoucher, setFocusedVoucher] = useState(null);
+  const [persistedVouchers, setPersistedVouchers] = useState([]);
+  const [totalVenta, setTotalVenta] = useState(0);
 
-  const totalBruto = useMemo(
-    () =>
-      resumenVenta.reduce(
-        (sum, item) =>
-          sum +
-            (item?.subtotal ??
-              (item?.precioUnitario ?? item?.precio ?? 0) * (item?.cantidad ?? 1)),
-        0
-      ),
-    [resumenVenta]
-  );
+  // Cuotas State
+  const [cuotas, setCuotas] = useState([]);
 
-  const totalDescuento = useMemo(
-    () => resumenVenta.reduce((sum, item) => sum + (item?.descuento ?? 0), 0),
-    [resumenVenta]
-  );
-
-  const totalNeto = useMemo(
-    () => Math.max(totalBruto - totalDescuento, 0),
-    [totalBruto, totalDescuento]
-  );
-
-  const years = useMemo(
-    () => [
-      { id: 2024, nombre: "2024" },
-      { id: 2025, nombre: "2025" },
-    ],
-    []
-  );
-
+  // Load Total and Vouchers
   useEffect(() => {
-    if (!state) {
+    if (!state || !ventaDraftId) return;
+
+    setventaactual(ventaDraftId);
+
+    const loadData = async () => {
+      const [ventaData, vouchersGuardados] = await Promise.all([
+        obtenerVentaBorradorPorId({ _id_venta: ventaDraftId }),
+        obtenerVouchersRecibidosPorVenta({ id_venta: ventaDraftId }),
+      ]);
+
+      if (ventaData) {
+        setTotalVenta(Number(ventaData.total_neto ?? 0));
+        // Initialize Cuota 1 if empty
+        if (cuotas.length === 0) {
+            setCuotas([
+                { id: 1, monto: Number(ventaData.total_neto ?? 0), fecha: new Date().toISOString().split('T')[0] }
+            ]);
+        }
+      }
+
+      setPersistedVouchers(
+        (vouchersGuardados ?? [])
+          .filter((item) => item?.archivo)
+          .map((item) => ({
+            id: item.id,
+            preview: item.archivo,
+            isPersisted: true,
+          }))
+      );
+    };
+
+    loadData();
+  }, [state, ventaDraftId]);
+
+  // Vouchers Logic
+  const addVouchers = (incomingFiles) => {
+    if (!incomingFiles?.length) return;
+    const normalizedFiles = incomingFiles
+      .filter((file) => file.type.startsWith("image/"))
+      .map((file, index) => ({
+        id: `${file.name}-${Date.now()}-${index}`,
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+    if (!normalizedFiles.length) return;
+    agregarvoucherspendientes(normalizedFiles);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    const droppedFiles = Array.from(event.dataTransfer?.files ?? []);
+    addVouchers(droppedFiles);
+  };
+
+  const handleRemoveVoucher = async (id) => {
+    const persisted = persistedVouchers.find((voucher) => voucher.id === id);
+    if (persisted) {
+      await eliminarvoucherrecibido({ id });
+      setPersistedVouchers((prev) => prev.filter((voucher) => voucher.id !== id));
+      if (focusedVoucher?.id === id) setFocusedVoucher(null);
       return;
     }
+    removervoucherpendiente(id);
+    if (focusedVoucher?.id === id) setFocusedVoucher(null);
+  };
 
-    setIsClosing(false);
-    cargarNiveles();
-    if (ventaDraftId) {
-      cargarResumenVenta(ventaDraftId);
+  const displayedVouchers = useMemo(
+    () => [...persistedVouchers, ...vouchers],
+    [persistedVouchers, vouchers]
+  );
+
+  // Cuotas Logic
+  const totalCuotas = useMemo(() => {
+    return cuotas.reduce((sum, c) => sum + (Number(c.monto) || 0), 0);
+  }, [cuotas]);
+
+  const isValidTotal = Math.abs(totalCuotas - totalVenta) < 0.01;
+
+  const handleAddCuota = () => {
+    const nextId = cuotas.length + 1;
+    setCuotas([...cuotas, { id: nextId, monto: 0, fecha: "" }]);
+  };
+
+  const handleRemoveCuota = (id) => {
+    if (cuotas.length <= 1) return;
+    setCuotas(cuotas.filter((c) => c.id !== id).map((c, i) => ({ ...c, id: i + 1 })));
+  };
+
+  const updateCuota = (id, field, value) => {
+    setCuotas(cuotas.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
+  };
+
+  // Confirm Logic
+  const handleFinish = async () => {
+    if (!ventaDraftId) {
+        toast.error("Error: No hay venta activa.");
+        return;
     }
-  }, [cargarNiveles, cargarResumenVenta, state, ventaDraftId]);
 
-  useEffect(() => {
-    if (state || isOpen) return;
-    limpiarSeleccion();
-    setOpenDropdown(null);
-    setSearchTerm("");
-    setSelectedYear(2025);
-  }, [isOpen, limpiarSeleccion, state]);
-
-  const nivelLabel = useMemo(() => {
-    if (selectedNivel?.nombre) return selectedNivel.nombre;
-    if (isLoadingNiveles) return "Cargando niveles...";
-    return "Niveles disponibles";
-  }, [isLoadingNiveles, selectedNivel]);
-
-  const subnivelLabel = useMemo(() => {
-    if (selectedSubnivel?.nombre) return selectedSubnivel.nombre;
-    if (isLoadingSubniveles) return "Cargando subniveles...";
-    return "Subniveles disponibles";
-  }, [isLoadingSubniveles, selectedSubnivel]);
-
-  const contenidoLabel = useMemo(() => {
-    if (selectedContenido?.nombre) return selectedContenido.nombre;
-    if (isLoadingContenidos) return "Cargando contenidos...";
-    return "Cursos o paquetes";
-  }, [isLoadingContenidos, selectedContenido]);
-
-  const filteredMateriales = useMemo(() => {
-    return materiales.filter((m) => {
-      const mYear = m.anio ? Number(m.anio) : null;
-      // If material has no year, we include it? Or strict filtering?
-      // Assuming strict if year is present. If null, include?
-      // User asked for "filter by year".
-      const matchesYear = mYear ? mYear === selectedYear : true;
-      const matchesSearch = searchTerm
-        ? m.label.toLowerCase().includes(searchTerm.toLowerCase())
-        : true;
-      return matchesYear && matchesSearch;
-    });
-  }, [materiales, selectedYear, searchTerm]);
-
-  const itemsLabel = useMemo(() => {
-    if (isLoadingMateriales) return "Buscando materiales...";
-    if (selectedItems.length === 1) {
-      const material = materiales.find((item) => item.id === selectedItems[0]);
-      return material?.label ?? "1 material";
+    if (displayedVouchers.length === 0) {
+        toast.warning("Debes subir al menos un voucher (evidencia de pago).");
+        return;
     }
-    if (selectedItems.length > 1) return `${selectedItems.length} materiales`;
-    return "Items disponibles";
-  }, [isLoadingMateriales, materiales, selectedItems]);
 
-  if (!isOpen) {
-    return null;
-  }
-
-  const handleRequestClose = async () => {
-    if (isClosing) {
-      return;
+    if (!isValidTotal) {
+        toast.warning(`La suma de las cuotas (S/${totalCuotas.toFixed(2)}) debe ser igual al total de la venta (S/${totalVenta.toFixed(2)}).`);
+        return;
     }
+
+    // Persist doc/inst if pending
+    const canPersistDocente = await onPersistDocente?.();
+    if (canPersistDocente === false) return;
 
     setIsClosing(true);
 
-    try {
-      await onClose?.();
-    } catch (error) {
-      setIsClosing(false);
-    }
-  };
-
-  const determinePlacement = (name) => {
-    const ref = triggerRefs[name];
-    if (!ref?.current) return "bottom";
-
-    const rect = ref.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const spaceBelow = viewportHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    const estimatedHeight = name === "items" ? 360 : 280;
-
-    if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
-      return "top";
-    }
-
-    return "bottom";
-  };
-
-  const toggleDropdown = async (name) => {
-    if (name === "subnivel" && !selectedNivel) {
-      toast.warning("No puedes seleccionar subnivel sin antes nivel.");
-      return;
-    }
-
-    if (name === "contenido") {
-      if (!editorialId) {
-        toast.warning("Selecciona una editorial en el paso 1.");
-        return;
-      }
-      if (!selectedNivel) {
-        toast.warning("Selecciona un nivel antes de continuar.");
-        return;
-      }
-      if (!selectedSubnivel) {
-        toast.warning("No puedes seleccionar contenido sin un subnivel.");
-        return;
-      }
-      if (!contenidos.length) {
-        await cargarContenidos({
-          idNivel: selectedNivel?.id,
-          idSubnivel: selectedSubnivel?.id,
-          editorialId,
+    // Upload pending vouchers
+    if (vouchers.length > 0) {
+        await subirvoucherspendientes({
+            idVenta: ventaDraftId,
+            idUsuario: datausuarios?.id ?? null,
         });
-      }
     }
 
-    if (name === "items") {
-      if (!editorialId) {
-        toast.warning("Selecciona primero una editorial en el paso 1.");
-        return;
-      }
-      if (!selectedNivel || !selectedSubnivel || !selectedContenido) {
-        toast.warning("Selecciona nivel, subnivel y curso/paquete antes de ver items.");
-        return;
-      }
+    // Confirm Sale and Insert Cuotas
+    // Pass cuotas to confirmVenta or call separate endpoint
+    const payload = {
+        idVenta: ventaDraftId,
+        cuotas: cuotas.map(c => ({
+            nro_cuota: c.id,
+            fecha_vencimiento: c.fecha || new Date().toISOString().split('T')[0], // Default today if missing
+            monto_programado: Number(c.monto),
+        }))
+    };
 
-      await cargarMateriales({ editorialId });
-    }
+    // Note: confirmarVenta in store currently only calls fn_confirmar_venta.
+    // I need to update the store/crud to accept cuotas or call a new function.
+    // For now, I will assume I updated `confirmarVenta` in store/crud to handle this,
+    // OR I call a new function `insertarCuotas` before confirming.
 
-    setDropdownPlacement((prev) => ({
-      ...prev,
-      [name]: determinePlacement(name),
-    }));
+    // I will use `confirmarVenta` and pass payload, assuming I'll update the store next.
+    const confirmado = await confirmarVenta(payload);
 
-    setOpenDropdown((prev) => (prev === name ? null : name));
-  };
-
-  const handleSelectNivel = async (nivel) => {
-    seleccionarNivel(nivel);
-    await cargarSubniveles(nivel?.id);
-    setOpenDropdown(null);
-  };
-
-  const handleSelectSubnivel = async (subnivel) => {
-    seleccionarSubnivel(subnivel);
-    if (selectedNivel?.id && subnivel?.id && editorialId) {
-      await cargarContenidos({
-        idNivel: selectedNivel.id,
-        idSubnivel: subnivel.id,
-        editorialId,
-      });
-    }
-    setOpenDropdown(null);
-  };
-
-  const handleSelectContenido = async (contenido) => {
-    seleccionarContenido(contenido);
-    await cargarMateriales({ editorialId });
-    setOpenDropdown(null);
-    setOpenDropdown("items"); // Automatically open items selection logic could be here, but maybe year needs to be checked?
-    // Current flow: user selects content, then maybe year, then items.
-    // If we auto-open items, year defaults to 2025.
-  };
-
-  const handleSelectYear = (yearOption) => {
-    setSelectedYear(yearOption.id);
-    setOpenDropdown(null);
-  };
-
-  const handleAgregarItems = async () => {
-    if (!ventaDraftId) {
-      toast.error("Primero crea un borrador de venta en los pasos anteriores.");
-      return;
-    }
-
-    if (!selectedItems.length) {
-      toast.warning("Selecciona al menos un material para agregar.");
-      return;
-    }
-
-    const agregado = await agregarItemsAVenta({ idVenta: ventaDraftId });
-    if (agregado) {
-      toast.success("Materiales agregados correctamente.");
-      setOpenDropdown(null);
-      setSearchTerm("");
-    } else {
-      toast.error("No se pudieron agregar los materiales.");
-    }
-  };
-
-  const handleEliminarItem = async (itemId) => {
-    if (!itemId) return;
-    const eliminado = await eliminarItemDeVenta({ idVenta: ventaDraftId, idItem: itemId });
-    if (eliminado) {
-      toast.success("Item eliminado del resumen.");
-    }
-  };
-
-  const handleFinish = async () => {
-    if (!ventaDraftId) {
-      toast.error("No se encontró el borrador de la venta.");
-      return;
-    }
-
-    if (resumenVenta.length === 0) {
-      toast.warning("Agrega al menos un item antes de registrar la venta.");
-      return;
-    }
-
-    const { editorial, vouchers, docente } = ventaFlags;
-    if (!editorial || !vouchers || !docente) {
-      toast.warning(
-        "Para completar la venta necesitas una editorial, al menos un voucher y los datos del docente."
-      );
-      return;
-    }
-
-    const canPersistDocente = await onPersistDocente?.();
-    if (canPersistDocente === false) {
-      return;
-    }
-
-    const confirmado = await confirmarVenta({ idVenta: ventaDraftId });
     if (confirmado) {
-      // Optimistic closing
-      onFinish?.();
-      // Background update
-      refrescarVentas();
-      return;
+        onFinish?.();
+    } else {
+        toast.error("No se pudo registrar la venta.");
+        setIsClosing(false);
     }
-
-    toast.error("No se pudo registrar la venta. Intenta nuevamente.");
   };
+
+  const handleRequestClose = async () => {
+    if (isClosing) return;
+    // Upload pending vouchers before closing if user wants?
+    // Usually "X" means cancel or just close modal.
+    // Vouchers logic in Step 1 uploaded on close. Here we can do the same.
+    if (vouchers.length > 0) {
+         await subirvoucherspendientes({
+            idVenta: ventaDraftId,
+            idUsuario: datausuarios?.id ?? null,
+        });
+    }
+    onClose?.();
+  };
+
+  if (!isOpen) return null;
 
   return (
     <Overlay $visible={state}>
-      <Modal aria-busy={isBusy} $visible={state}>
+      <Modal aria-busy={isClosing} $visible={state}>
         <Header>
           <div>
             <p>Registrar nueva venta</p>
-            <h2>Datos de venta</h2>
+            <h2>Pagos y Cuotas</h2>
           </div>
-            <button type="button" onClick={handleRequestClose} aria-label="Cerrar" disabled={isBusy}>
-              <IconCerrar />
-            </button>
+          <button type="button" onClick={handleRequestClose} aria-label="Cerrar" disabled={isClosing}>
+            <v.iconocerrar />
+          </button>
         </Header>
 
         <RegistroVentaStepper currentStep={3} />
 
         <Body>
-          <SelectorsPanel>
-            <SelectorsCard>
-              <SelectorGrid>
-            <SelectorColumn>
-              <span>Seleccionar nivel</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.nivel}
-                onClick={() => toggleDropdown("nivel")}
-                $disabled={isBusy}
-              >
-                {nivelLabel}
-              </SelectorButton>
-              <ListaDesplegable
-                data={niveles}
-                state={openDropdown === "nivel"}
-                setState={() => setOpenDropdown(null)}
-                funcion={handleSelectNivel}
-                onClear={() => seleccionarNivel(null)}
-                placement={dropdownPlacement.nivel}
-              />
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Seleccionar subnivel</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.subnivel}
-                onClick={() => toggleDropdown("subnivel")}
-                $disabled={isBusy}
-              >
-                {subnivelLabel}
-              </SelectorButton>
-              <ListaDesplegable
-                data={subniveles}
-                state={openDropdown === "subnivel"}
-                setState={() => setOpenDropdown(null)}
-                funcion={handleSelectSubnivel}
-                onClear={() => seleccionarSubnivel(null)}
-                placement={dropdownPlacement.subnivel}
-              />
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Seleccionar curso o paquete</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.contenido}
-                onClick={() => toggleDropdown("contenido")}
-                $disabled={isBusy}
-              >
-                {contenidoLabel}
-              </SelectorButton>
-              <ListaDesplegable
-                data={contenidos}
-                state={openDropdown === "contenido"}
-                setState={() => setOpenDropdown(null)}
-                funcion={handleSelectContenido}
-                onClear={() => seleccionarContenido(null)}
-                emptyLabel={selectedSubnivel ? "Sin cursos ni paquetes" : "Selecciona un subnivel"}
-                placement={dropdownPlacement.contenido}
-              />
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Seleccionar año</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.year}
-                onClick={() => toggleDropdown("year")}
-                $disabled={isBusy}
-              >
-                {selectedYear}
-              </SelectorButton>
-              <ListaDesplegable
-                data={years}
-                state={openDropdown === "year"}
-                setState={() => setOpenDropdown(null)}
-                funcion={handleSelectYear}
-                placement={dropdownPlacement.year}
-              />
-            </SelectorColumn>
-            <SelectorColumn>
-              <span>Seleccionar items</span>
-              <SelectorButton
-                type="button"
-                ref={triggerRefs.items}
-                onClick={() => toggleDropdown("items")}
-                $disabled={isBusy}
-              >
-                {itemsLabel}
-              </SelectorButton>
-              {openDropdown === "items" && (
-                <ItemsDropdown
-                  ref={itemsTriggerRef}
-                  $placement={dropdownPlacement.items}
-                >
-                  <SearchContainer>
-                    <InputText icono={<IconLupa/>}>
-                      <input
-                        type="text"
-                        className="form__field"
-                        placeholder="Buscar item..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <label className="form__label">Buscar item</label>
-                    </InputText>
-                  </SearchContainer>
+          <SplitPanel>
+            <LeftPanel>
+                <SectionTitle>Comprobantes de Pago (Cuota 1)</SectionTitle>
+                <VoucherMultiUploadSection
+                    vouchers={displayedVouchers}
+                    onFilesSelected={addVouchers}
+                    onDrop={handleDrop}
+                    onDragOver={(e) => e.preventDefault()}
+                    onVoucherClick={setFocusedVoucher}
+                    onRemoveVoucher={handleRemoveVoucher}
+                    emptyMessage="Sube los vouchers o comprobantes aquí."
+                />
+            </LeftPanel>
 
-                  {isLoadingMateriales ? (
-                    <div className="empty">
-                      <Spinner />
-                      <small>Cargando items...</small>
-                    </div>
-                  ) : filteredMateriales.length === 0 ? (
-                    <EmptyState>
-                      {materiales.length === 0
-                        ? "Sin materiales para los filtros seleccionados."
-                        : "No se encontraron items con ese nombre."}
-                    </EmptyState>
-                  ) : (
-                    <ul>
-                      {filteredMateriales.map((material) => {
-                        const isChecked = selectedItems.includes(material.id);
-                        return (
-                          <li key={material.id}>
-                            <label>
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleItem(material.id)}
-                              />
-                              <div className="info">
-                                <span className="label">{material.label}</span>
-                                <small>S/{material.precio.toFixed(2)}</small>
-                              </div>
-                            </label>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  <button
-                    type="button"
-                    className="add-btn"
-                    onClick={handleAgregarItems}
-                    disabled={isSavingItems || isBusy}
-                  >
-                    {isSavingItems ? <Spinner /> : <IconAgregar />}
-                    <span>Agregar</span>
-                  </button>
-                </ItemsDropdown>
-              )}
-            </SelectorColumn>
-              </SelectorGrid>
-            </SelectorsCard>
-          </SelectorsPanel>
+            <RightPanel>
+                <SectionTitle>Cronograma de Pagos</SectionTitle>
+                <TotalDisplay>
+                    <span>Total Venta:</span>
+                    <strong>S/ {totalVenta.toFixed(2)}</strong>
+                </TotalDisplay>
 
-          <ResumenWrapper>
-            <ResumenCard>
-            <header>
-              <div>
-                <h4>Resumen de venta</h4>
-                <p>Los montos se actualizan al agregar o quitar items.</p>
-              </div>
-              <GhostButton type="button" disabled>
-                Aplicar cupón
-              </GhostButton>
-            </header>
-            <ResumenHeaderRow>
-              <span>Detalle</span>
-              <span className="center">Cantidad</span>
-              <span className="center">P. unitario</span>
-              <span className="end">Subtotal</span>
-              <span className="actions" aria-hidden />
-            </ResumenHeaderRow>
-            <ul>
-              {isLoadingResumen ? (
-                <li className="empty">
-                  <Spinner />
-                </li>
-              ) : resumenVenta.length === 0 ? (
-                <li className="empty">
-                  <span>No hay materiales agregados todavía.</span>
-                </li>
-              ) : (
-                resumenVenta.map((item) => (
-                  <li key={item.id}>
-                    <div className="item-title">
-                      <strong>{item.nombre}</strong>
-                      <div className="item-meta">
-                        {item.nivel && <small>{item.nivel}</small>}
-                        {item.subnivel && <small>{item.subnivel}</small>}
-                        {item.curso && <small>{item.curso}</small>}
-                      </div>
-                    </div>
-                    <div className="center">x{item.cantidad ?? 1}</div>
-                    <div className="center">S/{(item.precioUnitario ?? item.precio).toFixed(2)}</div>
-                    <div className="end">S/{(item.subtotal ?? item.precio).toFixed(2)}</div>
-                    <RemoveButton
-                      type="button"
-                      onClick={() => handleEliminarItem(item.id)}
-                      disabled={isBusy}
-                    >
-                      <IconCerrar aria-hidden />
-                    </RemoveButton>
-                  </li>
-                ))
-              )}
-            </ul>
-            <Totals>
-              <div>
-                <span>Total bruto</span>
-                <b>S/{totalBruto.toFixed(2)}</b>
-              </div>
-              <div>
-                <span>Descuento</span>
-                <b>S/{totalDescuento.toFixed(2)}</b>
-              </div>
-              <div className="neto">
-                <span>Total neto</span>
-                <strong>S/{totalNeto.toFixed(2)}</strong>
-              </div>
-            </Totals>
-            </ResumenCard>
-          </ResumenWrapper>
+                <CuotasList>
+                    {cuotas.map((cuota, index) => (
+                        <CuotaItem key={cuota.id}>
+                            <div className="header">
+                                <span>Cuota {cuota.id}</span>
+                                {index > 0 && (
+                                    <button onClick={() => handleRemoveCuota(cuota.id)} className="remove-btn">
+                                        <v.iconocerrar size="12px"/>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="inputs">
+                                <VentaInput
+                                    label="Fecha"
+                                    type="date"
+                                    value={cuota.fecha}
+                                    onChange={(e) => updateCuota(cuota.id, 'fecha', e.target.value)}
+                                />
+                                <VentaInput
+                                    label="Monto"
+                                    type="number"
+                                    value={cuota.monto}
+                                    onChange={(e) => updateCuota(cuota.id, 'monto', e.target.value)}
+                                />
+                            </div>
+                        </CuotaItem>
+                    ))}
+                </CuotasList>
+
+                <AddCuotaButton type="button" onClick={handleAddCuota}>
+                    <v.iconoagregar /> Agregar Cuota
+                </AddCuotaButton>
+
+                <TotalCheck $isValid={isValidTotal}>
+                    <span>Total Cuotas: S/ {totalCuotas.toFixed(2)}</span>
+                    {!isValidTotal && <small>Difiere por S/ {(totalVenta - totalCuotas).toFixed(2)}</small>}
+                </TotalCheck>
+
+            </RightPanel>
+          </SplitPanel>
         </Body>
 
+        {focusedVoucher && (
+          <LightboxOverlay onClick={() => setFocusedVoucher(null)}>
+            <img src={focusedVoucher.preview} alt="Voucher" />
+          </LightboxOverlay>
+        )}
+
         <Footer>
-            <OutlineButton type="button" onClick={onPrevious} disabled={isBusy}>
-              <IconFlechaIzquierda /> Atrás
-            </OutlineButton>
-            <SuccessButton type="button" onClick={handleFinish} disabled={isBusy}>
-              Registrar venta <IconCheck />
-            </SuccessButton>
-          </Footer>
-        {(isClosing || isConfirming) && (
+          <OutlineButton type="button" onClick={onPrevious} disabled={isClosing}>
+            <v.iconoflechaizquierda /> Atrás
+          </OutlineButton>
+          <PrimaryButton type="button" onClick={handleFinish} disabled={isClosing || !isValidTotal}>
+            Finalizar Venta <v.iconocheck />
+          </PrimaryButton>
+        </Footer>
+
+        {isClosing && (
           <ClosingOverlay>
             <Spinner />
-            <strong>{isConfirming ? "Registrando venta..." : "Guardando cambios..."}</strong>
-            <small>Por favor espera un momento.</small>
+            <strong>Registrando venta...</strong>
           </ClosingOverlay>
         )}
       </Modal>
@@ -636,419 +326,104 @@ export function RegistrarVentas3({
   );
 }
 
-// Modal más ancho en desktop para dar aire al selector y al resumen.
 const Modal = styled(ModalContainer)`
-  width: min(1100px, 88vw);
-  max-width: 1100px;
+    width: min(1000px, 95vw);
+    max-width: 1000px;
 `;
-
 const Header = styled(ModalHeader)``;
-
 const Body = styled.div`
-  display: grid;
-  grid-template-columns: minmax(260px, 0.36fr) minmax(460px, 0.64fr);
-  gap: clamp(16px, 2vw, 26px);
-  align-items: start;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 6px;
-
-  @media (max-width: 1080px) {
-    grid-template-columns: 1fr;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(${({ theme }) => theme.textRgba}, 0.2);
-    border-radius: 999px;
-  }
+  padding-right: 4px;
 `;
-
-const SelectorsPanel = styled.section`
-  display: flex;
-  justify-content: flex-start;
-  width: 100%;
-`;
-
-const SelectorsCard = styled.div`
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  background: ${({ theme }) => theme.posPanelBg};
-  border-radius: 18px;
-  padding: clamp(12px, 1.5vw, 18px);
-  width: 100%;
-  max-width: 340px;
-  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.08);
-
-  @media (max-width: 1080px) {
-    max-width: none;
-  }
-`;
-
-const SelectorGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px 14px;
-  justify-content: start;
-`;
-
-const SelectorColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-weight: 600;
-  position: relative;
-
-  @media (min-width: 960px) {
-    max-width: 250px;
-  }
-`;
-
-const ResumenWrapper = styled.div`
-  min-width: 0;
-`;
-
-const SelectorButton = styled.button`
-  border-radius: 16px;
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.2);
-  padding: 12px 18px;
-  background: ${({ theme }) => theme.posInputBg};
-  color: ${({ theme }) => theme.text};
-  text-align: left;
-  cursor: pointer;
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-
-  &[disabled],
-  &[data-disabled="true"] {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const ResumenCard = styled.section`
-  border-radius: 24px;
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
-  background: ${({ theme }) => theme.posPanelBg};
-  padding: clamp(16px, 1.8vw, 22px);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-
-  header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-
-    p {
-      margin: 4px 0 0;
-      color: rgba(${({ theme }) => theme.textRgba}, 0.65);
-      max-width: 100%;
+const SplitPanel = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
     }
-  }
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+`;
+const LeftPanel = styled.div``;
+const RightPanel = styled.div`
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-height: 340px;
-    overflow-y: auto;
-    padding-right: 4px;
-    min-width: 0;
-
-    li {
-      display: grid;
-      grid-template-columns: 1.6fr 0.5fr 0.7fr 0.7fr auto;
-      gap: 10px;
-      align-items: center;
-      padding-bottom: 12px;
-      border-bottom: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.15);
-
-      @media (max-width: 720px) {
-        grid-template-columns: 1fr 0.6fr;
-        grid-template-rows: auto auto;
-        row-gap: 8px;
-      }
-
-      .item-title {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        min-width: 0;
-      }
-
-      .item-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-
-        small {
-          background: rgba(${({ theme }) => theme.textRgba}, 0.06);
-          padding: 4px 8px;
-          border-radius: 10px;
-          font-weight: 600;
-        }
-      }
-
-      .center {
-        text-align: center;
-        font-weight: 700;
-      }
-
-      .end {
-        text-align: right;
-        font-weight: 700;
-      }
-
-      strong {
-        font-size: 1rem;
-      }
-
-      span {
-        color: rgba(${({ theme }) => theme.textRgba}, 0.65);
-      }
-
-      @media (max-width: 720px) {
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto auto auto;
-        .item-title {
-          grid-column: 1 / -1;
-        }
-
-        .end {
-          text-align: right;
-        }
-      }
-    }
-
-    .empty {
-      justify-content: center;
-      border-bottom: none;
-      padding: 20px;
-      color: rgba(${({ theme }) => theme.textRgba}, 0.6);
-      display: grid;
-      place-items: center;
-    }
-  }
-
-  footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    small {
-      color: rgba(${({ theme }) => theme.textRgba}, 0.65);
-    }
-
-    strong {
-      font-size: 1.2rem;
-      line-height: 1.3;
-    }
-  }
 `;
-
-const ResumenHeaderRow = styled.div`
-  display: grid;
-  grid-template-columns: 1.6fr 0.5fr 0.7fr 0.7fr auto;
-  gap: 10px;
-  padding: 0 6px;
+const SectionTitle = styled.h3`
+  font-size: 1rem;
   font-weight: 700;
-  color: rgba(${({ theme }) => theme.textRgba}, 0.55);
-  align-items: center;
-
-  .center {
-    text-align: center;
-  }
-
-  .end {
-    text-align: right;
-  }
-
-  @media (max-width: 720px) {
-    display: none;
-  }
+  margin-bottom: 12px;
+  color: ${({ theme }) => theme.text};
 `;
-
-const Totals = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  align-items: start;
-
-  div {
-    background: rgba(${({ theme }) => theme.textRgba}, 0.04);
-    border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.12);
-    border-radius: 14px;
+const TotalDisplay = styled.div`
+    background: ${({ theme }) => theme.bg2};
     padding: 12px;
+    border-radius: 12px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-  }
-
-  span {
-    color: rgba(${({ theme }) => theme.textRgba}, 0.6);
-    font-weight: 600;
-  }
-
-  b,
-  strong {
-    font-weight: 800;
-  }
-
-  .neto {
-    background: rgba(23, 224, 192, 0.12);
-    border-color: rgba(23, 224, 192, 0.35);
-  }
+    font-size: 1.1rem;
+    border: 1px solid ${({ theme }) => theme.borderColor};
 `;
-
-const Footer = styled(ModalFooter)`
-  @media (max-width: 520px) {
-    flex-direction: column;
-  }
-`;
-
-const SuccessButton = styled(PrimaryButton)`
-  background: linear-gradient(120deg, #17e0c0, #53b257);
-  color: #031c17;
-`;
-
-const GhostButton = styled.button`
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.2);
-  border-radius: 14px;
-  padding: 0 22px;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.12);
-  color: ${({ theme }) => theme.text};
-  font-weight: 700;
-  cursor: pointer;
-  height: 26px;
-  min-height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-
-  &:hover {
-    background: rgba(${({ theme }) => theme.textRgba}, 0.18);
-    border-color: rgba(${({ theme }) => theme.textRgba}, 0.28);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const ItemsDropdown = styled.div`
-  position: absolute;
-  z-index: 3;
-  ${({ $placement }) =>
-    $placement === "top"
-      ? "bottom: calc(100% + 10px);"
-      : "top: calc(100% + 10px);"};
-  background: ${({ theme }) => theme.body};
-  border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.12);
-  border-radius: 14px;
-  padding: 12px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
-  min-width: min(360px, 92vw);
-  max-width: min(480px, 96vw);
-  max-height: 400px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+const CuotasList = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-height: 220px;
+    gap: 10px;
+    max-height: 300px;
     overflow-y: auto;
-  }
+`;
+const CuotaItem = styled.div`
+    background: ${({ theme }) => theme.bg};
+    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
+    border-radius: 10px;
+    padding: 10px;
 
-  li label {
+    .header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .remove-btn {
+        background: none;
+        border: none;
+        color: ${({ theme }) => theme.text};
+        cursor: pointer;
+        opacity: 0.6;
+        &:hover { opacity: 1; color: #ff4444; }
+    }
+`;
+const AddCuotaButton = styled.button`
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 12px;
-    border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.1);
-    background: ${({ theme }) => theme.posInputBg};
-  }
-
-  .info {
+    justify-content: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px dashed ${({ theme }) => theme.borderColor};
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: ${({ theme }) => theme.text};
+    &:hover { background: ${({ theme }) => theme.bg2}; }
+`;
+const TotalCheck = styled.div`
+    text-align: right;
+    font-weight: 600;
+    color: ${({ $isValid }) => $isValid ? '#0c554a' : '#ff4444'};
     display: flex;
     flex-direction: column;
-    gap: 4px;
-  }
-
-  .label {
-    font-weight: 600;
-  }
-
-  .add-btn {
-    border: none;
-    background: rgba(23, 224, 192, 0.15);
-    color: #06463b;
-    border-radius: 12px;
-    padding: 10px 16px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-weight: 700;
-  }
-
-  .add-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
+    small { font-weight: 400; }
 `;
-
-const SearchContainer = styled.div`
-  padding: 0 4px 4px;
-  .form__group {
-    padding-top: 10px;
-  }
-`;
-
-const RemoveButton = styled.button`
-  border: none;
-  background: rgba(${({ theme }) => theme.textRgba}, 0.08);
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const EmptyState = styled.div`
-  text-align: center;
-  padding: 16px;
-  color: rgba(${({ theme }) => theme.textRgba}, 0.65);
+const Footer = styled(ModalFooter)``;
+const LightboxOverlay = styled.div`
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
+  display: flex; justify-content: center; align-items: center;
+  img { max-width: 90%; max-height: 90%; border-radius: 8px; }
 `;

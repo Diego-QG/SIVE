@@ -274,3 +274,56 @@ export async function obtenerVentaBorradorPorId(p = {}) {
 
   return data ?? null;
 }
+
+export async function confirmarVenta(p) {
+    // p = { idVenta, cuotas: [{ nro_cuota, fecha_vencimiento, monto_programado }] }
+
+    const idVenta = p?.idVenta ?? null;
+    const cuotas = p?.cuotas ?? [];
+
+    if (!idVenta) return false;
+
+    // 1. Insert Cuotas
+    if (cuotas.length > 0) {
+        const cuotasPayload = cuotas.map(c => ({
+            id_venta: idVenta,
+            nro_cuota: c.nro_cuota,
+            fecha_vencimiento: c.fecha_vencimiento,
+            monto_programado: c.monto_programado,
+            saldo: c.monto_programado, // Inicialmente saldo = monto
+            estado: 'pendiente'
+        }));
+
+        // Delete existing cuotas first? (Usually borrador shouldn't have cuotas yet, but safer)
+        await supabase.from(TABLA_CUOTAS).delete().eq('id_venta', idVenta);
+
+        const { error: errorCuotas } = await supabase
+            .from(TABLA_CUOTAS)
+            .insert(cuotasPayload);
+
+        if (errorCuotas) {
+             Swal.fire({
+                icon: "error",
+                title: "Error al registrar cuotas",
+                text: errorCuotas.message,
+            });
+            return false;
+        }
+    }
+
+    // 2. Call RPC to confirm sale state
+    const { error, data } = await supabase.rpc("fn_confirmar_venta", {
+        _id_venta: idVenta
+    });
+
+    if (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: error.message,
+        });
+        return false;
+    }
+
+    return true;
+}

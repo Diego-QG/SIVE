@@ -201,7 +201,7 @@ export function POSTemplate({ datausuarios } = {}) {
 
   const handleFinishRegistro = () => {
     setIsExploding(true);
-    handleCloseRegistro();
+    handleCloseRegistro({ skipBeforeClose: true });
   };
 
   return (
@@ -218,6 +218,11 @@ export function POSTemplate({ datausuarios } = {}) {
         onDraftCreationStateChange={setIsCreatingDraft}
         onBeforeCloseChange={handleBeforeCloseChange}
         isEditing={accion === "Editar"}
+        // Passed Docente Form Props
+        docenteForm={docenteForm}
+        setDocenteForm={setDocenteForm}
+        institucionForm={institucionForm}
+        setInstitucionForm={setInstitucionForm}
       />
       <RegistrarVentas2
         onClose={handleCloseRegistro}
@@ -228,13 +233,6 @@ export function POSTemplate({ datausuarios } = {}) {
         ventaDraftId={ventaDraftId}
         onVentaTieneDatosChange={handleVentaTieneDatosChange}
         onBeforeCloseChange={handleBeforeCloseChange}
-        onPersistChange={(handler) => {
-          persistDocenteHandlerRef.current = handler;
-        }}
-        docenteForm={docenteForm}
-        setDocenteForm={setDocenteForm}
-        institucionForm={institucionForm}
-        setInstitucionForm={setInstitucionForm}
       />
       <RegistrarVentas3
         onClose={handleCloseRegistro}
