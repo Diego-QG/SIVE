@@ -358,7 +358,7 @@ const PanelCard = styled.section`
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   background: ${({ theme }) => theme.posPanelBg};
   border-radius: 18px;
-  padding: clamp(14px, 1.4vw, 18px);
+  padding: 16px;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
@@ -383,7 +383,7 @@ const TotalDisplay = styled.div`
     border-radius: 12px;
     display: flex;
     justify-content: space-between;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     border: 1px solid ${({ theme }) => theme.borderColor};
 `;
 const CuotasList = styled.div`
@@ -410,6 +410,9 @@ const CuotaItem = styled.div`
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
+        @media (max-width: 760px) {
+          grid-template-columns: 1fr;
+        }
     }
     .remove-btn {
         background: none;
@@ -432,6 +435,11 @@ const AddCuotaButton = styled.button`
     cursor: pointer;
     color: ${({ theme }) => theme.text};
     &:hover { background: ${({ theme }) => theme.bg2}; }
+    align-self: flex-start;
+    min-width: 0;
+    @media (max-width: 760px) {
+      width: 100%;
+    }
 `;
 const TotalCheck = styled.div`
     text-align: right;
@@ -444,6 +452,6 @@ const TotalCheck = styled.div`
 const Footer = styled(ModalFooter)``;
 const LightboxOverlay = styled.div`
   position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
-  display: flex; justify-content: center; align-items: center;
-  img { max-width: 90%; max-height: 90%; border-radius: 8px; }
+  display: flex; justify-content: center; align-items: center; padding: 16px;
+  img { max-width: 95%; max-height: 90%; border-radius: 10px; }
 `;

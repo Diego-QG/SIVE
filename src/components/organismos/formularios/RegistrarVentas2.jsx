@@ -571,9 +571,11 @@ export function RegistrarVentas2({
                         </ul>
                       )}
 
-                      <button className="add-btn" onClick={handleAgregarItems} disabled={isBusy}>
-                        <IconAgregar /> Agregar items seleccionados
-                      </button>
+                      <div className="actions-sticky">
+                        <button className="add-btn" onClick={handleAgregarItems} disabled={isBusy}>
+                          <IconAgregar /> Agregar items seleccionados
+                        </button>
+                      </div>
                     </ItemsDropdown>
                   )}
                 </SelectorColumn>
@@ -705,9 +707,9 @@ const Body = styled.div`
 
 const PanelsGrid = styled.div`
   display: grid;
-  grid-template-columns: minmax(340px, 0.45fr) minmax(420px, 0.55fr);
-  gap: clamp(16px, 2vw, 24px);
-  align-items: stretch;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(14px, 2vw, 22px);
+  align-items: start;
 
   @media (max-width: 1080px) {
     grid-template-columns: 1fr;
@@ -773,19 +775,24 @@ const SelectorsCard = styled.div`
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   background: ${({ theme }) => theme.posPanelBg};
   border-radius: 18px;
-  padding: clamp(12px, 1.5vw, 18px);
+  padding: 12px 14px;
   width: 100%;
   box-shadow: 0 16px 60px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-height: auto;
 `;
 
 const SelectorGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px 14px;
   justify-content: start;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const SelectorColumn = styled.div`
@@ -794,21 +801,21 @@ const SelectorColumn = styled.div`
   gap: 8px;
   font-weight: 600;
   position: relative;
-
-  @media (min-width: 960px) {
-    max-width: 250px;
-  }
 `;
 
 const ResumenWrapper = styled.div`
   min-width: 0;
   height: 100%;
+
+  @media (max-width: 768px) {
+    margin-top: 4px;
+  }
 `;
 
 const SelectorButton = styled.button`
   border-radius: 16px;
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.2);
-  padding: 12px 18px;
+  padding: 12px 16px;
   background: ${({ theme }) => theme.posInputBg};
   color: ${({ theme }) => theme.text};
   text-align: left;
@@ -816,6 +823,12 @@ const SelectorButton = styled.button`
   position: relative;
   width: 100%;
   max-width: 100%;
+  min-height: 48px;
+  font-size: 0.95rem;
+
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+  }
 
   &[disabled],
   &[data-disabled="true"] {
@@ -1027,11 +1040,15 @@ const ItemsDropdown = styled.div`
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
   min-width: min(360px, 92vw);
   max-width: min(480px, 96vw);
-  max-height: 400px;
+  max-height: min(50vh, 460px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  @media (max-width: 640px) {
+    min-width: 90vw;
+  }
 
   ul {
     list-style: none;
@@ -1040,7 +1057,7 @@ const ItemsDropdown = styled.div`
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 220px;
+    max-height: 50vh;
     overflow-y: auto;
   }
 
@@ -1075,16 +1092,28 @@ const ItemsDropdown = styled.div`
     gap: 8px;
     cursor: pointer;
     font-weight: 700;
+    width: 100%;
+    justify-content: center;
   }
 
   .add-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
   }
+
+  .actions-sticky {
+    position: sticky;
+    bottom: 0;
+    padding-top: 4px;
+    margin-top: auto;
+    background: ${({ theme }) => theme.bg};
+    padding: 8px;
+  }
 `;
 
 const SearchContainer = styled.div`
   padding: 0 4px 4px;
+  width: 100%;
   .form__group {
     padding-top: 10px;
   }

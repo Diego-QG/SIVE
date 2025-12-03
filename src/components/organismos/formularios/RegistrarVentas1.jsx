@@ -960,20 +960,29 @@ const SectionTitle = styled.h3`
 `;
 const ContentGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: clamp(14px, 2vw, 22px);
   align-items: start;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 `;
 const Card = styled.section`
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   background: ${({ theme }) => theme.posPanelBg};
   border-radius: 18px;
-  padding: clamp(14px, 1.6vw, 20px);
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
   box-shadow: 0 14px 50px rgba(0, 0, 0, 0.08);
+
+  @media (min-width: 960px) {
+    padding: 14px 18px;
+  }
 `;
 const CardHeader = styled.div`
   display: flex;
@@ -997,7 +1006,8 @@ const Label = styled.p`
   white-space: nowrap;
 `;
 const DropdownWrapper = styled(ContainerSelector)`
-  width: min(320px, 100%);
+  width: 100%;
+  max-width: 380px;
   position: relative;
   flex-direction: column;
   align-items: stretch;
@@ -1037,14 +1047,17 @@ const DniInputGroup = styled(InputGroup)`
 const DualGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 18px;
+  gap: 14px;
   align-items: flex-end;
 `;
 const LocationSelectorsRow = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   width: 100%;
-  gap: 14px;
+  gap: 12px;
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
 `;
 const NameFieldsRow = styled(LocationSelectorsRow)`
   align-items: flex-end;
@@ -1056,6 +1069,14 @@ const CountrySelectorWrapper = styled(DropdownWrapper)`
   margin-left: auto;
   margin-top: 8px;
   min-width: 0;
+  max-width: 220px;
+
+  @media (max-width: 640px) {
+    max-width: 180px;
+    width: 100%;
+    margin-left: 0;
+    justify-self: flex-start;
+  }
 `;
 const LocationDropdownWrapper = styled(DropdownWrapper)`
   width: 100%;
@@ -1070,21 +1091,22 @@ const PhoneInputRow = styled.div`
 `;
 
 const PhoneFieldCluster = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 10px;
   width: 100%;
-  flex-wrap: wrap;
 
   @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 `;
 
 const PhoneCodeSelect = styled.select`
-  min-width: 108px;
-  padding: 12px 12px;
+  min-width: 68px;
+  max-width: 86px;
+  padding: 10px 10px;
   border-radius: 12px;
   border: 1px solid ${SELECTOR_BORDER_COLOR};
   background: rgba(${({ theme }) => theme.textRgba}, 0.04);
@@ -1092,6 +1114,7 @@ const PhoneCodeSelect = styled.select`
   font-weight: 600;
   font-size: 0.95rem;
   outline: none;
+  text-align: center;
 
   &:disabled {
     opacity: 0.65;

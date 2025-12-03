@@ -561,7 +561,7 @@ const VoucherLightboxContent = styled.div`
   max-height: min(90vh, 820px);
   background: ${({ theme }) => theme.bgtotal};
   border-radius: 24px;
-  padding: 24px;
+  padding: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -570,10 +570,11 @@ const VoucherLightboxContent = styled.div`
   img {
     width: 100%;
     height: auto;
-    max-height: calc(90vh - 160px);
+    max-width: 95%;
+    max-height: calc(90vh - 120px);
     object-fit: contain;
-    border-radius: 18px;
-    background: rgba(4, 18, 29, 0.75);
+    border-radius: 10px;
+    background: rgba(4, 18, 29, 0.65);
     padding: 8px;
   }
 
@@ -661,6 +662,11 @@ const ScrollArea = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
+
+  @media (max-width: 640px) {
+    padding: 16px;
+    gap: 18px;
+  }
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -906,11 +912,16 @@ const PagosList = styled.div`
   flex-direction: column;
   gap: 8px;
 
+  @media (max-width: 720px) {
+    margin-left: 0;
+    padding: 10px 8px;
+  }
+
   .pago-wrapper {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 8px 12px;
+    padding: 8px 10px;
     background: ${({ theme }) => theme.bgtotal};
     border-radius: 6px;
     border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.05);
@@ -920,6 +931,8 @@ const PagosList = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 
     .pago-info {
       display: flex;
@@ -951,8 +964,8 @@ const EvidenceThumb = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px;
-  border-radius: 16px;
+  padding: 10px;
+  border-radius: 12px;
   background: rgba(${({ theme }) => theme.textRgba}, 0.04);
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
   color: ${({ theme }) => theme.text};
@@ -960,6 +973,7 @@ const EvidenceThumb = styled.div`
   font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 
   &:hover {
     background: rgba(${({ theme }) => theme.textRgba}, 0.06);
@@ -968,9 +982,11 @@ const EvidenceThumb = styled.div`
 
   img {
     width: 100%;
-    height: 120px;
+    max-width: 120px;
+    height: 100px;
     object-fit: contain;
-    border-radius: 12px;
+    margin: 0 auto;
+    border-radius: 10px;
     background: rgba(4, 18, 29, 0.3);
     padding: 4px;
   }
