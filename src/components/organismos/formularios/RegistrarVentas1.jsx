@@ -369,6 +369,7 @@ export function RegistrarVentas1({
           apellido_m: existingDocente.apellido_m ?? null,
           shouldPersist: true,
         });
+        onVentaTieneDatosChange?.("docente", true);
         return existingDocente;
       }
 
@@ -386,7 +387,7 @@ export function RegistrarVentas1({
   }, [
     empresaId, guardardocenteborrador, isPhoneReady, paisSeleccionado, persistDocenteDraft,
     hasDocenteIdentifyingData, phoneNumber, docentedraft, institucionDraft, ventaDraftId,
-    buildTelefonoCompleto
+    buildTelefonoCompleto, onVentaTieneDatosChange
   ]);
 
   const handlePhoneChange = (event) => {
@@ -819,7 +820,7 @@ export function RegistrarVentas1({
                 <Label>País</Label>
                 <Selector
                   state={openDropdown === "country"}
-                  funcion={() => toggleDropdown("country")}
+                  funcion={() => toggleDropdown("country", institutionGuardMessage)}
                   texto1=""
                   texto2={paisSeleccionado?.nombre ?? "País"}
                   color={SELECTOR_BORDER_COLOR}
