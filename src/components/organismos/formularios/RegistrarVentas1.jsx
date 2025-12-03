@@ -109,9 +109,13 @@ export function RegistrarVentas1({
     [dataempresa?.id, datausuarios?.id_empresa]
   );
 
-  const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? null;
-  const dniDigitsRequired = paisSeleccionado?.digitos_documento ?? null;
-  const phoneCodeLabel = paisSeleccionado?.cod_llamada ?? "+51";
+  const defaultPais = useMemo(
+    () => paises.find((pais) => Number(pais.id) === Number(DEFAULT_PAIS_ID)) ?? null,
+    [paises]
+  );
+  const phoneDigitsRequired = paisSeleccionado?.cant_numeros ?? defaultPais?.cant_numeros ?? null;
+  const dniDigitsRequired = paisSeleccionado?.digitos_documento ?? defaultPais?.digitos_documento ?? null;
+  const phoneCodeLabel = paisSeleccionado?.cod_llamada ?? defaultPais?.cod_llamada ?? "+51";
 
   // --- Docente Logic Helpers ---
 
@@ -197,6 +201,33 @@ export function RegistrarVentas1({
     setOpenDropdown((prev) => (prev === key ? null : key));
   };
 
+  const buildTelefonoCompleto = useCallback(
+    () =>
+      phoneNumber
+        ? `${phoneCodeLabel ? `${phoneCodeLabel} ` : ""}${phoneNumber}`.trim()
+        : null,
+    [phoneCodeLabel, phoneNumber]
+  );
+
+  const parseTelefonoConCodigo = useCallback(
+    (telefonoRaw) => {
+      const raw = `${telefonoRaw ?? ""}`.trim();
+      if (!raw) return { digits: "", paisId: null };
+
+      const paisCoincidente = paises.find(
+        (pais) => pais.cod_llamada && raw.startsWith(pais.cod_llamada)
+      );
+
+      if (paisCoincidente) {
+        const remaining = raw.slice(paisCoincidente.cod_llamada.length).replace(/\D/g, "");
+        return { digits: remaining, paisId: paisCoincidente.id };
+      }
+
+      return { digits: raw.replace(/\D/g, ""), paisId: null };
+    },
+    [paises]
+  );
+
   const geoNivel1Id = departamentoSeleccionado?.id ?? null;
   const geoNivel2Id = provinciaSeleccionada?.id ?? null;
   const geoNivel3Id = distritoSeleccionado?.id ?? null;
@@ -277,7 +308,7 @@ export function RegistrarVentas1({
       _id_empresa: empresaId,
       _id_pais: paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
       _id_institucion: docentedraft?.id_institucion ?? institucionDraft?.id ?? null,
-      telefono: phoneNumber || null,
+      telefono: buildTelefonoCompleto(),
       nro_doc: dniValue || null,
       nombres: nombres || null,
       apellido_p: apellidoPaterno || null,
@@ -295,17 +326,26 @@ export function RegistrarVentas1({
     apellidoMaterno, apellidoPaterno, dniValue, docentedraft, empresaId,
     guardardocenteborrador, hasDocenteIdentifyingData, institucionDraft,
     isPhoneReady, nombres, onVentaTieneDatosChange, paisSeleccionado,
-    phoneLookupState, phoneNumber, ventaDraftId
+    phoneLookupState, phoneNumber, ventaDraftId, buildTelefonoCompleto
   ]);
 
   const lookupDocenteByPhone = useCallback(async () => {
     if (!isPhoneReady || !empresaId || !ventaDraftId) return null;
 
     try {
-      const existingDocente = await buscarDocentePorTelefono({
-        telefono: phoneNumber,
+      const telefonoCompleto = buildTelefonoCompleto();
+
+      let existingDocente = await buscarDocentePorTelefono({
+          telefono: telefonoCompleto ?? phoneNumber,
         _id_empresa: empresaId,
       });
+
+      if (!existingDocente && telefonoCompleto && telefonoCompleto !== phoneNumber) {
+        existingDocente = await buscarDocentePorTelefono({
+          telefono: telefonoCompleto ?? phoneNumber,
+          _id_empresa: empresaId,
+        });
+      }
 
       if (existingDocente) {
         updateDocenteField("dniValue", existingDocente.nro_doc ? `${existingDocente.nro_doc}` : "");
@@ -322,7 +362,7 @@ export function RegistrarVentas1({
           _id_empresa: empresaId,
           _id_pais: existingDocente.id_pais ?? paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
           _id_institucion: existingDocente.id_institucion ?? institucionDraft?.id ?? docentedraft?.id_institucion ?? null,
-          telefono: existingDocente.telefono ?? phoneNumber,
+          telefono: existingDocente.telefono ?? telefonoCompleto ?? phoneNumber,
           nro_doc: existingDocente.nro_doc ?? null,
           nombres: existingDocente.nombres ?? null,
           apellido_p: existingDocente.apellido_p ?? null,
@@ -345,7 +385,8 @@ export function RegistrarVentas1({
     }
   }, [
     empresaId, guardardocenteborrador, isPhoneReady, paisSeleccionado, persistDocenteDraft,
-    hasDocenteIdentifyingData, phoneNumber, docentedraft, institucionDraft, ventaDraftId
+    hasDocenteIdentifyingData, phoneNumber, docentedraft, institucionDraft, ventaDraftId,
+    buildTelefonoCompleto
   ]);
 
   const handlePhoneChange = (event) => {
@@ -363,6 +404,14 @@ export function RegistrarVentas1({
     const digitsOnly = rawValue.replace(/\D/g, "");
     const maxDigits = phoneDigitsRequired ?? 15;
     updateDocenteField("phoneNumber", digitsOnly.slice(0, maxDigits));
+    setIsPhoneReady(false);
+    setPhoneLookupState("idle");
+  };
+
+  const handlePhoneCodeChange = async (event) => {
+    if (isDocenteLocked) return;
+    const paisId = event.target.value || defaultPais?.id || null;
+    await seleccionarpais(paisId);
     setIsPhoneReady(false);
     setPhoneLookupState("idle");
   };
@@ -470,7 +519,7 @@ export function RegistrarVentas1({
           _id_empresa: empresaId,
           _id_pais: paisSeleccionado?.id ?? docentedraft?.id_pais ?? DEFAULT_PAIS_ID,
           _id_institucion: savedInstitution.id,
-          telefono: phoneNumber || null,
+          telefono: buildTelefonoCompleto(),
           nro_doc: dniValue || null,
           nombres: nombres || null,
           apellido_p: apellidoPaterno || null,
@@ -548,14 +597,26 @@ export function RegistrarVentas1({
 
   // Restore Docente fields when data is loaded
   useEffect(() => {
-    if (!state || hasHydratedDocente) return;
+    if (!state || hasHydratedDocente || !paises.length) return;
     if (docentedraft?.id_pais && (!paisSeleccionado || Number(paisSeleccionado.id) !== Number(docentedraft.id_pais))) return;
 
     const telefonoGuardado = `${docentedraft?.telefono ?? ""}`;
     const documentoGuardado = docentedraft?.nro_doc ? `${docentedraft.nro_doc}` : "";
 
-    updateDocenteField("phoneNumber", telefonoGuardado);
-    setIsPhoneReady(Boolean(telefonoGuardado) && (!phoneDigitsRequired || telefonoGuardado.length === phoneDigitsRequired));
+    const { digits: telefonoDigits, paisId: telefonoPaisId } = parseTelefonoConCodigo(telefonoGuardado);
+
+    if (
+      telefonoPaisId &&
+      (!paisSeleccionado || Number(paisSeleccionado.id) !== Number(telefonoPaisId))
+    ) {
+      seleccionarpais(telefonoPaisId);
+      return;
+    }
+
+    updateDocenteField("phoneNumber", telefonoDigits);
+    setIsPhoneReady(
+      Boolean(telefonoDigits) && (!phoneDigitsRequired || telefonoDigits.length === phoneDigitsRequired)
+    );
 
     updateDocenteField("dniValue", documentoGuardado);
     setIsDniReady(Boolean(documentoGuardado) && (!dniDigitsRequired || documentoGuardado.length === dniDigitsRequired));
@@ -564,7 +625,17 @@ export function RegistrarVentas1({
     updateDocenteField("apellidoPaterno", normalizeTextInput(docentedraft?.apellido_p));
     updateDocenteField("apellidoMaterno", normalizeTextInput(docentedraft?.apellido_m));
     setHasHydratedDocente(true);
-  }, [docentedraft, state, hasHydratedDocente, paisSeleccionado, phoneDigitsRequired, dniDigitsRequired]);
+  }, [
+    docentedraft,
+    state,
+    hasHydratedDocente,
+    paisSeleccionado,
+    phoneDigitsRequired,
+    dniDigitsRequired,
+    paises.length,
+    parseTelefonoConCodigo,
+    seleccionarpais,
+  ]);
 
   // Restore Institucion fields
   useEffect(() => {
@@ -645,40 +716,39 @@ export function RegistrarVentas1({
               <InputGroup>
                 <label>Número de teléfono</label>
                 <PhoneInputRow>
-                  <PhoneCodeSelectorSlot>
-                    <Selector
-                      state={openDropdown === "phoneCode"}
-                      funcion={() => toggleDropdown("phoneCode", isDocenteLocked ? "No se puede cambiar el teléfono." : null)}
-                      texto1=""
-                      texto2={phoneCodeLabel}
-                      color={SELECTOR_BORDER_COLOR}
-                      isPlaceholder={false}
-                      width="auto"
-                      minWidth="88px"
+                  <PhoneFieldCluster>
+                    <PhoneCodeSelect
+                      value={paisSeleccionado?.id ?? defaultPais?.id ?? ""}
+                      onChange={handlePhoneCodeChange}
+                      disabled={isDocenteLocked}
+                    >
+                      {paises.length === 0 && <option value="">Códigos</option>}
+                      {paises.map((pais) => (
+                        <option key={pais.id} value={pais.id}>
+                          {pais.cod_llamada}
+                        </option>
+                      ))}
+                    </PhoneCodeSelect>
+                    <PhoneNumberField
+                      type="tel"
+                      placeholder="Número de teléfono"
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
+                      onBlur={handlePhoneBlur}
+                      maxLength={phoneDigitsRequired ?? 15}
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      disabled={isDocenteLocked}
                     />
-                    <ListaDesplegable
-                      state={openDropdown === "phoneCode"}
-                      data={paises}
-                      funcion={seleccionarpais}
-                      setState={closeDropdown}
-                      width="260px"
-                      top="3.3rem"
-                      placement="bottom"
-                      emptyLabel="No hay códigos"
-                    />
-                  </PhoneCodeSelectorSlot>
-                  <PhoneNumberField
-                    type="tel"
-                    placeholder="Número de teléfono"
-                    value={phoneNumber}
-                    onChange={handlePhoneChange}
-                    onBlur={handlePhoneBlur}
-                    maxLength={phoneDigitsRequired ?? 15}
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    disabled={isDocenteLocked}
-                  />
-                  <ResetButton type="button" onClick={handleResetForm}>Limpiar</ResetButton>
+                    <ResetIconButton
+                      type="button"
+                      onClick={handleResetForm}
+                      aria-label="Limpiar número"
+                      disabled={!phoneNumber}
+                    >
+                      <v.iconocerrar />
+                    </ResetIconButton>
+                  </PhoneFieldCluster>
                   {phoneLookupMessage && (
                     <LookupStatus $status={phoneLookupState}>
                       {phoneLookupState === "searching" && <InlineSpinner />}
@@ -992,22 +1062,79 @@ const LocationDropdownWrapper = styled(DropdownWrapper)`
   min-width: 0;
 `;
 const PhoneInputRow = styled.div`
-  display: grid;
-  grid-template-columns: auto minmax(140px, 190px) auto minmax(200px, 1fr);
-  align-items: center;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
-  @media (max-width: 768px) { grid-template-columns: 1fr; align-items: flex-start; }
 `;
-const PhoneCodeSelectorSlot = styled(ContainerSelector)`
-  width: auto; min-width: 88px; flex: 0 0 auto;
+
+const PhoneFieldCluster = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
+
+const PhoneCodeSelect = styled.select`
+  min-width: 108px;
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 1px solid ${SELECTOR_BORDER_COLOR};
+  background: rgba(${({ theme }) => theme.textRgba}, 0.04);
+  color: ${({ theme }) => theme.text};
+  font-weight: 600;
+  font-size: 0.95rem;
+  outline: none;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+`;
+
 const PhoneNumberField = styled.input`
-  width: 100%; max-width: 190px; min-width: 140px; font-size: 1rem; padding: 12px 14px; line-height: 1.4;
+  flex: 1 1 220px;
+  min-width: 0;
+  font-size: 1rem;
+  padding: 12px 14px;
+  line-height: 1.4;
+  border-radius: 12px;
+  border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
+  background: rgba(${({ theme }) => theme.textRgba}, 0.04);
+  color: ${({ theme }) => theme.text};
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
-const ResetButton = styled.button`
-  align-self: center; padding: 8px 10px; font-size: 0.85rem; border-radius: 10px; border: 1px solid rgba(0,0,0,0.12);
-  background: #f6f8fb; color: #1f2933; cursor: pointer;
+
+const ResetIconButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #f6f8fb;
+  color: #111827;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background: #eef2f6;
+  }
 `;
 const PhoneStatusRow = styled.div`
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
