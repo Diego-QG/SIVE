@@ -242,7 +242,7 @@ export async function eliminarVentaItem({ id }) {
   return true;
 }
 
-export async function confirmarVenta({ idVenta }) {
+export async function confirmarVentaItems({ idVenta }) {
   if (!idVenta) return false;
 
   console.info("[crudVentaItems] Confirmando venta", { idVenta });

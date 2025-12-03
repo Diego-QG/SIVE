@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import {
-  confirmarVenta as confirmarVentaSupabase,
+  confirmarVentaItems,
   insertarItemsEnVenta,
   mostrarNiveles,
   obtenerContenidosPorNivel,
@@ -257,7 +257,7 @@ export const useRegistrarVentasStore = create((set, get) => ({
   confirmarVenta: async ({ idVenta }) => {
     if (!idVenta) return false;
     set({ isConfirming: true });
-    const confirmado = await confirmarVentaSupabase({ idVenta });
+    const confirmado = await confirmarVentaItems({ idVenta });
     set({ isConfirming: false });
     return confirmado;
   },
