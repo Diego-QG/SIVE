@@ -1,15 +1,11 @@
 import styled from "styled-components";
-import { useState } from "react";
-import {
-  LinksArray,
-  SecondarylinksArray,
-  ToggleTema,
-} from "../../../index";
+import { LinksArray, SecondarylinksArray, useAuthStore } from "../../../index";
 import { v } from "../../../styles/variables";
 import { NavLink } from "react-router-dom";
 import { Icon } from "@iconify/react";
 export const MenuMovil = ({ setState }) => {
-  const [state, setstate] = useState(true);
+  const state = true;
+  const { cerrarSesion } = useAuthStore();
 
   return (
     <Container>
@@ -20,7 +16,7 @@ export const MenuMovil = ({ setState }) => {
             <div className="imgcontent">
               <img src={v.logo} />
             </div>
-            <h2>Ada369 3.0</h2>
+            <h2>R&H SIVE</h2>
           </div>
           {LinksArray.map(({ icon, label, to }) => (
             <div
@@ -68,22 +64,28 @@ export const MenuMovil = ({ setState }) => {
           <div className={state ? "LinkContainer active" : "LinkContainer"}>
             <div
               className="Links"
-              onClick={() => SetstateDesplegableLinks(!stateDesplegableLinks)}
+              role="button"
+              tabIndex={0}
+              onClick={cerrarSesion}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  cerrarSesion();
+                }
+              }}
             >
               <section className={state ? "content open" : "content"}>
                 <Icon
-                  color="#CE82FF"
+                  color="#a31d1d"
                   className="Linkicon"
-                  icon="heroicons:ellipsis-horizontal-circle-solid"
+                  icon="material-symbols:logout"
                 />
                 <span className={state ? "label_ver" : "label_oculto"}>
-                  MÁS
+                  Cerrar sesión
                 </span>
               </section>
             </div>
           </div>
-
-          <ToggleTema />
         </Container>
       </Main>
     </Container>

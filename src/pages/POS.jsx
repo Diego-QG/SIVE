@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { POSTemplate, Spinner1, useEditorialesStore, useUsuariosStore, useVentasStore } from "../index";
+import { POSTemplate, Spinner1, SpinnerSecundario, useEditorialesStore, useUsuariosStore, useVentasStore } from "../index";
 
 export function POS() {
     const { datausuarios } = useUsuariosStore();
@@ -31,7 +31,7 @@ export function POS() {
         isLoadingEditoriales ||
         !datausuarios?.id
     ) {
-        return <Spinner1 />;
+        return <SpinnerSecundario texto="Cargando ventas..." />;
     }
 
     if (errorVentas || errorEditoriales) {

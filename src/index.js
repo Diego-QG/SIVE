@@ -8,6 +8,7 @@ export * from './components/moleculas/BtnGenerar';
 export * from './components/moleculas/ImagenContent';
 export * from './components/moleculas/RegistroVentaStepper';
 export * from './components/moleculas/Spinner1';
+export * from './components/moleculas/SpinnerSecundario';
 export * from './components/moleculas/SwitchHamburguesa';
 export * from './components/moleculas/VentaInput';
 export * from './components/organismos/Buscador';
