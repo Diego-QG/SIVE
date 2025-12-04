@@ -206,7 +206,7 @@ export function POSTemplate({ datausuarios } = {}) {
   };
 
   return (
-    <Container>
+    <>
       <Toaster />
       <RegistrarVentas1
         onClose={handleCloseRegistro}
@@ -250,6 +250,7 @@ export function POSTemplate({ datausuarios } = {}) {
           return true;
         }}
       />
+      <Container>
       <section className="area1">
         <div className="hero-text">
           <Title>Tu registro de ventas</Title>
@@ -272,6 +273,7 @@ export function POSTemplate({ datausuarios } = {}) {
         <TablaPOS data={filteredVentas} onEditarBorrador={handleEditarVenta} />
       </section>
     </Container>
+    </>
   );
 }
 

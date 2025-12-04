@@ -8,6 +8,7 @@ import {
 } from "../../../index";
 import { v } from "../../../styles/variables";
 import { useCallback, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   flexRender,
   getCoreRowModel,
@@ -415,6 +416,7 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
   });
   return (
     <>
+      {createPortal(
       <DetalleVenta
         open={detalleVisible}
         onClose={cerrarDetalleVenta}
@@ -422,7 +424,9 @@ export function TablaPOS({ data = [], onEditarBorrador }) {
         loading={detalleLoading}
         error={detalleError}
         ventaBase={ventaSeleccionada}
-      />
+      />,
+      document.body
+      )}
       <Container>
         <TableScrollArea>
           <table className="responsive-table">

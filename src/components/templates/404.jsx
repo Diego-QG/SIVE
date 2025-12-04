@@ -18,7 +18,7 @@ export function PageNot() {
           </div>
 
           <div className="home__img">
-            <img src="https://i.ibb.co/J3ScNtK/roshi.png" alt="" />
+            <img src="https://ecohosting.cl/wp-content/uploads/2017/09/construir-web.png" alt="" />
           </div>
         </div>
       </section>
