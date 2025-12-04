@@ -1113,6 +1113,7 @@ const PhoneCodeSelect = styled.select`
   font-size: 0.95rem;
   outline: none;
   text-align: center;
+  box-sizing: border-box;
 
   &:disabled {
     opacity: 0.65;
@@ -1136,6 +1137,7 @@ const PhoneNumberField = styled.input`
   background: rgba(${({ theme }) => theme.textRgba}, 0.04);
   color: ${({ theme }) => theme.text};
   width: 100%;
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
     width: 100%;

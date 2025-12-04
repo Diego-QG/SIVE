@@ -60,6 +60,7 @@ const Container = styled.div`
   width: ${({ $width }) => $width ?? "min(100%, 340px)"};
   min-width: ${({ $minWidth }) => $minWidth ?? "auto"};
   max-width: 100%;
+  box-sizing: border-box;
 
   .texts {
     display: flex;

@@ -4,20 +4,23 @@ export const Overlay = styled.div`
   position: fixed;
   inset: 0;
   background: rgba(7, 20, 36, 0.55);
-  display: grid;
-  place-items: center;
   z-index: 1200;
-  padding: 24px 18px;
+  padding: 32px 18px;
+  box-sizing: border-box;
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   pointer-events: ${({ $visible }) => ($visible ? "auto" : "none")};
   visibility: ${({ $visible }) => ($visible ? "visible" : "hidden")};
-  overflow-y: auto;
+  overflow: hidden;
 `;
 
 export const ModalContainer = styled.div`
+  position: fixed;                 /* SE CENTRA RESPECTO AL VIEWPORT */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -48%); /* -50% = centro exacto, -48% lo sube un pelín */
+  
   width: min(680px, 100%);
-  height: min(720px, calc(100vh - 100px));
-  max-height: min(720px, calc(100vh - 100px));
+  max-height: calc(100vh - 96px);
   background: ${({ theme }) => theme.bgtotal};
   border-radius: 28px;
   padding: 28px 32px 32px;
@@ -26,8 +29,7 @@ export const ModalContainer = styled.div`
   flex-direction: column;
   gap: 22px;
   color: ${({ theme }) => theme.text};
-  position: relative;
-  overflow: hidden;
+  overflow: auto;
 `;
 
 export const ModalHeader = styled.header`
