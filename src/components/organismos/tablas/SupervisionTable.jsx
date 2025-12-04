@@ -1,208 +1,189 @@
-import React, { useState } from "react";
-import styled from "styled-components";
-import { v } from "../../../styles/variables";
+import React, { useMemo, useState } from "react";
 import {
-    useReactTable,
-    getCoreRowModel,
-    getPaginationRowModel,
-    getFilteredRowModel,
-    flexRender,
-} from "@tanstack/react-table";
-import { SupervisionTableContainer, StatusBadge, ActionButton } from "./SupervisionTableStyles";
+    SupervisionTableContainer,
+    HeaderRow,
+    SearchInput,
+    TableList,
+    RowCard,
+    RowGrid,
+    CellLabel,
+    CellContent,
+    StrongText,
+    MutedText,
+    Pill,
+    ActionStack,
+    SmallButton,
+    IconAction,
+    LockOverlay,
+    OverlayContent,
+    OverlayTag,
+    EmptyState
+} from "./SupervisionTableStyles";
+import {
+    FaCalendarAlt,
+    FaCheck,
+    FaEye,
+    FaFileAlt,
+    FaLock,
+    FaTimes,
+    FaUserShield
+} from "react-icons/fa";
 import Swal from "sweetalert2";
 
-const Table = styled.table`
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 10px;
-  margin-top: 10px;
+const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString("es-PE", { year: "numeric", month: "short", day: "numeric" });
+};
 
-  th, td {
-    padding: 16px;
-    text-align: left;
-    color: ${({ theme }) => theme.text};
-  }
+export function SupervisionTable({ data, currentUserId, onReview, onShowVouchers }) {
+    const [search, setSearch] = useState("");
 
-  th {
-    background-color: transparent;
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    color: ${({ theme }) => `rgba(${theme.textRgba}, 0.6)`};
-    border-bottom: 2px solid ${({ theme }) => `rgba(${theme.textRgba}, 0.1)`};
-  }
+    const ventasPendientes = useMemo(() => {
+        const list = Array.isArray(data) ? data : [];
+        return list.filter((venta) => !["aprobado", "rechazado", "aceptado"].includes(venta?.estado_supervision));
+    }, [data]);
 
-  tbody tr {
-    background-color: ${({ theme }) => theme.bg};
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    border-radius: 12px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    const filteredVentas = useMemo(() => {
+        const text = search.toLowerCase();
+        if (!text) return ventasPendientes;
 
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-    }
-  }
+        return ventasPendientes.filter((venta) => {
+            const values = [
+                venta?.nombre_docente,
+                venta?.nombre_vendedor,
+                venta?.resumen_venta,
+                venta?.supervisor_nombre
+            ];
 
-  td:first-child {
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
-  }
+            return values.some((value) => `${value ?? ""}`.toLowerCase().includes(text));
+        });
+    }, [search, ventasPendientes]);
 
-  td:last-child {
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
-  }
-`;
-
-const FilterInput = styled.input`
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid ${({ theme }) => `rgba(${theme.textRgba}, 0.2)`};
-  margin-bottom: 20px;
-  width: 100%;
-  max-width: 400px;
-  background-color: ${({ theme }) => theme.bg};
-  color: ${({ theme }) => theme.text};
-  font-size: 1rem;
-
-  &:focus {
-      outline: none;
-      border-color: ${v.colorPrincipal};
-      box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
-  }
-`;
-
-const HeaderContainer = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-`;
-
-export function SupervisionTable({ data, currentUserId, onUnlock, onShowVouchers }) {
-    const [globalFilter, setGlobalFilter] = useState("");
-
-    const columns = [
-        {
-            header: "Docente",
-            accessorKey: "nombre_docente",
-            cell: info => <strong style={{fontSize: '1.05rem'}}>{info.getValue()}</strong>
-        },
-        {
-            header: "Resumen",
-            accessorKey: "resumen_venta",
-            cell: info => <span style={{fontSize: '0.9rem', color: '#666'}}>{info.getValue() || "-"}</span>
-        },
-        {
-            header: "Vendedor",
-            accessorKey: "nombre_vendedor",
-        },
-        {
-            header: "Total",
-            accessorKey: "total_neto",
-            cell: info => <span style={{fontWeight: 'bold', color: '#0c554a'}}>S/ {Number(info.getValue()).toFixed(2)}</span>
-        },
-        {
-            header: "Estado",
-            accessorKey: "estado_supervision",
-            cell: info => <StatusBadge status={info.getValue()}>{info.getValue().replace('_', ' ')}</StatusBadge>
-        },
-        {
-            header: "Supervisor",
-            accessorKey: "supervisor_nombre",
-            cell: info => info.getValue() || <span style={{fontStyle: 'italic', opacity: 0.6}}>Sin asignar</span>
-        },
-        {
-            header: "Acciones",
-            cell: ({ row }) => {
-                const r = row.original;
-                const isLocked = r.estado_supervision === 'en_revision' && r.venta_supervision?.[0]?.actor_usuario !== currentUserId;
-
-                return (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <ActionButton
-                            $variant="primary"
-                            onClick={() => {
-                                if (isLocked) {
-                                    Swal.fire({
-                                        icon: "warning",
-                                        title: "Bloqueado",
-                                        text: `Esta venta está siendo revisada por ${r.supervisor_nombre}`
-                                    });
-                                } else {
-                                    onUnlock(r);
-                                }
-                            }}
-                            disabled={isLocked}
-                        >
-                            {r.estado_supervision === 'pendiente' ? 'Revisar' : 'Ver'}
-                        </ActionButton>
-                        <ActionButton
-                            $variant="secondary"
-                            onClick={() => onShowVouchers(r)}
-                        >
-                            Vouchers
-                        </ActionButton>
-                    </div>
-                );
-            }
-        }
-    ];
-
-    const table = useReactTable({
-        data: data || [],
-        columns,
-        state: { globalFilter },
-        onGlobalFilterChange: setGlobalFilter,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-    });
+    const handleLockedAlert = (venta) => {
+        Swal.fire({
+            icon: "warning",
+            title: "Venta tomada",
+            text: `Esta venta está siendo revisada por ${venta.supervisor_nombre ?? "otro supervisor"}.`,
+        });
+    };
 
     return (
         <SupervisionTableContainer>
-            <HeaderContainer>
-                <FilterInput
-                    value={globalFilter ?? ""}
-                    onChange={e => setGlobalFilter(e.target.value)}
-                    placeholder="🔍 Buscar por docente, vendedor..."
+            <HeaderRow>
+                <div>
+                    <h3>Ventas pendientes de supervisión</h3>
+                    <p>Las filas permanecen difuminadas hasta que tomes la venta. Solo se muestran las pendientes.</p>
+                </div>
+                <SearchInput
+                    placeholder="Buscar por asesor, docente o supervisor"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
                 />
-            </HeaderContainer>
-            <div style={{overflowX: 'auto'}}>
-                <Table>
-                    <thead>
-                        {table.getHeaderGroups().map(headerGroup => (
-                            <tr key={headerGroup.id}>
-                                {headerGroup.headers.map(header => (
-                                    <th key={header.id}>
-                                        {flexRender(header.column.columnDef.header, header.getContext())}
-                                    </th>
-                                ))}
-                            </tr>
-                        ))}
-                    </thead>
-                    <tbody>
-                        {table.getRowModel().rows.length > 0 ? (
-                            table.getRowModel().rows.map(row => (
-                                <tr key={row.id}>
-                                    {row.getVisibleCells().map(cell => (
-                                        <td key={cell.id}>
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))
-                        ) : (
-                             <tr>
-                                <td colSpan={columns.length} style={{textAlign: 'center', padding: '30px'}}>
-                                    No se encontraron registros.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </Table>
-            </div>
+            </HeaderRow>
+
+            <TableList>
+                {filteredVentas.length === 0 && (
+                    <EmptyState>No hay ventas pendientes para supervisar.</EmptyState>
+                )}
+
+                {filteredVentas.map((venta) => {
+                    const lockedByOther = venta.estado_supervision === "en_revision" && venta.actor_usuario && venta.actor_usuario !== currentUserId;
+                    const takenByCurrent = venta.estado_supervision === "en_revision" && venta.actor_usuario === currentUserId;
+                    const blurred = !takenByCurrent;
+
+                    return (
+                        <RowCard key={venta.id} $active={takenByCurrent}>
+                            <LockOverlay $show={!takenByCurrent} $danger={lockedByOther}>
+                                <OverlayContent>
+                                    <OverlayTag $danger={lockedByOther}>
+                                        <FaLock />
+                                        {lockedByOther ? "Venta tomada" : "Venta bloqueada"}
+                                    </OverlayTag>
+                                    <span>
+                                        {lockedByOther
+                                            ? `Venta tomada por ${venta.supervisor_nombre ?? "otro supervisor"}`
+                                            : "Supervisar venta"}
+                                    </span>
+                                    {!lockedByOther && (
+                                        <SmallButton onClick={() => onReview(venta)}>
+                                            <FaUserShield /> Tomar revisión
+                                        </SmallButton>
+                                    )}
+                                </OverlayContent>
+                            </LockOverlay>
+
+                            <RowGrid>
+                                <CellContent $blurred={blurred} $keepVisible>
+                                    <CellLabel>Asesor</CellLabel>
+                                    <StrongText>{venta.nombre_vendedor ?? "-"}</StrongText>
+                                </CellContent>
+
+                                <CellContent $blurred={blurred} $keepVisible>
+                                    <CellLabel>Fecha de venta</CellLabel>
+                                    <MutedText><FaCalendarAlt style={{ marginRight: 6 }} /> {formatDate(venta.fecha_venta)}</MutedText>
+                                </CellContent>
+
+                                <CellContent $blurred={blurred}>
+                                    <CellLabel>Docente</CellLabel>
+                                    <StrongText>{venta.nombre_docente ?? "-"}</StrongText>
+                                </CellContent>
+
+                                <CellContent $blurred={blurred}>
+                                    <CellLabel>Resumen</CellLabel>
+                                    <MutedText>{venta.resumen_venta ?? "-"}</MutedText>
+                                </CellContent>
+
+                                <CellContent $blurred={blurred}>
+                                    <CellLabel>Total neto</CellLabel>
+                                    <StrongText>S/ {Number(venta.total_neto ?? 0).toFixed(2)}</StrongText>
+                                </CellContent>
+
+                                <CellContent $blurred={blurred}>
+                                    <CellLabel>Supervisor</CellLabel>
+                                    <Pill $type={takenByCurrent ? "success" : lockedByOther ? "danger" : "warning"}>
+                                        <FaUserShield />
+                                        {takenByCurrent ? "Tú" : (venta.supervisor_nombre || "Sin asignar")}
+                                    </Pill>
+                                </CellContent>
+
+                                <ActionStack>
+                                    <SmallButton
+                                        onClick={() => (lockedByOther ? handleLockedAlert(venta) : onReview(venta))}
+                                        disabled={lockedByOther}
+                                    >
+                                        <FaEye /> Ver detalle
+                                    </SmallButton>
+                                    <SmallButton
+                                        $variant="ghost"
+                                        onClick={() => (lockedByOther ? handleLockedAlert(venta) : onShowVouchers(venta))}
+                                        disabled={lockedByOther}
+                                    >
+                                        <FaFileAlt /> Vouchers
+                                    </SmallButton>
+                                    <IconAction
+                                        $type="success"
+                                        title="Aprobar"
+                                        disabled={!takenByCurrent}
+                                        onClick={() => onReview(venta, "approve")}
+                                    >
+                                        <FaCheck />
+                                    </IconAction>
+                                    <IconAction
+                                        $type="danger"
+                                        title="Rechazar"
+                                        disabled={!takenByCurrent}
+                                        onClick={() => onReview(venta, "reject")}
+                                    >
+                                        <FaTimes />
+                                    </IconAction>
+                                </ActionStack>
+                            </RowGrid>
+                        </RowCard>
+                    );
+                })}
+            </TableList>
         </SupervisionTableContainer>
     );
 }

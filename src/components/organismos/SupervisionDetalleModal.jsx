@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { v } from "../../styles/variables";
 import Swal from "sweetalert2";
@@ -108,12 +108,89 @@ const FileInput = styled.input`
     margin-top: 10px;
 `;
 
-export function SupervisionDetalleModal({ onClose, idUsuario, venta, items, vouchers, docente, onApprove, onReject }) {
+const SummaryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+`;
+
+const SummaryCard = styled.div`
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: ${({ theme }) => `rgba(${theme.textRgba}, 0.06)`};
+  border: 1px solid ${({ theme }) => `rgba(${theme.textRgba}, 0.08)`};
+`;
+
+const Label = styled.div`
+  font-size: 0.85rem;
+  color: ${({ theme }) => `rgba(${theme.textRgba}, 0.65)`};
+`;
+
+const Value = styled.div`
+  font-weight: 700;
+  color: ${({ theme }) => theme.text};
+`;
+
+const Chip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: ${({ $type }) => $type === "danger" ? "rgba(244,67,54,0.12)" : "rgba(46, 125, 50, 0.12)"};
+  color: ${({ $type }) => $type === "danger" ? "#b71c1c" : "#1b5e20"};
+  font-weight: 700;
+`;
+
+const InlineInputs = styled.div`
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const InputLabel = styled.label`
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+`;
+
+const Badge = styled.span`
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: ${({ theme }) => `rgba(${theme.textRgba}, 0.08)`};
+  color: ${({ theme }) => theme.text};
+  font-size: 0.9rem;
+`;
+
+export function SupervisionDetalleModal({ onClose, idUsuario, venta, items, vouchers, docente, onApprove, onReject, actionIntent }) {
   const [rejectMode, setRejectMode] = useState(false);
   const [comentario, setComentario] = useState("");
   const [severidad, setSeveridad] = useState(1);
   const [evidenciaFile, setEvidenciaFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+      if (actionIntent === 'reject') {
+          setRejectMode(true);
+      }
+      if (actionIntent === 'approve') {
+          setRejectMode(false);
+      }
+  }, [actionIntent]);
 
   const handleApprove = async () => {
       const result = await Swal.fire({
@@ -147,11 +224,15 @@ export function SupervisionDetalleModal({ onClose, idUsuario, venta, items, vouc
 
       if (result.isConfirmed) {
           setIsUploading(true);
-          onReject({
-              comentario,
-              severidad,
-              evidenciaFile
-          });
+          try {
+              await onReject({
+                  comentario,
+                  severidad,
+                  evidenciaFile
+              });
+          } finally {
+              setIsUploading(false);
+          }
       }
   };
 
@@ -162,6 +243,32 @@ export function SupervisionDetalleModal({ onClose, idUsuario, venta, items, vouc
           <Title>Revisión de Venta #{venta.id}</Title>
           <CloseButton onClick={onClose}>&times;</CloseButton>
         </Header>
+        <Section>
+            <SummaryGrid>
+                <SummaryCard>
+                    <Label>Asesor</Label>
+                    <Value>{venta?.usuarios?.nombres ?? "-"}</Value>
+                </SummaryCard>
+                <SummaryCard>
+                    <Label>Docente</Label>
+                    <Value>{docente?.nombres} {docente?.apellido_p}</Value>
+                </SummaryCard>
+                <SummaryCard>
+                    <Label>Fecha de venta</Label>
+                    <Value>{venta?.fecha_venta ? new Date(venta.fecha_venta).toLocaleDateString() : "-"}</Value>
+                </SummaryCard>
+                <SummaryCard>
+                    <Label>Total neto</Label>
+                    <Value>S/ {Number(venta.total_neto ?? 0).toFixed(2)}</Value>
+                </SummaryCard>
+                <SummaryCard>
+                    <Label>Estado de supervisión</Label>
+                    <Chip $type={rejectMode ? "danger" : "success"}>
+                        {rejectMode ? "En corrección" : "Listo para aprobar"}
+                    </Chip>
+                </SummaryCard>
+            </SummaryGrid>
+        </Section>
 
         <Section>
             <SubTitle>Datos del Docente</SubTitle>
@@ -174,7 +281,7 @@ export function SupervisionDetalleModal({ onClose, idUsuario, venta, items, vouc
         </Section>
 
         <Section>
-            <SubTitle>Items de Venta</SubTitle>
+            <SubTitle>Detalle de la venta</SubTitle>
             <ItemTable>
                 <thead>
                     <tr>
@@ -212,28 +319,34 @@ export function SupervisionDetalleModal({ onClose, idUsuario, venta, items, vouc
         </Section>
 
         <Section>
-            <SubTitle>Comentarios / Observaciones</SubTitle>
-            <TextArea
-                placeholder="Ingrese comentario..."
-                value={comentario}
-                onChange={(e) => setComentario(e.target.value)}
-            />
+            <SubTitle>Comentarios y evidencia</SubTitle>
+            <InlineInputs>
+                <div>
+                    <InputLabel>Comentario</InputLabel>
+                    <TextArea
+                        placeholder="Explica tu decisión para dejar trazabilidad"
+                        value={comentario}
+                        onChange={(e) => setComentario(e.target.value)}
+                    />
+                </div>
+                <div>
+                    <InputLabel>Cargar evidencia (opcional)</InputLabel>
+                    <FileInput type="file" accept="image/*" onChange={(e) => setEvidenciaFile(e.target.files[0])} />
+                    <Badge style={{ marginTop: 10 }}>Se guardará en incidencias al rechazar</Badge>
+                </div>
+            </InlineInputs>
         </Section>
 
         {rejectMode && (
             <Section style={{ border: '1px solid red', padding: '10px', borderRadius: '5px' }}>
                 <SubTitle style={{color: 'red'}}>Reporte de Incidencia</SubTitle>
                 <div style={{ marginBottom: '10px'}}>
-                    <label>Severidad: </label>
-                    <select value={severidad} onChange={e => setSeveridad(e.target.value)}>
+                    <InputLabel>Severidad</InputLabel>
+                    <Select value={severidad} onChange={e => setSeveridad(Number(e.target.value))}>
                         <option value="1">Baja</option>
                         <option value="2">Media</option>
                         <option value="3">Alta</option>
-                    </select>
-                </div>
-                <div style={{ marginBottom: '10px'}}>
-                     <label>Evidencia (Imagen): </label>
-                     <FileInput type="file" accept="image/*" onChange={(e) => setEvidenciaFile(e.target.files[0])} />
+                    </Select>
                 </div>
                 <Button color={v.rojo} onClick={handleReject} disabled={isUploading}>
                     {isUploading ? "Subiendo..." : "Confirmar Rechazo"}
