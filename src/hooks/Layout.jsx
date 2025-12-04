@@ -1,50 +1,61 @@
 import styled from "styled-components";
 import { useState } from "react";
-import { Sidebar, Spinner1, SwitchHamburguesa, useEmpresaStore, useUsuariosStore } from "../index";
+import {
+  MenuMovil,
+  Sidebar,
+  Spinner1,
+  SwitchHamburguesa,
+  useEmpresaStore,
+  useUsuariosStore,
+} from "../index";
 import { Device } from "../styles/breakpoints";
 import { useQuery } from "@tanstack/react-query";
 
 export function Layout({ children }) {
-    
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [stateMenu, setStateMenu] = useState(false);
 
-    const { datausuarios, mostrarusuarios } = useUsuariosStore();
-    const { mostrarempresa } = useEmpresaStore();
-    const { isLoading, error } = useQuery({
-        queryKey: ["mostrar usuarios"],
-        queryFn: mostrarusuarios,
-        refetchOnWindowFocus: false,
-    });
-    useQuery({
-        queryKey: ["mostrar empresa", datausuarios?.id],
-        queryFn: () => mostrarempresa({ _id_usuario: datausuarios?.id }),
-        enabled: !!datausuarios?.id,
-        refetchOnWindowFocus: false,
-    });
+  const { datausuarios, mostrarusuarios } = useUsuariosStore();
+  const { mostrarempresa } = useEmpresaStore();
+  const { isLoading, error } = useQuery({
+    queryKey: ["mostrar usuarios"],
+    queryFn: mostrarusuarios,
+    refetchOnWindowFocus: false,
+  });
+  useQuery({
+    queryKey: ["mostrar empresa", datausuarios?.id],
+    queryFn: () => mostrarempresa({ _id_usuario: datausuarios?.id }),
+    enabled: !!datausuarios?.id,
+    refetchOnWindowFocus: false,
+  });
 
-    if (isLoading) {
-        return <Spinner1 />;
-    }
-    if (error) {
-        return <div>Error al cargar los usuarios</div>;
-    }
+  if (isLoading) {
+    return <Spinner1 />;
+  }
+  if (error) {
+    return <div>Error al cargar los usuarios</div>;
+  }
 
-    return (
-        <Container className={sidebarOpen ? "active" : ""}>
-            <section className="contentSidebar">
-                <Sidebar
-                    state={sidebarOpen}
-                    setState={() => setSidebarOpen(!sidebarOpen)}
-                />
-            </section>
+  return (
+    <Container className={sidebarOpen ? "active" : ""}>
+      <section className="contentSidebar">
+        <Sidebar
+          state={sidebarOpen}
+          setState={() => setSidebarOpen(!sidebarOpen)}
+        />
+      </section>
 
-            <section className="contentMenuamburger">
-                <SwitchHamburguesa />
-            </section>
+      <section className="contentMenuamburger">
+        <SwitchHamburguesa
+          state={stateMenu}
+          setstate={() => setStateMenu(!stateMenu)}
+        />
+        {stateMenu ? <MenuMovil setState={() => setStateMenu(false)} /> : null}
+      </section>
 
-            <ContainerBody>{children}</ContainerBody>
-        </Container>
-    );
+      <ContainerBody>{children}</ContainerBody>
+    </Container>
+  );
 }
 
 const Container = styled.main`

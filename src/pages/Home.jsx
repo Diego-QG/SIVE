@@ -1,7 +1,7 @@
-import { HomeTemplate } from "../index";
+import { HomeTemplate, Welcome } from "../index";
 
 export function Home() {
     return (
-        <HomeTemplate />
+        <Welcome />
     )
 }

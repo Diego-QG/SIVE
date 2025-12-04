@@ -12,6 +12,7 @@ import {
   POS,
   Layout,
   Supervision,
+  PageNot,
 } from "../index";
 
 export function MyRoutes() {
@@ -114,6 +115,20 @@ export function MyRoutes() {
           <ProtectedRoute accessBy="authenticated">
             <Layout>
               <Supervision />
+            </Layout>
+          </ProtectedRoute>} 
+        />
+
+
+
+
+
+        <Route
+        path="*"
+        element={
+          <ProtectedRoute accessBy="authenticated">
+            <Layout>
+              <PageNot />
             </Layout>
           </ProtectedRoute>} 
         />
