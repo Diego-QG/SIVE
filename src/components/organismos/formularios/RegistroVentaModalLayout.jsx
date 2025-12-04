@@ -4,14 +4,14 @@ export const Overlay = styled.div`
   position: fixed;
   inset: 0;
   background: rgba(7, 20, 36, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   z-index: 1200;
-  padding: 16px;
+  padding: 24px 18px;
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   pointer-events: ${({ $visible }) => ($visible ? "auto" : "none")};
   visibility: ${({ $visible }) => ($visible ? "visible" : "hidden")};
+  overflow-y: auto;
 `;
 
 export const ModalContainer = styled.div`

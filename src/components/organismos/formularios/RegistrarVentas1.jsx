@@ -730,25 +730,27 @@ export function RegistrarVentas1({
                         </option>
                       ))}
                     </PhoneCodeSelect>
-                    <PhoneNumberField
-                      type="tel"
-                      placeholder="Número de teléfono"
-                      value={phoneNumber}
-                      onChange={handlePhoneChange}
-                      onBlur={handlePhoneBlur}
-                      maxLength={phoneDigitsRequired ?? 15}
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      disabled={isDocenteLocked}
-                    />
-                    <ResetIconButton
-                      type="button"
-                      onClick={handleResetForm}
-                      aria-label="Limpiar número"
-                      disabled={!phoneNumber}
-                    >
-                      <v.iconocerrar />
-                    </ResetIconButton>
+                    <PhoneNumberWrapper>
+                      <PhoneNumberField
+                        type="tel"
+                        placeholder="Número de teléfono"
+                        value={phoneNumber}
+                        onChange={handlePhoneChange}
+                        onBlur={handlePhoneBlur}
+                        maxLength={phoneDigitsRequired ?? 15}
+                        inputMode="numeric"
+                        autoComplete="tel"
+                        disabled={isDocenteLocked}
+                      />
+                      <ResetIconButton
+                        type="button"
+                        onClick={handleResetForm}
+                        aria-label="Limpiar número"
+                        disabled={!phoneNumber}
+                      >
+                        <v.iconocerrar />
+                      </ResetIconButton>
+                    </PhoneNumberWrapper>
                   </PhoneFieldCluster>
                   {phoneLookupMessage && (
                     <LookupStatus $status={phoneLookupState}>
@@ -1040,8 +1042,8 @@ const InputRow = styled.div`
   @media (max-width: 560px) { flex-direction: column; align-items: stretch; }
 `;
 const DniInputGroup = styled(InputGroup)`
-  flex: 0 0 45%;
-  max-width: 360px;
+  flex: 0 0 60%;
+  max-width: 480px;
   @media (max-width: 560px) { flex: 1 1 auto; max-width: none; }
 `;
 const DualGrid = styled.div`
@@ -1063,19 +1065,15 @@ const NameFieldsRow = styled(LocationSelectorsRow)`
   align-items: flex-end;
 `;
 const CountrySelectorWrapper = styled(DropdownWrapper)`
-  width: auto;
-  justify-self: end;
-  align-self: flex-end;
-  margin-left: auto;
+  width: 100%;
+  justify-self: flex-start;
+  align-self: flex-start;
   margin-top: 8px;
   min-width: 0;
-  max-width: 220px;
+  max-width: 360px;
 
   @media (max-width: 640px) {
-    max-width: 180px;
-    width: 100%;
-    margin-left: 0;
-    justify-self: flex-start;
+    max-width: none;
   }
 `;
 const LocationDropdownWrapper = styled(DropdownWrapper)`
@@ -1122,16 +1120,22 @@ const PhoneCodeSelect = styled.select`
   }
 `;
 
+const PhoneNumberWrapper = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
 const PhoneNumberField = styled.input`
   flex: 1 1 220px;
   min-width: 0;
   font-size: 1rem;
-  padding: 12px 14px;
+  padding: 12px 44px 12px 14px;
   line-height: 1.4;
   border-radius: 12px;
   border: 1px dashed rgba(${({ theme }) => theme.textRgba}, 0.2);
   background: rgba(${({ theme }) => theme.textRgba}, 0.04);
   color: ${({ theme }) => theme.text};
+  width: 100%;
 
   @media (max-width: 768px) {
     width: 100%;
@@ -1139,25 +1143,28 @@ const PhoneNumberField = styled.input`
 `;
 
 const ResetIconButton = styled.button`
+  position: absolute;
+  inset: 50% 10px auto auto;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: #f6f8fb;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.8);
   color: #111827;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, opacity 0.2s ease;
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
   }
 
   &:hover:not(:disabled) {
-    background: #eef2f6;
+    background: rgba(255, 255, 255, 1);
   }
 `;
 const PhoneStatusRow = styled.div`
