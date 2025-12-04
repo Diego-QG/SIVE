@@ -12,6 +12,7 @@ import { v } from "../../styles/variables";
 import ConfettiExplosion from "react-confetti-explosion";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Toaster } from "sonner";
+import {blur_in} from "../../styles/keyframes";
 
 export function POSTemplate({ datausuarios } = {}) {
   const { dataventas, buscador, setBuscador, eliminarborrador } = useVentasStore();
@@ -284,6 +285,7 @@ const Container = styled.div`
     "main" auto;
   gap: 24px;
   align-content: start;
+  animation: ${blur_in} 0.5s linear both;
 
   @media (min-width: ${v.bpbart}) {
     padding: 32px 32px 40px;

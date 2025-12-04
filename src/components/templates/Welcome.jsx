@@ -1,35 +1,28 @@
 import styled from "styled-components";
 
 import { useAuthStore } from "../../index";
+import { ToggleTema } from "../organismos/ToggleTema";
 export function Welcome() {
   const { cerrarSesion } = useAuthStore();
   function cerrar(){
     cerrarSesion()
-   
+
   }
   return (
     <Container>
+      <ThemeToggle>
+        <ToggleTema />
+      </ThemeToggle>
       <section class="home">
         <div class="description">
           <h1 class="title">
-            <span class="gradient-text">BIENVENIDO AL</span> POS VENTAS CON
-            REACT.JS
+            <span class="gradient-text">BIENVENIDO A PAKARY</span> SIVE
           </h1>
           <p class="paragraph">
-            Este proyecto-curso esta en construcción, pueder probar la
-            configuración y VENTAS por ahora. Si desean ser parte del proyecto
-            pueden inscribirse en el botón INSCRIBIRSE:
+            Este portal está en desarrollo para la empresa Pakary; es la
+            plataforma mediante la cual podrás trabajar de manera más eficiente y rápida.
           </p>
           <ContainerBtn>
-            <a
-              target="_blank"
-              href="https://www.udemy.com/course/punto-de-venta-con-react-full-stack/?couponCode=SOYINVISIBLE"
-              class="btn"
-              aria-label="submit"
-            >
-              <span>Inscribirse</span>
-              <ion-icon name="arrow-forward-outline"></ion-icon>
-            </a>
             <a
              class="btn"
               onClick={cerrar}
@@ -89,6 +82,7 @@ const Container = styled.div`
   height: 100%;
   display: flex;
   overflow: hidden;
+  position: relative;
 
   img {
     width: 100%;
@@ -468,7 +462,14 @@ const Container = styled.div`
     }
   }
 `;
+const ThemeToggle = styled.div`
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+`;
 const ContainerBtn = styled.div`
   display:flex;
+  justify-content:center;
   gap:10px;
 `
