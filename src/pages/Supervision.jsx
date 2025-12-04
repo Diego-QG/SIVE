@@ -27,15 +27,16 @@ export function Supervision() {
     const [showVouchers, setShowVouchers] = useState(false);
     const [vouchersToShow, setVouchersToShow] = useState([]);
     const [voucherTitle, setVoucherTitle] = useState("");
+    const [actionIntent, setActionIntent] = useState(null);
 
     useEffect(() => {
         mostrarVentas();
     }, []);
 
-    const handleUnlock = async (row) => {
+    const handleOpenReview = async (row, intent = null) => {
         const idVenta = row.id;
         const currentStatus = row.estado_supervision;
-        const currentActor = row.venta_supervision?.[0]?.actor_usuario;
+        const currentActor = row.actor_usuario ?? row.venta_supervision?.[0]?.actor_usuario;
 
         if (currentStatus === 'en_revision' && currentActor !== user.id) {
             Swal.fire({
@@ -46,11 +47,14 @@ export function Supervision() {
             return;
         }
 
-        const success = await tomarRevision(idVenta, user.id);
-        if (success) {
-            await cargarDetalleVenta(idVenta);
-            setSelectedVentaId(idVenta);
-        }
+        const alreadyTakenByUser = currentStatus === 'en_revision' && currentActor === user.id;
+
+        const success = alreadyTakenByUser ? true : await tomarRevision(idVenta, user.id);
+        if (!success) return;
+
+        await cargarDetalleVenta(idVenta);
+        setSelectedVentaId(idVenta);
+        setActionIntent(intent);
     };
 
     const handleShowVouchers = async (row) => {
@@ -66,6 +70,7 @@ export function Supervision() {
 
     const handleCloseDetail = () => {
         setSelectedVentaId(null);
+        setActionIntent(null);
         limpiarDetalle();
     };
 
@@ -110,7 +115,7 @@ export function Supervision() {
             <SupervisionTemplate
                 dataVentas={dataVentas}
                 currentUserId={user?.id}
-                onUnlock={handleUnlock}
+                onReview={handleOpenReview}
                 onShowVouchers={handleShowVouchers}
             />
 
@@ -124,6 +129,7 @@ export function Supervision() {
                     onClose={handleCloseDetail}
                     onApprove={handleApprove}
                     onReject={handleReject}
+                    actionIntent={actionIntent}
                 />
             )}
 
