@@ -39,7 +39,7 @@ const Stepper = styled.div`
   width: 100%;
 
   @media (max-width: 640px) {
-    flex-direction: column;
+    gap: 8px;
   }
 `;
 
@@ -54,6 +54,14 @@ const StepItem = styled.div`
   background: rgba(${({ theme }) => theme.textRgba}, 0.03);
   border: 1px solid rgba(${({ theme }) => theme.textRgba}, 0.08);
 
+  @media (max-width: 640px) {
+    padding: 8px 10px;
+    gap: 8px;
+    flex-direction: row;
+    justify-content: center;
+    border-radius: 12px;
+  }
+
   .bullet {
     width: 36px;
     height: 36px;
@@ -63,22 +71,41 @@ const StepItem = styled.div`
     font-weight: 700;
     background: rgba(${({ theme }) => theme.textRgba}, 0.15);
     color: ${({ theme }) => theme.text};
+    flex-shrink: 0;
+
+    @media (max-width: 640px) {
+      width: 28px;
+      height: 28px;
+      font-size: 0.85rem;
+    }
   }
 
   .labels {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 
     .title {
       font-size: 0.75rem;
       color: rgba(${({ theme }) => theme.textRgba}, 0.65);
+
+      @media (max-width: 640px) {
+        display: none; /* Ocultar "Paso X" en móvil */
+      }
     }
 
     strong {
       font-size: 0.95rem;
       font-weight: 600;
       color: ${({ theme }) => theme.text};
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      @media (max-width: 640px) {
+        font-size: 0.85rem;
+      }
     }
   }
 
@@ -90,6 +117,10 @@ const StepItem = styled.div`
     height: 2px;
     background: rgba(${({ theme }) => theme.textRgba}, 0.2);
     transform: translateY(-50%);
+
+    @media (max-width: 640px) {
+       display: none; /* Ocultar conector en móvil para evitar superposiciones */
+    }
   }
 
   &.active {
