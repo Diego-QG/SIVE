@@ -444,7 +444,7 @@ const AddCuotaButton = styled.button`
 const TotalCheck = styled.div`
     text-align: right;
     font-weight: 600;
-    color: ${({ $isValid }) => $isValid ? '#0c554a' : '#ff4444'};
+    color: ${({ $isValid }) => $isValid ? 'rgba(57, 125, 20, 0.7)' : 'rgba(255, 68, 68, 0.5)'};
     display: flex;
     flex-direction: column;
     small { font-weight: 400; }

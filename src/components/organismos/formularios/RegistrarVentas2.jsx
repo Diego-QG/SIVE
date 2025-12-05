@@ -475,7 +475,7 @@ export function RegistrarVentas2({
                   />
                 </SelectorColumn>
                 <SelectorColumn>
-                  <span>Seleccionar curso o paquete</span>
+                  <span>Seleccionar curso</span>
                   <SelectorButton
                     type="button"
                     ref={triggerRefs.contenido}
@@ -707,8 +707,8 @@ const Body = styled.div`
 
 const PanelsGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(14px, 2vw, 22px);
+  grid-template-columns: 1fr 3fr;
+  gap: clamp(20px, 2.8vw, 32px);
   align-items: start;
 
   @media (max-width: 1080px) {
@@ -806,8 +806,10 @@ const SelectorColumn = styled.div`
 const ResumenWrapper = styled.div`
   min-width: 0;
   height: 100%;
+  padding-left: 8px;
 
   @media (max-width: 768px) {
+    padding-left: 0;
     margin-top: 4px;
   }
 `;
@@ -1084,7 +1086,7 @@ const ItemsDropdown = styled.div`
   .add-btn {
     border: none;
     background: rgba(23, 224, 192, 0.15);
-    color: #06463b;
+    color: rgba(15, 157, 88, 1);
     border-radius: 12px;
     padding: 10px 16px;
     display: inline-flex;

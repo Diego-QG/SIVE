@@ -201,6 +201,35 @@ export function RegistrarVentas1({
     setOpenDropdown((prev) => (prev === key ? null : key));
   };
 
+  const shouldBlockLocationSelection = (guardMessage) => {
+    if (guardMessage) {
+      toast.info(guardMessage);
+      return true;
+    }
+    return false;
+  };
+
+  const seleccionarDepartamentoSeguro = async (value) => {
+    if (shouldBlockLocationSelection(departamentoGuardMessage)) return;
+    await seleccionardepartamento(value);
+    await seleccionarprovincia(null);
+    seleccionardistrito(null);
+    closeDropdown();
+  };
+
+  const seleccionarProvinciaSeguro = async (value) => {
+    if (shouldBlockLocationSelection(provinciaGuardMessage)) return;
+    await seleccionarprovincia(value);
+    seleccionardistrito(null);
+    closeDropdown();
+  };
+
+  const seleccionarDistritoSeguro = (value) => {
+    if (shouldBlockLocationSelection(distritoGuardMessage)) return;
+    seleccionardistrito(value);
+    closeDropdown();
+  };
+
   const buildTelefonoCompleto = useCallback(
     () =>
       phoneNumber

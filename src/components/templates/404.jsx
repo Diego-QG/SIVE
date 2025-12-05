@@ -17,7 +17,7 @@ export function PageNot() {
           </div>
 
           <div className="home__img">
-            <img src="https://static.vecteezy.com/system/resources/previews/009/342/639/non_2x/under-construction-zone-clipart-design-illustration-free-png.png" alt="" />
+            <img src="https://icon-icons.com/download-file?file=https%3A%2F%2Fimages.icon-icons.com%2F1852%2FPNG%2F512%2Ficonfinder-websiteunderconstruction-4417109_116618.png&id=116618&pack_or_individual=pack" alt="" />
           </div>
         </div>
       </section>
@@ -76,7 +76,7 @@ const Container = styled.div`
     z-index: 100;
   }
 
-  background-color: var(--first-color);
+  background-color: ${({ theme }) => theme.bgtotal};
 
   display: grid;
 
