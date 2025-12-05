@@ -283,9 +283,12 @@ export function DetalleVenta({
                                   <div className="cuota-info">
                                     <strong>Cuota #{cuotaNumero}</strong>
                                     <small>
-                                      Vence: {mostrarConGuion(cuota.fecha_vencimiento)}
+                                      Vence:{" "}
+                                      {mostrarConGuion(cuota.fecha_vencimiento)}
                                     </small>
-                                    <small>Estado: {mostrarConGuion(cuota.estado)}</small>
+                                    <small>
+                                      Estado: {mostrarConGuion(cuota.estado)}
+                                    </small>
                                   </div>
                                 </div>
                                 <div className="cuota-amount">
@@ -304,23 +307,41 @@ export function DetalleVenta({
                                     {cuota.pagos.map((pago, pagoIdx) => {
                                       const cuenta = pago?.cuenta ?? {};
                                       const pagoNumero = pagoIdx + 1;
-                                      const cuentaInfo =
-                                        [
-                                          cuenta.entidad,
-                                          cuenta.medio,
-                                          cuenta.etiqueta,
-                                          cuenta.numero,
-                                        ]
-                                          .filter(Boolean)
-                                          .join(" - ");
-                                      const voucherArchivo =
-                                        pago?.archivo_voucher ??
-                                        pago?.voucher ??
-                                        pago?.evidencia?.archivo ??
-                                        pago?.evidencias?.[0]?.archivo ??
-                                        null;
+
+                                      const cuentaInfo = [
+                                        cuenta.entidad,
+                                        cuenta.medio,
+                                        cuenta.etiqueta,
+                                        cuenta.numero,
+                                        cuenta.titular, // ahora también mostramos el titular
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" - ");
+
+                                      // === AQUI AJUSTAMOS EL VOUCHER PARA QUE COINCIDA CON TU JSON ===
+                                      let voucherArchivo =
+                                        pago?.archivo_voucher ?? null;
+
+                                      // Si no viene la URL pero sí el id_evidencia, construimos la ruta
+                                      if (
+                                        !voucherArchivo &&
+                                        pago?.id_evidencia
+                                      ) {
+                                        voucherArchivo = `https://bykzndnpaqcotqcpsblf.supabase.co/storage/v1/object/public/imagenes/vouchers_recibidos/${pago.id_evidencia}`;
+                                      }
+
+                                      // Fallbacks antiguos por si en alguna venta vieja viene con otro formato
+                                      if (!voucherArchivo) {
+                                        voucherArchivo =
+                                          pago?.voucher ??
+                                          pago?.evidencia?.archivo ??
+                                          (Array.isArray(pago?.evidencias) &&
+                                            pago.evidencias[0]?.archivo) ??
+                                          null;
+                                      }
+
                                       const fechaPago = obtenerPartesFecha(
-                                        pago.fecha_pago,
+                                        pago.fecha_pago
                                       );
 
                                       return (
@@ -330,13 +351,14 @@ export function DetalleVenta({
                                         >
                                           <div className="pago-item">
                                             <div className="pago-info">
-                                              <div className="pago-label">Pago #{pagoNumero}</div>
+                                              <div className="pago-label">
+                                                Pago #{pagoNumero}
+                                              </div>
                                               <strong>
-                                                {`${fechaPago.fecha} ${
-                                                  fechaPago.hora !== "--:--"
+                                                {`${fechaPago.fecha} ${fechaPago.hora !== "--:--"
                                                     ? `• ${fechaPago.hora}`
                                                     : ""
-                                                }`}
+                                                  }`}
                                               </strong>
                                               <small>
                                                 {`Cuota #${cuotaNumero}`}
@@ -459,12 +481,8 @@ export function DetalleVenta({
                         <BsPerson />
                       </div>
                       <div className="docente-details">
-                        <strong>
-                          {mostrarConGuion(docenteData?.nombre)}
-                        </strong>
-                        <small>
-                          {mostrarConGuion(docenteData?.nro_doc)}
-                        </small>
+                        <strong>{mostrarConGuion(docenteData?.nombre)}</strong>
+                        <small>{mostrarConGuion(docenteData?.nro_doc)}</small>
                       </div>
                       <ContactInfo>
                         <div className="contact-row">
@@ -553,10 +571,7 @@ export function DetalleVenta({
                 >
                   ×
                 </button>
-                <img
-                  src={focusedVoucher.preview}
-                  alt={`Vista ampliada`}
-                />
+                <img src={focusedVoucher.preview} alt={`Vista ampliada`} />
               </VoucherLightboxContent>
             </VoucherLightboxOverlay>
           )}
