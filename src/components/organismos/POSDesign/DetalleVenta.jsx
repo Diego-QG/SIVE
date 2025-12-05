@@ -270,79 +270,92 @@ export function DetalleVenta({
                       </EmptySection>
                     ) : (
                       <CuotasContainer>
-                        {cuotas.map((cuota, index) => (
-                          <CuotaRow key={`cuota-${index}`}>
-                            <div className="cuota-header">
-                              <div className="cuota-title">
-                                <span className="cuota-number">
-                                  {cuota.nro_cuota}
-                                </span>
-                                <div className="cuota-info">
+                        {cuotas.map((cuota, index) => {
+                          const cuotaNumero = cuota.nro_cuota ?? index + 1;
+
+                          return (
+                            <CuotaRow key={`cuota-${index}`}>
+                              <div className="cuota-header">
+                                <div className="cuota-title">
+                                  <span className="cuota-number">
+                                    {cuotaNumero}
+                                  </span>
+                                  <div className="cuota-info">
+                                    <strong>Cuota #{cuotaNumero}</strong>
+                                    <small>
+                                      Vence: {mostrarConGuion(cuota.fecha_vencimiento)}
+                                    </small>
+                                    <small>Estado: {mostrarConGuion(cuota.estado)}</small>
+                                  </div>
+                                </div>
+                                <div className="cuota-amount">
+                                  <small>
+                                    Saldo: {mostrarConGuion(cuota.saldo)}
+                                  </small>
                                   <strong>
-                                    Vence:{" "}
-                                    {mostrarConGuion(cuota.fecha_vencimiento)}
+                                    {mostrarConGuion(cuota.monto_programado)}
                                   </strong>
-                                  <small>{mostrarConGuion(cuota.estado)}</small>
                                 </div>
                               </div>
-                              <div className="cuota-amount">
-                                <small>
-                                  Saldo: {mostrarConGuion(cuota.saldo)}
-                                </small>
-                                <strong>
-                                  {mostrarConGuion(cuota.monto_programado)}
-                                </strong>
-                              </div>
-                            </div>
 
-                            {Array.isArray(cuota.pagos) &&
-                              cuota.pagos.length > 0 && (
-                                <PagosList>
-                                  {cuota.pagos.map((pago, pagoIdx) => {
-                                    const cuenta = pago?.cuenta ?? {};
-                                    const cuotaNumero =
-                                      cuota.nro_cuota ?? pago.nro_cuota ?? pagoIdx + 1;
-                                    const cuentaInfo =
-                                      [
-                                        cuenta.entidad,
-                                        cuenta.medio,
-                                        cuenta.etiqueta,
-                                        cuenta.numero,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(" - ");
-                                    const voucherArchivo =
-                                      pago?.archivo_voucher ??
-                                      pago?.voucher ??
-                                      pago?.evidencia?.archivo ??
-                                      pago?.evidencias?.[0]?.archivo ??
-                                      null;
+                              {Array.isArray(cuota.pagos) &&
+                                cuota.pagos.length > 0 && (
+                                  <PagosList>
+                                    {cuota.pagos.map((pago, pagoIdx) => {
+                                      const cuenta = pago?.cuenta ?? {};
+                                      const pagoNumero = pagoIdx + 1;
+                                      const cuentaInfo =
+                                        [
+                                          cuenta.entidad,
+                                          cuenta.medio,
+                                          cuenta.etiqueta,
+                                          cuenta.numero,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" - ");
+                                      const voucherArchivo =
+                                        pago?.archivo_voucher ??
+                                        pago?.voucher ??
+                                        pago?.evidencia?.archivo ??
+                                        pago?.evidencias?.[0]?.archivo ??
+                                        null;
+                                      const fechaPago = obtenerPartesFecha(
+                                        pago.fecha_pago,
+                                      );
 
-                                    return (
-                                      <div
-                                        className="pago-wrapper"
-                                        key={`pago-${pagoIdx}`}
-                                      >
-                                        <div className="pago-item">
-                                          <div className="pago-info">
-                                            <strong>
-                                              {mostrarConGuion(pago.fecha_pago)}
-                                            </strong>
-                                            <small>
-                                              {cuentaInfo || `Cuota #${cuotaNumero}`}
-                                            </small>
+                                      return (
+                                        <div
+                                          className="pago-wrapper"
+                                          key={`pago-${pagoIdx}`}
+                                        >
+                                          <div className="pago-item">
+                                            <div className="pago-info">
+                                              <div className="pago-label">Pago #{pagoNumero}</div>
+                                              <strong>
+                                                {`${fechaPago.fecha} ${
+                                                  fechaPago.hora !== "--:--"
+                                                    ? `• ${fechaPago.hora}`
+                                                    : ""
+                                                }`}
+                                              </strong>
+                                              <small>
+                                                {`Cuota #${cuotaNumero}`}
+                                                {cuentaInfo
+                                                  ? ` • ${cuentaInfo}`
+                                                  : ""}
+                                              </small>
+                                            </div>
+                                            <div className="pago-amount">
+                                              {mostrarConGuion(pago.monto)}
+                                            </div>
                                           </div>
-                                          <div className="pago-amount">
-                                            {mostrarConGuion(pago.monto)}
-                                          </div>
-                                        </div>
 
-                                        {voucherArchivo && (
                                           <PagoEvidencias>
                                             <EvidenceThumb
                                               role="button"
                                               tabIndex={0}
                                               onClick={() =>
+                                                voucherArchivo &&
                                                 setFocusedVoucher({
                                                   preview: voucherArchivo,
                                                   id: `voucher-${index}-${pagoIdx}`,
@@ -350,8 +363,9 @@ export function DetalleVenta({
                                               }
                                               onKeyDown={(e) => {
                                                 if (
-                                                  e.key === "Enter" ||
-                                                  e.key === " "
+                                                  voucherArchivo &&
+                                                  (e.key === "Enter" ||
+                                                    e.key === " ")
                                                 ) {
                                                   setFocusedVoucher({
                                                     preview: voucherArchivo,
@@ -360,23 +374,32 @@ export function DetalleVenta({
                                                 }
                                               }}
                                             >
-                                              <img
-                                                src={voucherArchivo}
-                                                alt={`Voucher cuota ${cuotaNumero}`}
-                                              />
+                                              {voucherArchivo ? (
+                                                <img
+                                                  src={voucherArchivo}
+                                                  alt={`Voucher pago ${pagoNumero} - cuota ${cuotaNumero}`}
+                                                  loading="lazy"
+                                                />
+                                              ) : (
+                                                <div className="evidence-placeholder">
+                                                  Sin voucher
+                                                </div>
+                                              )}
                                               <span className="evidence-label">
-                                                Voucher cuota {cuotaNumero}
+                                                {voucherArchivo
+                                                  ? `Voucher pago ${pagoNumero}`
+                                                  : `Pago ${pagoNumero} sin voucher`}
                                               </span>
                                             </EvidenceThumb>
                                           </PagoEvidencias>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </PagosList>
-                              )}
-                          </CuotaRow>
-                        ))}
+                                        </div>
+                                      );
+                                    })}
+                                  </PagosList>
+                                )}
+                            </CuotaRow>
+                          );
+                        })}
                       </CuotasContainer>
                     )}
                   </Section>
@@ -937,6 +960,15 @@ const PagosList = styled.div`
     .pago-info {
       display: flex;
       flex-direction: column;
+      gap: 2px;
+
+      .pago-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        color: rgba(${({ theme }) => theme.textRgba}, 0.55);
+        font-weight: 700;
+      }
       strong {
         font-size: 0.85rem;
       }
