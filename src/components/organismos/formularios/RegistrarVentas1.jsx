@@ -1177,12 +1177,24 @@ const InputField = styled.input`
 `;
 const FieldStatus = styled.small`
   font-size: 0.78rem;
-  color: ${({ theme, $status }) => $status === "success" ? "#0c554a" : `rgba(${theme.textRgba}, 0.65)`};
+  color: ${({ theme, $status }) =>
+    $status === "success"
+      ? "rgba(12, 85, 74, 1)"
+      : `rgba(${theme.textRgba}, 0.65)`};
   font-weight: ${({ $status }) => ($status === "success" ? 600 : 500)};
 `;
+
 const LookupStatus = styled(FieldStatus)`
-  color: ${({ $status }) => $status === "found" ? "#0f9d58" : $status === "not-found" ? "#111827" : "rgba(0,0,0,0.55)"};
-  display: flex; align-items: flex-start; gap: 8px; min-width: 220px; word-break: break-word;
+  color: ${({ theme, $status }) => {
+    if ($status === "found") return "rgba(15, 157, 88, 1)";
+    if ($status === "not-found") return theme.text;
+    return `rgba(${theme.textRgba}, 0.65)`;
+  }};
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 220px;
+  word-break: break-word;
 `;
 const InlineSpinner = styled(Spinner)`
   width: 16px; height: 16px; border-width: 2px; border-color: rgba(0,0,0,0.1); border-top-color: ${({ theme }) => `rgba(${theme.textRgba}, 0.9)`};
