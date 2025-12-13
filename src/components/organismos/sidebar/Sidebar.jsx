@@ -22,7 +22,7 @@ export function Sidebar({ state, setState }) {
           <div className="imgcontent">
             <img src={v.logo} />
           </div>
-          <h2>R&H SIVE</h2>
+          <h2>Pakary SIVE</h2>
         </div>
         <div className="LinksWrapper">
           {LinksArray.map(({ icon, label, to }) => (

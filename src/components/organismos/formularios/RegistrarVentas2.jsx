@@ -751,7 +751,6 @@ const EditorialHeader = styled.div`
   justify-content: space-between;
   gap: 16px;
   width: 100%;
-
   h3 {
     font-size: 1.05rem;
   }
