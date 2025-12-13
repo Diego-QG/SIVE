@@ -88,6 +88,8 @@ export function RegistrarVentas1({
   const [hasHydratedInstitucion, setHasHydratedInstitucion] = useState(false);
   const [isPhoneReady, setIsPhoneReady] = useState(false);
   const [isDniReady, setIsDniReady] = useState(false);
+  const [dniLookupState, setDniLookupState] = useState("idle");
+  const [isDniLookupLoading, setIsDniLookupLoading] = useState(false);
   const [phoneLookupState, setPhoneLookupState] = useState("idle");
   const [isDocenteLocked, setIsDocenteLocked] = useState(false);
   const lastSavedSnapshotRef = useRef(null);
@@ -164,6 +166,14 @@ export function RegistrarVentas1({
     if (!dniDigitsRequired) return `${dniValue.length} dígitos ingresados.`;
     return `${dniValue.length}/${dniDigitsRequired} dígitos.`;
   }, [dniDigitsRequired, dniValue, isDniReady]);
+
+  const dniLookupMessage = useMemo(() => {
+    if (dniLookupState === "searching") return "Consultando DNI...";
+    if (dniLookupState === "found") return "Datos encontrados y bloqueados.";
+    if (dniLookupState === "not-found") return "No se encontraron datos para este DNI.";
+    if (dniLookupState === "error") return "No se pudo consultar el DNI.";
+    return null;
+  }, [dniLookupState]);
 
   const phoneLookupMessage = useMemo(() => {
     if (phoneLookupState === "found") return "Se encontraron registros. Datos cargados.";
@@ -304,6 +314,8 @@ export function RegistrarVentas1({
     updateInstitucionField("nombreIe", "");
     setIsPhoneReady(false);
     setIsDniReady(false);
+    setDniLookupState("idle");
+    setIsDniLookupLoading(false);
     setPhoneLookupState("idle");
     setIsDocenteLocked(false);
     setHasHydratedDocente(false);
@@ -477,6 +489,7 @@ export function RegistrarVentas1({
     const maxDigits = dniDigitsRequired ?? 12;
     updateDocenteField("dniValue", digitsOnly.slice(0, maxDigits));
     setIsDniReady(false);
+    setDniLookupState("idle");
   };
 
   const handleDniBlur = () => {
@@ -495,6 +508,75 @@ export function RegistrarVentas1({
     updateDocenteField("apellidoMaterno", "");
     if (!isDocenteLocked) {
       persistDocenteDraft();
+    }
+  };
+
+  const handleBuscarDni = async () => {
+    if (isDniLookupLoading) return;
+
+    if (!dniValue) {
+      toast.info("Ingresa un DNI para consultarlo.");
+      return;
+    }
+
+    if (dniDigitsRequired && dniValue.length !== dniDigitsRequired) {
+      toast.warning(`Se requieren ${dniDigitsRequired} dígitos.`);
+      return;
+    }
+
+    const baseUrl = import.meta.env.VITE_DECOLECTA_DNI_URL ?? "https://api.decolecta.com/dni";
+    const token =
+      import.meta.env.VITE_APP_DECOLECTA_TOKEN ?? import.meta.env.VITE_DECOLECTA_API_TOKEN;
+    const endpoint = baseUrl.includes("{dni}")
+      ? baseUrl.replace("{dni}", dniValue)
+      : `${baseUrl.replace(/\/?$/, "/")}${dniValue}`;
+
+    setIsDniLookupLoading(true);
+    setDniLookupState("searching");
+
+    try {
+      const response = await fetch(endpoint, {
+        headers: {
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Estado ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const data = payload?.data ?? payload?.result ?? payload?.persona ?? payload;
+
+      const nombresApi = normalizeTextInput(data?.nombres ?? data?.nombre ?? "");
+      const apellidoPaternoApi = normalizeTextInput(
+        data?.apellido_paterno ?? data?.apellidoPaterno ?? data?.apellido_p ?? data?.apellidoP ?? ""
+      );
+      const apellidoMaternoApi = normalizeTextInput(
+        data?.apellido_materno ?? data?.apellidoMaterno ?? data?.apellido_m ?? data?.apellidoM ?? ""
+      );
+
+      if (!nombresApi && !apellidoPaternoApi && !apellidoMaternoApi) {
+        setDniLookupState("not-found");
+        toast.error("No se encontraron datos para este DNI.");
+        return;
+      }
+
+      updateDocenteField("nombres", nombresApi);
+      updateDocenteField("apellidoPaterno", apellidoPaternoApi);
+      updateDocenteField("apellidoMaterno", apellidoMaternoApi);
+      setIsDocenteLocked(true);
+      setIsDniReady(true);
+      setDniLookupState("found");
+      toast.success("Datos del DNI encontrados.");
+      await persistDocenteDraft();
+    } catch (error) {
+      console.error("Error al consultar DNI:", error);
+      setDniLookupState("error");
+      toast.error("Ocurrió un error al consultar el DNI.");
+    } finally {
+      setIsDniLookupLoading(false);
     }
   };
 
@@ -809,6 +891,29 @@ export function RegistrarVentas1({
                   />
                   <FieldStatus $status={isDniReady ? "success" : "idle"}>{dniStatusMessage}</FieldStatus>
                 </DniInputGroup>
+
+                <DniActions>
+                  <BuscarDniButton
+                    type="button"
+                    onClick={handleBuscarDni}
+                    disabled={
+                      !dniValue ||
+                      isDniLookupLoading ||
+                      isDocenteLocked ||
+                      (dniDigitsRequired ? dniValue.length !== dniDigitsRequired : false)
+                    }
+                    aria-label="Buscar datos por DNI"
+                  >
+                    {isDniLookupLoading ? <InlineSpinner /> : "Buscar"}
+                  </BuscarDniButton>
+
+                  {dniLookupMessage && (
+                    <LookupStatus $status={dniLookupState}>
+                      {dniLookupState === "searching" && <InlineSpinner />}
+                      <span>{dniLookupMessage}</span>
+                    </LookupStatus>
+                  )}
+                </DniActions>
               </InputRow>
 
               <NameFieldsRow>
@@ -1074,6 +1179,45 @@ const DniInputGroup = styled(InputGroup)`
   flex: 0 0 60%;
   max-width: 480px;
   @media (max-width: 560px) { flex: 1 1 auto; max-width: none; }
+`;
+const DniActions = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex: 1 1 40%;
+  min-width: 0;
+
+  @media (max-width: 560px) {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+const BuscarDniButton = styled.button`
+  align-self: stretch;
+  min-height: 44px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: none;
+  background: ${v.colorselector};
+  color: #0b0b0b;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.2s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 const DualGrid = styled.div`
   display: grid;
